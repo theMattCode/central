@@ -8,14 +8,18 @@
     "lib": ["es2022"],
     "module": "nodenext",
     "moduleResolution": "nodenext",
+    "target": "es2022",
+    "customConditions": ["@central/source"],
+
+    /* Linting */
+    "strict": true,
     "noEmitOnError": true,
     "noFallthroughCasesInSwitch": true,
     "noImplicitOverride": true,
     "noImplicitReturns": true,
+    "noUncheckedSideEffectImports": true,
     "noUnusedLocals": true,
-    "skipLibCheck": true,
-    "strict": true,
-    "target": "es2022",
-    "customConditions": ["@central/source"]
+    "noUnusedParameters": true,
+    "skipLibCheck": true
   }
 }
