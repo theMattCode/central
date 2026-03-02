@@ -1,0 +1,46 @@
+{
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "name": "cockpit",
+  "projectType": "application",
+  "root": "apps/cockpit",
+  "sourceRoot": "apps/cockpit/src",
+  "targets": {
+    "start": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "apps/cockpit",
+        "command": "pnpm run start:dev"
+      }
+    },
+    "preview": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "apps/cockpit",
+        "command": "pnpm run start:preview"
+      }
+    },
+    "build": {
+      "executor": "nx:run-commands",
+      "outputs": ["{projectRoot}/dist"],
+      "options": {
+        "cwd": "apps/cockpit",
+        "command": "pnpm run build"
+      }
+    },
+    "test": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "apps/cockpit",
+        "command": "pnpm exec vitest run --passWithNoTests"
+      }
+    },
+    "typecheck": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "apps/cockpit",
+        "command": "pnpm exec tsc --noEmit -p tsconfig.json"
+      }
+    }
+  },
+  "tags": []
+}

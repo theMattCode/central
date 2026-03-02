@@ -1,0 +1,22 @@
+{
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "name": "i12e-postgres",
+  "projectType": "application",
+  "root": "i12e/postgres",
+  "sourceRoot": "i12e/postgres",
+  "targets": {
+    "build": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "docker build --file i12e/postgres/Dockerfile --tag central/i12/postgres:latest i12e/postgres"
+      }
+    },
+    "run": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "docker run --rm --name central-i12e-postgres -p 5432:5432 -e POSTGRES_USER=central -e POSTGRES_PASSWORD=central -e POSTGRES_DB=central central/i12e/postgres:latest"
+      }
+    }
+  },
+  "tags": ["scope:persistence", "type:infra"]
+}

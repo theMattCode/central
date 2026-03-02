@@ -9,6 +9,12 @@ pnpm install
 pnpm dev
 ```
 
+To run with Nx:
+
+```bash
+pnpm nx start cockpit
+```
+
 To build this application for production:
 
 ```bash
@@ -21,6 +27,14 @@ This project uses [Vitest](https://vitest.dev/) for testing. You can run the tes
 
 ```bash
 pnpm test
+```
+
+Or with Nx:
+
+```bash
+pnpm nx test cockpit
+pnpm nx typecheck cockpit
+pnpm nx build cockpit
 ```
 
 ## Styling
@@ -168,4 +182,3 @@ Loaders simplify your data fetching logic dramatically. Check out more informati
 ## Learn More
 
 For TanStack Start specific documentation, visit [TanStack Start](https://tanstack.com/start). You can learn more about TanStack in the [TanStack documentation](https://tanstack.com).
-

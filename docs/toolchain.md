@@ -61,6 +61,20 @@ These targets are either [inferred automatically](https://nx.dev/concepts/inferr
 
 [More about running tasks in the docs &raquo;](https://nx.dev/features/run-tasks?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
 
+### Persistence image project
+
+Build the persistence-layer PostgreSQL image:
+
+```bash
+pnpm nx build persistence-postgres
+```
+
+Run the persistence-layer PostgreSQL container:
+
+```bash
+pnpm nx run persistence-postgres:run
+```
+
 ### Versioning and releasing
 
 To version and release the library use
