@@ -16,11 +16,12 @@
     color-scheme: dark;
     --color-bg: #0a0b0a;
     --color-content-bg-start: #202225;
-    --color-content-bg-end: rgba(20, 20, 20, 0.6);
+    --color-content-bg-end: #141414;
     --color-txt: #e0e0e0;
     --color-txt-group: #8f8f8f;
     --color-pri: #3fbfdc;
     --color-sec: #44c56a;
+    --color-section-border: #272727;
   }
 }
 
