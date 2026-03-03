@@ -1,0 +1,70 @@
+{
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "name": "i12e-orchestrator",
+  "projectType": "application",
+  "root": "i12e/orchestrator",
+  "sourceRoot": "i12e/orchestrator",
+  "targets": {
+    "up-dev": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "docker compose --env-file i12e/orchestrator/.env.dev --file i12e/orchestrator/docker-compose.yml up --detach --build postgres && docker compose --env-file i12e/orchestrator/.env.dev --file i12e/orchestrator/docker-compose.yml run --rm --no-deps postgres-migrate && docker compose --env-file i12e/orchestrator/.env.dev --file i12e/orchestrator/docker-compose.yml up --detach --build cockpit"
+      }
+    },
+    "up-prod": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "docker compose --env-file i12e/orchestrator/.env.prod --file i12e/orchestrator/docker-compose.yml up --detach --build postgres && docker compose --env-file i12e/orchestrator/.env.prod --file i12e/orchestrator/docker-compose.yml run --rm --no-deps postgres-migrate && docker compose --env-file i12e/orchestrator/.env.prod --file i12e/orchestrator/docker-compose.yml up --detach --build cockpit"
+      }
+    },
+    "down-dev": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "docker compose --env-file i12e/orchestrator/.env.dev --file i12e/orchestrator/docker-compose.yml down --remove-orphans"
+      }
+    },
+    "down-prod": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "docker compose --env-file i12e/orchestrator/.env.prod --file i12e/orchestrator/docker-compose.yml down --remove-orphans"
+      }
+    },
+    "migrate-dev": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "docker compose --env-file i12e/orchestrator/.env.dev --file i12e/orchestrator/docker-compose.yml run --rm --no-deps postgres-migrate"
+      }
+    },
+    "migrate-prod": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "docker compose --env-file i12e/orchestrator/.env.prod --file i12e/orchestrator/docker-compose.yml run --rm --no-deps postgres-migrate"
+      }
+    },
+    "logs-dev": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "docker compose --env-file i12e/orchestrator/.env.dev --file i12e/orchestrator/docker-compose.yml logs --follow --tail=100"
+      }
+    },
+    "logs-prod": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "docker compose --env-file i12e/orchestrator/.env.prod --file i12e/orchestrator/docker-compose.yml logs --follow --tail=100"
+      }
+    },
+    "ps-dev": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "docker compose --env-file i12e/orchestrator/.env.dev --file i12e/orchestrator/docker-compose.yml ps"
+      }
+    },
+    "ps-prod": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "docker compose --env-file i12e/orchestrator/.env.prod --file i12e/orchestrator/docker-compose.yml ps"
+      }
+    }
+  },
+  "tags": ["scope:platform", "type:infra"]
+}

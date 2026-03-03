@@ -27,6 +27,18 @@
         "command": "pnpm run build"
       }
     },
+    "container-build": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "docker build --file apps/cockpit/Dockerfile --tag central/apps/cockpit:latest ."
+      }
+    },
+    "container-run": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "docker run --rm --name central-cockpit -p 3000:3000 central/apps/cockpit:latest"
+      }
+    },
     "test": {
       "executor": "nx:run-commands",
       "options": {

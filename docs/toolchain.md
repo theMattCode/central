@@ -66,13 +66,88 @@ These targets are either [inferred automatically](https://nx.dev/concepts/inferr
 Build the persistence-layer PostgreSQL image:
 
 ```bash
-pnpm nx build persistence-postgres
+pnpm nx build i12e-postgres
 ```
 
 Run the persistence-layer PostgreSQL container:
 
 ```bash
-pnpm nx run persistence-postgres:run
+pnpm nx run i12e-postgres:run
+```
+
+Override standalone container name/port when needed:
+
+```bash
+POSTGRES_PORT=55432 POSTGRES_CONTAINER_NAME=central-i12e-postgres-dev pnpm nx run i12e-postgres:run
+```
+
+Apply SQL migrations against the running PostgreSQL container:
+
+```bash
+pnpm nx run i12e-postgres:migrate
+```
+
+Create a new SQL migration file:
+
+```bash
+MIGRATION_NAME=create_users pnpm nx run i12e-postgres:create-migration
+```
+
+### Cockpit container
+
+Build the cockpit container image:
+
+```bash
+pnpm nx run cockpit:container-build
+```
+
+Run the cockpit container image:
+
+```bash
+pnpm nx run cockpit:container-run
+```
+
+### Orchestrator project
+
+Start complete the complete development environment with all required services run:
+
+```bash
+pnpm nx run i12e-orchestrator:up-dev
+```
+
+To start the production environment use:
+
+```bash
+pnpm nx run i12e-orchestrator:up-prod
+```
+
+The migration step runs as a one-off `postgres-migrate` container and is removed after completion.
+
+Stop all orchestrated services:
+
+Dev:
+```bash
+pnpm nx run i12e-orchestrator:down-dev
+```
+
+Prod:
+```bash
+pnpm nx run i12e-orchestrator:down-prod
+```
+
+Re-run migrations:
+
+Requires PostgreSQL to already be running.
+
+Dev:
+
+```bash
+pnpm nx run i12e-orchestrator:migrate-dev
+```
+
+Prod:
+```bash
+pnpm nx run i12e-orchestrator:migrate-prod
 ```
 
 ### Versioning and releasing

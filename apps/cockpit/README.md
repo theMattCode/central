@@ -37,6 +37,20 @@ pnpm nx typecheck cockpit
 pnpm nx build cockpit
 ```
 
+## Container
+
+Build the cockpit container image:
+
+```bash
+pnpm nx run cockpit:container-build
+```
+
+Run the cockpit container image:
+
+```bash
+pnpm nx run cockpit:container-run
+```
+
 ## Styling
 
 This project uses [Tailwind CSS](https://tailwindcss.com/) for styling.

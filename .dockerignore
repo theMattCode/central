@@ -1,0 +1,11 @@
+.git
+.github
+.idea
+.nx
+.vscode
+node_modules
+tmp
+**/node_modules
+**/dist
+**/.turbo
+.DS_Store

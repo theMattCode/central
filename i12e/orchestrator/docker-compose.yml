@@ -1,0 +1,52 @@
+name: ${COMPOSE_PROJECT_NAME:-central-i12e}
+services:
+  postgres:
+    build:
+      context: ../postgres
+      dockerfile: Dockerfile
+    image: central/i12e/postgres:16.4
+    environment:
+      POSTGRES_USER: central
+      POSTGRES_PASSWORD: central
+      POSTGRES_DB: central
+    ports:
+      - '${POSTGRES_PORT:-5434}:5432'
+    volumes:
+      - central_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U "$$POSTGRES_USER" -d "$$POSTGRES_DB"']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  postgres-migrate:
+    image: central/i12e/postgres:16.4
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      PGHOST: postgres
+      PGPORT: '5432'
+      PGDATABASE: central
+      PGUSER: central
+      PGPASSWORD: central
+    command: ['apply-migrations.sh']
+    restart: 'no'
+
+  cockpit:
+    build:
+      context: ../..
+      dockerfile: apps/cockpit/Dockerfile
+    image: central/apps/cockpit:latest
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://central:central@postgres:5432/central
+      NODE_ENV: ${COCKPIT_NODE_ENV:-production}
+    ports:
+      - '${COCKPIT_PORT:-3000}:3000'
+
+volumes:
+  central_postgres_data:
