@@ -1,6 +1,9 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { WeatherDataState, WeatherLocation } from '@/widgets/weather/model/model.ts';
 import { fetchWeatherData } from '@/widgets/weather/model/open-meteo.ts';
+
+//const WEATHER_REFRESH_INTERVAL_MS = 3 * 1000;
+const WEATHER_REFRESH_INTERVAL_MS = 5 * 60 * 1000;
 
 function toErrorMessage(error: unknown): string {
   if (error instanceof Error) {
@@ -15,8 +18,8 @@ function getLocationDependencyKey(location: WeatherLocation): string {
 
 export function useWeatherSnapshot(location: WeatherLocation): WeatherDataState {
   const [refreshVersion, setRefreshVersion] = useState(0);
-
   const [state, setState] = useState<WeatherDataState>(() => ({ status: 'loading' }));
+  const previousLocationDependencyKeyRef = useRef(getLocationDependencyKey(location));
 
   const locationDependencyKey = getLocationDependencyKey(location);
 
@@ -25,9 +28,20 @@ export function useWeatherSnapshot(location: WeatherLocation): WeatherDataState 
   }, []);
 
   useEffect(() => {
-    const abortController = new AbortController();
+    const intervalId = setInterval(() => {
+      setRefreshVersion((version) => version + 1);
+    }, WEATHER_REFRESH_INTERVAL_MS);
 
-    setState({ status: 'loading' });
+    return () => clearInterval(intervalId);
+  }, [locationDependencyKey]);
+
+  useEffect(() => {
+    const abortController = new AbortController();
+    const hasLocationChanged = previousLocationDependencyKeyRef.current !== locationDependencyKey;
+    if (hasLocationChanged) {
+      previousLocationDependencyKeyRef.current = locationDependencyKey;
+      setState({ status: 'loading' });
+    }
 
     const loadWeather = async () => {
       try {

@@ -9,7 +9,5 @@ import type { PropsWithChildren } from 'react';
  * @param {React.ReactNode} props.children - The child components to be rendered within the full-screen container.
  */
 export function PageLayout({ children }: PropsWithChildren) {
-  return (
-    <div className="h-dvh w-full min-h-0 overflow-hidden flex flex-col-reverse lg:flex-row transition-all">{children}</div>
-  );
+  return <div className="h-dvh w-full min-h-0 overflow-hidden flex flex-col md:flex-row transition-all">{children}</div>;
 }

@@ -1,14 +1,25 @@
-import type { PropsWithChildren } from 'react';
+import type { ComponentType, MouseEventHandler, PropsWithChildren } from 'react';
+import { cx } from '@/utils/styles.ts';
 
 type NavigationItemProps = PropsWithChildren<{
-  Icon?: React.ComponentType<{ className?: string }>;
+  Icon?: ComponentType<{ className?: string }>;
+  href?: string;
+  onClick?: MouseEventHandler<HTMLAnchorElement>;
+  compact?: boolean;
 }>;
 
-export function NavigationItem({ Icon, children }: NavigationItemProps) {
+export function NavigationItem({ Icon, children, href = '/', onClick, compact = false }: NavigationItemProps) {
   return (
-    <a className="w-20 lg:w-full flex flex-row gap-2 items-center hover:bg-(--color-pri)/10 rounded-lg p-1" href="/">
-      {Icon && <Icon className="w-6 h-6 text-(--color-txt-group)" />}
-      <div className="truncate">{children}</div>
+    <a
+      className={cx(
+        'w-full flex flex-row items-center hover:bg-(--color-pri)/10 rounded-lg transition-colors',
+        compact ? 'justify-center p-2' : 'gap-2 p-2',
+      )}
+      href={href}
+      onClick={onClick}
+    >
+      {Icon && <Icon className="w-6 h-6 text-(--color-txt-sec)" />}
+      {!compact && <div className="truncate">{children}</div>}
     </a>
   );
 }

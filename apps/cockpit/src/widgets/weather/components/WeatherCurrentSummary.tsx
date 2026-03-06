@@ -14,23 +14,19 @@ export function WeatherCurrentSummary({ weather }: WeatherCurrentSummaryProps) {
   const interpretation = TRANSLATION[weatherCode.i18nKey].de;
 
   return (
-    <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
-      <div className="flex flex-col text-center">
-        <p className="text-lg font-semibold text-(--color-txt)">
-          <img src={`/weather/${icon}.svg`} alt={weatherCode.i18nKey} />
-        </p>
-      </div>
-      <div className="flex flex-col gap-2">
-        <p className="text-6xl text-right font-semibold text-(--color-txt)">
+    <div className="flex flex-row gap-4">
+      <img src={`/weather/${icon}.svg`} alt={weatherCode.i18nKey} className="h-48 text-(--color-txt)" />
+      <div className="flex flex-col grow gap-2">
+        <p className="text-4xl text-right font-semibold text-(--color-txt)">
           {weather.current.temperatureC.toFixed(1)} °C
         </p>
         <Detail label="" value={interpretation} />
         <Detail label="Gefühlt" value={weather.current.temperatureApparentC.toFixed(1) + ' °C'} />
-        <Detail label="Luftfeuchtigkeit" value={weather.current.relativeHumidity.toFixed(0) + ' %'} />
         <Detail
           label="Wind"
           value={<WindDetails windSpeed={weather.current.windSpeed} windDirection={weather.current.windDirection} />}
         />
+        <Detail label="Luftfeuchtigkeit" value={weather.current.relativeHumidity.toFixed(0) + ' %'} />
         <Detail label="Luftdruck" value={weather.current.pressure.toFixed(1) + ' hPa'} />
         <Detail label="Niederschlag" value={weather.current.precipitation.toFixed(1) + ' mm'} />
       </div>
@@ -40,7 +36,7 @@ export function WeatherCurrentSummary({ weather }: WeatherCurrentSummaryProps) {
 
 function Detail({ label, value }: { label: string; value: string | ReactNode }) {
   return (
-    <div className="flex flex-row justify-between text-sm">
+    <div className="flex flex-row justify-between text-sm gap-4">
       <p className="text-(--color-txt-sec)">{label}</p>
       <p className="text-(--color-txt)">{value}</p>
     </div>

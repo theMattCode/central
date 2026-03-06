@@ -6,9 +6,9 @@ type NavigationGroupProps = PropsWithChildren<{
 
 export function NavigationGroup({ title, children }: NavigationGroupProps) {
   return (
-    <div className="w-20 lg:w-full flex flex-col gap-1 lg:gap-2">
-      <div className="truncate text-sm text-(--color-txt-group)">{title}</div>
-      {children}
+    <div className="w-full flex flex-col gap-1">
+      <div className="truncate px-2 text-xs uppercase tracking-[0.14em] text-(--color-txt-sec)">{title}</div>
+      <div className="flex flex-col gap-1">{children}</div>
     </div>
   );
 }

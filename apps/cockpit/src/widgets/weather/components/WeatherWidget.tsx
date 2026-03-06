@@ -14,11 +14,10 @@ export function WeatherWidget({ location }: WeatherWidgetProps) {
 
   return (
     <FadeTransition transitionKey={weather.status}>
-      {weather.status === 'loading' && <div className="w-lg h-lg" />}
       {weather.status === 'error' && <Section>{weather.errorMessage}</Section>}
       {weather.status === 'loaded' && (
         <Section>
-          <div className="w-lg h-lg flex flex-col gap-2">
+          <div className="flex flex-col gap-2">
             <Header location={location} data={weather} />
             <WeatherCurrentSummary weather={weather.weatherData} />
           </div>
