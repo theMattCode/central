@@ -3,12 +3,13 @@
 :root {
   color-scheme: light;
   --color-bg: #FFF;
-  --color-content-bg-start: rgba(230, 230, 230, 0.6);
-  --color-content-bg-end: rgba(235, 235, 235, 0.6);
-  --color-txt: #12243c;
-  --color-txt-group: #2c333c;
+  --color-content-bg-start: #E6E6E6;
+  --color-content-bg-end: #FAFAFA;
+  --color-txt: #000000;
+  --color-txt-sec: #707070;
   --color-pri: #3fbfdc;
   --color-sec: #44c56a;
+  --color-section-border: #d6dde6;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -18,7 +19,7 @@
     --color-content-bg-start: #202225;
     --color-content-bg-end: #141414;
     --color-txt: #e0e0e0;
-    --color-txt-group: #8f8f8f;
+    --color-txt-sec: #8f8f8f;
     --color-pri: #3fbfdc;
     --color-sec: #44c56a;
     --color-section-border: #272727;
@@ -34,4 +35,32 @@ body {
 
 code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, "Courier New", monospace;
+}
+
+.dashboard-grid {
+  min-height: 100%;
+}
+
+.dashboard-grid .react-grid-item {
+  transition: all 200ms ease;
+}
+
+.dashboard-grid .react-grid-item.react-grid-placeholder {
+  border: 1px dashed color-mix(in srgb, var(--color-pri) 65%, transparent);
+  background: color-mix(in srgb, var(--color-pri) 20%, transparent);
+  border-radius: 0.75rem;
+}
+
+.dashboard-grid-item {
+  height: 100%;
+  overflow: auto;
+  border-radius: 0.75rem;
+  border: 1px solid color-mix(in srgb, var(--color-section-border) 85%, transparent);
+  background: color-mix(in srgb, var(--color-bg) 82%, transparent);
+  padding: 0.75rem;
+}
+
+.dashboard-grid-item .react-resizable-handle::after {
+  border-right-color: color-mix(in srgb, var(--color-pri) 70%, transparent);
+  border-bottom-color: color-mix(in srgb, var(--color-pri) 70%, transparent);
 }

@@ -12,7 +12,7 @@
 - E2E tests: Playwright
 - CI: GitHub Actions
 - Node requirement: `>=24` (`package.json`, `.nvmrc` uses `lts/*`)
-- 
+
 ## Command Reference
 
 Run commands from repository root.
@@ -105,6 +105,12 @@ Run the cockpit container image:
 
 ```bash
 pnpm nx run cockpit:container-run
+```
+
+For tailscale exposure run:
+
+```
+tailscale serve --tcp 3001 http://127.0.0.1:3001
 ```
 
 ### Orchestrator project

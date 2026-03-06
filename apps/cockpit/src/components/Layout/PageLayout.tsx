@@ -10,8 +10,6 @@ import type { PropsWithChildren } from 'react';
  */
 export function PageLayout({ children }: PropsWithChildren) {
   return (
-    <div className="h-dvh w-full overflow-hidden flex flex-col-reverse lg:flex-row gap-2 lg:gap-4 p-2 lg:p-4 transition-all">
-      {children}
-    </div>
+    <div className="h-dvh w-full min-h-0 overflow-hidden flex flex-col-reverse lg:flex-row transition-all">{children}</div>
   );
 }

@@ -37,6 +37,47 @@ pnpm nx typecheck cockpit
 pnpm nx build cockpit
 ```
 
+## Weather Widget
+
+`WeatherWidget` uses Open-Meteo's DWD endpoint (`https://api.open-meteo.com/v1/dwd-icon`) and requests:
+
+- `current`: `temperature_2m`, `weather_code`
+- `hourly`: `temperature_2m`, `rain`, `snowfall`
+- `forecast_days=1` for a full-day hourly view
+
+The widget accepts one `location` prop per instance:
+
+```tsx
+import { WeatherWidget } from '@/widgets/weather/WeatherWidget.tsx';
+import type { WeatherLocation } from '@/widgets/weather/model/model.ts';
+
+const BERLIN: WeatherLocation = {
+  id: 'berlin',
+  label: 'Berlin',
+  latitude: 52.52,
+  longitude: 13.41,
+  timezone: 'Europe/Berlin',
+};
+
+<WeatherWidget location={BERLIN} />;
+```
+
+To show multiple locations, render one widget per location:
+
+```tsx
+import { WeatherWidget } from '@/widgets/weather/WeatherWidget.tsx';
+import { LOCATION_MOESSINGEN, LOCATION_OBERNHEIM } from '@/widgets/weather/model/model.ts';
+
+<>
+  <WeatherWidget location={LOCATION_MOESSINGEN} />
+  <WeatherWidget location={LOCATION_OBERNHEIM} />
+</>;
+```
+
+Widgets are rendered in a 12-column dashboard grid (`react-grid-layout`) below the breadcrumb in `ContentLayout`, so each widget can be dragged and resized.
+
+Weather state changes in `WeatherWidget` use a shared fade transition wrapper at `src/components/Transition/FadeTransition.tsx`.
+
 ## Container
 
 Build the cockpit container image:
