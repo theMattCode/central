@@ -9,11 +9,12 @@ use axum::{
 use chrono::{DateTime, Utc};
 use serde::Serialize;
 use tokio::time::MissedTickBehavior;
+use tracing::{info, warn};
 
 use crate::{
-    app_state::AppState,
+    context::Context,
+    domain::model::{WeatherQueryInput, WeatherSnapshotResponse},
     error::ApiError,
-    weather::model::{WeatherQueryInput, WeatherSnapshotResponse},
 };
 
 #[derive(Serialize)]
@@ -41,21 +42,62 @@ pub(super) async fn healthz() -> Json<HealthResponse> {
 }
 
 pub(super) async fn current_weather(
-    State(state): State<AppState>,
+    State(context): State<Context>,
     Query(query): Query<WeatherQueryInput>,
 ) -> Result<Json<WeatherSnapshotResponse>, ApiError> {
     let location = query.into_location()?;
-    let snapshot = state.open_meteo.fetch_weather_snapshot(&location).await?;
+    info!(
+        lat = location.latitude,
+        lon = location.longitude,
+        timezone = %location.timezone,
+        "Received manual weather refresh request"
+    );
+
+    let snapshot = match context.weather_service.fetch_and_store_snapshot(&location).await {
+        Ok(snapshot) => snapshot,
+        Err(error) => {
+            warn!(
+                lat = location.latitude,
+                lon = location.longitude,
+                timezone = %location.timezone,
+                code = error.code(),
+                error = %error,
+                "Manual weather refresh failed"
+            );
+            return Err(error);
+        }
+    };
+
+    info!(
+        lat = snapshot.location.latitude,
+        lon = snapshot.location.longitude,
+        timezone = %snapshot.location.timezone,
+        source_time = %snapshot.meta.source_time,
+        "Manual weather refresh succeeded"
+    );
+
     Ok(Json(snapshot))
 }
 
 pub(super) async fn stream_weather(
-    State(state): State<AppState>,
+    State(context): State<Context>,
     Query(query): Query<WeatherQueryInput>,
 ) -> Result<Sse<impl futures_core::Stream<Item = Result<Event, Infallible>>>, ApiError> {
     let location = query.into_location()?;
-    let refresh_interval = state.config.refresh_interval;
-    let open_meteo = state.open_meteo.clone();
+    let latitude = location.latitude;
+    let longitude = location.longitude;
+    let timezone = location.timezone.clone();
+    let refresh_interval = context.config.refresh_interval;
+    let refresh_interval_seconds = refresh_interval.as_secs();
+    let context = context.clone();
+
+    info!(
+        lat = latitude,
+        lon = longitude,
+        timezone = %timezone,
+        refresh_interval_seconds,
+        "Opened weather snapshot stream"
+    );
 
     let updates = stream! {
         let mut interval = tokio::time::interval(refresh_interval);
@@ -63,11 +105,25 @@ pub(super) async fn stream_weather(
         interval.tick().await;
 
         loop {
-            match open_meteo.fetch_weather_snapshot(&location).await {
+            match context.weather_service.fetch_and_store_snapshot(&location).await {
                 Ok(snapshot) => {
+                    info!(
+                        lat = latitude,
+                        lon = longitude,
+                        timezone = %timezone,
+                        source_time = %snapshot.meta.source_time,
+                        "Weather stream snapshot updated"
+                    );
                     match serde_json::to_string(&snapshot) {
                         Ok(payload) => yield Ok(Event::default().event("snapshot").data(payload)),
                         Err(error) => {
+                            warn!(
+                                lat = latitude,
+                                lon = longitude,
+                                timezone = %timezone,
+                                error = %error,
+                                "Failed to serialize weather snapshot for SSE stream"
+                            );
                             let envelope = StreamErrorEnvelope {
                                 error: StreamErrorPayload {
                                     code: "serialization_error",
@@ -83,9 +139,17 @@ pub(super) async fn stream_weather(
                     }
                 }
                 Err(error) => {
+                    warn!(
+                        lat = latitude,
+                        lon = longitude,
+                        timezone = %timezone,
+                        code = error.code(),
+                        error = %error,
+                        "Weather stream refresh failed"
+                    );
                     let envelope = StreamErrorEnvelope {
                         error: StreamErrorPayload {
-                            code: "upstream_error",
+                            code: error.code(),
                             message: error.to_string(),
                             timestamp: Utc::now(),
                         },

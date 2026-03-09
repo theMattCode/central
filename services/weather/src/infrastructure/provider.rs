@@ -3,13 +3,17 @@ use std::{sync::Arc, time::Duration};
 use chrono::Utc;
 use reqwest::Client;
 use serde::Deserialize;
+use tracing::{info, warn};
 
 use crate::{
-    error::ApiError,
-    weather::model::{
-        CurrentWeatherPayload, WeatherLocationPayload, WeatherLocationQuery, WeatherMetaPayload,
-        WeatherSnapshotResponse,
+    domain::{
+        contracts::WeatherSnapshotFetcher,
+        model::{
+            CurrentWeatherPayload, WeatherLocationPayload, WeatherLocationQuery,
+            WeatherMetaPayload, WeatherSnapshotResponse,
+        },
     },
+    error::ApiError,
 };
 
 const CURRENT_WEATHER_FIELDS: &str =
@@ -41,14 +45,17 @@ impl OpenMeteoClient {
         location: &WeatherLocationQuery,
     ) -> Result<WeatherSnapshotResponse, ApiError> {
         let url = format!("{}/v1/dwd-icon", self.base_url);
+        let latitude = location.latitude;
+        let longitude = location.longitude;
+        let timezone = location.timezone.clone();
 
         let response = self
             .http
             .get(&url)
             .query(&[
-                ("latitude", location.latitude.to_string()),
-                ("longitude", location.longitude.to_string()),
-                ("timezone", location.timezone.clone()),
+                ("latitude", latitude.to_string()),
+                ("longitude", longitude.to_string()),
+                ("timezone", timezone.clone()),
                 ("current", CURRENT_WEATHER_FIELDS.to_string()),
             ])
             .send()
@@ -61,6 +68,14 @@ impl OpenMeteoClient {
                 .text()
                 .await
                 .unwrap_or_else(|_| "<unable to read error body>".to_string());
+            warn!(
+                lat = latitude,
+                lon = longitude,
+                timezone = %timezone,
+                status = %status,
+                body = %body,
+                "Open-Meteo returned a non-success response"
+            );
             return Err(ApiError::Upstream(format!(
                 "Open-Meteo returned HTTP {status}: {body}"
             )));
@@ -74,7 +89,7 @@ impl OpenMeteoClient {
             ApiError::Upstream("Open-Meteo response is missing current weather.".to_string())
         })?;
 
-        Ok(WeatherSnapshotResponse {
+        let snapshot = WeatherSnapshotResponse {
             location: WeatherLocationPayload {
                 latitude: payload.latitude,
                 longitude: payload.longitude,
@@ -98,7 +113,27 @@ impl OpenMeteoClient {
                 fetched_at: Utc::now(),
                 source_time: current.time,
             },
-        })
+        };
+
+        info!(
+            lat = snapshot.location.latitude,
+            lon = snapshot.location.longitude,
+            timezone = %snapshot.location.timezone,
+            source_time = %snapshot.meta.source_time,
+            "Fetched weather snapshot from Open-Meteo"
+        );
+
+        Ok(snapshot)
+    }
+}
+
+#[async_trait::async_trait]
+impl WeatherSnapshotFetcher for OpenMeteoClient {
+    async fn fetch_weather_snapshot(
+        &self,
+        location: &WeatherLocationQuery,
+    ) -> Result<WeatherSnapshotResponse, ApiError> {
+        OpenMeteoClient::fetch_weather_snapshot(self, location).await
     }
 }
 
@@ -124,3 +159,7 @@ struct OpenMeteoCurrent {
     pressure_msl: f64,
     cloud_cover: f64,
 }
+
+#[cfg(test)]
+#[path = "provider_tests.rs"]
+mod tests;

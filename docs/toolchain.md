@@ -145,6 +145,8 @@ nx run weather-service:container-run
 
 The weather container run target publishes `5010:8080`.
 
+Weather update polling defaults to 15 minutes (`WEATHER_REFRESH_INTERVAL_SECONDS=900`), and successful updates are persisted to PostgreSQL via `WEATHER_DATABASE_URL`.
+
 ### Orchestrator project
 
 Start complete the complete development environment with all required services run:

@@ -10,7 +10,7 @@ vi.mock('@/widgets/weather/model/fetchWeatherData.ts', () => ({
   fetchWeatherData: vi.fn(),
 }));
 
-const WEATHER_REFRESH_INTERVAL_MS = 5 * 60 * 1000;
+const WEATHER_REFRESH_INTERVAL_MS = 15 * 60 * 1000;
 
 const TEST_LOCATION: WeatherLocation = {
   id: 'test-location',
@@ -59,7 +59,7 @@ describe('useWeatherSnapshot', () => {
     expect(fetchWeatherDataMock).toHaveBeenCalledTimes(1);
   });
 
-  it('refreshes weather data every 5 minutes', async () => {
+  it('refreshes weather data every 15 minutes', async () => {
     vi.useFakeTimers();
 
     renderHook(() => useWeatherSnapshot(TEST_LOCATION));

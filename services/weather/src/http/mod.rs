@@ -11,16 +11,16 @@ use tower_http::{
 };
 use tracing::warn;
 
-use crate::app_state::AppState;
+use crate::context::Context;
 
-pub fn build_router(state: AppState) -> Router {
-    let cors = build_cors_layer(&state.config.cors_allow_origin);
+pub fn build_router(context: Context) -> Router {
+    let cors = build_cors_layer(&context.config.cors_allow_origin);
 
     Router::new()
         .route("/healthz", get(handlers::healthz))
         .route("/api/v1/weather/current", get(handlers::current_weather))
         .route("/api/v1/weather/stream", get(handlers::stream_weather))
-        .with_state(state)
+        .with_state(context)
         .layer(cors)
         .layer(TraceLayer::new_for_http())
 }
@@ -42,3 +42,6 @@ fn build_cors_layer(allow_origin: &str) -> CorsLayer {
         }
     }
 }
+
+#[cfg(test)]
+mod tests;

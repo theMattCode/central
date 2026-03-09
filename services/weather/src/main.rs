@@ -1,16 +1,18 @@
-mod app_state;
+mod context;
 mod config;
+mod domain;
 mod error;
 mod http;
+mod infrastructure;
 mod mcp;
-mod weather;
 
 use std::{net::SocketAddr, sync::Arc};
 
-use app_state::AppState;
+use context::Context;
 use config::{Config, RuntimeMode};
+use domain::service::WeatherSnapshotService;
+use infrastructure::{provider::OpenMeteoClient, repository::WeatherSnapshotRepository};
 use tracing::{error, info};
-use weather::provider::OpenMeteoClient;
 
 #[tokio::main]
 async fn main() {
@@ -22,6 +24,16 @@ async fn main() {
         .init();
 
     let config = Arc::new(Config::from_env());
+    info!(
+        runtime_mode = ?config.runtime_mode,
+        port = config.port,
+        refresh_interval_seconds = config.refresh_interval.as_secs(),
+        request_timeout_seconds = config.request_timeout.as_secs(),
+        open_meteo_base_url = %config.open_meteo_base_url,
+        cors_allow_origin = %config.cors_allow_origin,
+        "Loaded weather service configuration"
+    );
+
     let open_meteo =
         match OpenMeteoClient::new(config.open_meteo_base_url.clone(), config.request_timeout) {
             Ok(client) => client,
@@ -31,10 +43,21 @@ async fn main() {
             }
         };
 
+    let weather_repository = match WeatherSnapshotRepository::connect(&config.database_url).await {
+        Ok(repository) => repository,
+        Err(error) => {
+            error!("{error}");
+            std::process::exit(1);
+        }
+    };
+
+    let weather_service =
+        WeatherSnapshotService::new(Arc::new(open_meteo), Arc::new(weather_repository));
+
     let result = match config.runtime_mode {
-        RuntimeMode::Http => run_http_server(config, open_meteo).await,
-        RuntimeMode::Mcp => run_mcp_server(open_meteo).await,
-        RuntimeMode::Both => run_http_and_mcp(config, open_meteo).await,
+        RuntimeMode::Http => run_http_server(config, weather_service).await,
+        RuntimeMode::Mcp => run_mcp_server(weather_service).await,
+        RuntimeMode::Both => run_http_and_mcp(config, weather_service).await,
     };
 
     if let Err(error) = result {
@@ -43,12 +66,15 @@ async fn main() {
     }
 }
 
-async fn run_http_server(config: Arc<Config>, open_meteo: OpenMeteoClient) -> Result<(), String> {
-    let state = AppState {
+async fn run_http_server(
+    config: Arc<Config>,
+    weather_service: WeatherSnapshotService,
+) -> Result<(), String> {
+    let context = Context {
         config: Arc::clone(&config),
-        open_meteo,
+        weather_service,
     };
-    let app = http::build_router(state);
+    let app = http::build_router(context);
 
     let address = SocketAddr::from(([0, 0, 0, 0], config.port));
     info!("Starting weather HTTP service on {address}");
@@ -68,19 +94,22 @@ async fn run_http_server(config: Arc<Config>, open_meteo: OpenMeteoClient) -> Re
     Ok(())
 }
 
-async fn run_mcp_server(open_meteo: OpenMeteoClient) -> Result<(), String> {
+async fn run_mcp_server(weather_service: WeatherSnapshotService) -> Result<(), String> {
     info!("Starting weather MCP stdio server");
-    mcp::run_server(open_meteo)
+    mcp::run_server(weather_service)
         .await
         .map_err(|error| format!("Weather MCP server error: {error}"))
 }
 
-async fn run_http_and_mcp(config: Arc<Config>, open_meteo: OpenMeteoClient) -> Result<(), String> {
+async fn run_http_and_mcp(
+    config: Arc<Config>,
+    weather_service: WeatherSnapshotService,
+) -> Result<(), String> {
     info!("Starting weather service in combined mode (HTTP + MCP)");
-    let mcp_client = open_meteo.clone();
-    let mcp_task = tokio::spawn(async move { mcp::run_server(mcp_client).await });
+    let mcp_weather_service = weather_service.clone();
+    let mcp_task = tokio::spawn(async move { mcp::run_server(mcp_weather_service).await });
 
-    let http_result = run_http_server(config, open_meteo).await;
+    let http_result = run_http_server(config, weather_service).await;
 
     if !mcp_task.is_finished() {
         mcp_task.abort();

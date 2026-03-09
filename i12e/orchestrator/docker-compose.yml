@@ -5,10 +5,14 @@ services:
       context: ../..
       dockerfile: services/weather/Dockerfile
     image: central/services/weather:latest
+    depends_on:
+      postgres:
+        condition: service_healthy
     environment:
       WEATHER_PORT: '8080'
-      WEATHER_REFRESH_INTERVAL_SECONDS: ${WEATHER_REFRESH_INTERVAL_SECONDS:-300}
+      WEATHER_REFRESH_INTERVAL_SECONDS: ${WEATHER_REFRESH_INTERVAL_SECONDS:-900}
       WEATHER_REQUEST_TIMEOUT_SECONDS: ${WEATHER_REQUEST_TIMEOUT_SECONDS:-10}
+      WEATHER_DATABASE_URL: ${WEATHER_DATABASE_URL:-postgres://central:central@postgres:5432/central}
       WEATHER_CORS_ALLOW_ORIGIN: ${WEATHER_CORS_ALLOW_ORIGIN:-*}
     ports:
       - '${WEATHER_PORT:-3010}:8080'

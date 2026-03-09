@@ -3,7 +3,7 @@ import type { WeatherDataState, WeatherLocation } from '@/widgets/weather/model/
 import { fetchWeatherData } from '@/widgets/weather/model/fetchWeatherData.ts';
 
 //const WEATHER_REFRESH_INTERVAL_MS = 3 * 1000;
-const WEATHER_REFRESH_INTERVAL_MS = 5 * 60 * 1000;
+const WEATHER_REFRESH_INTERVAL_MS = 15 * 60 * 1000;
 
 function toErrorMessage(error: unknown): string {
   if (error instanceof Error) {
