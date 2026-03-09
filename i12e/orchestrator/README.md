@@ -16,14 +16,17 @@ pnpm nx run i12e-orchestrator:up-prod
 
 This brings up:
 
+- Cockpit app (`cockpit` service)
 - PostgreSQL (`postgres` service)
 - Migration runner (`postgres-migrate`) as a one-off container (`--rm`)
-- Cockpit app (`cockpit` service)
+- Weather backend (`weather` service)
 
 Environment defaults are stored in:
 
 - `i12e/orchestrator/.env.dev`
 - `i12e/orchestrator/.env.prod`
+
+Service and port mapping details (including dev/prod differences) are documented in [`docs/service-catalog.md`](../../docs/service-catalog.md).
 
 The compose project names keep dev/prod container names isolated.
 

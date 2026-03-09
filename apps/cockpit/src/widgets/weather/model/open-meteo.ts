@@ -1,90 +1,96 @@
-import { fetchWeatherApi } from 'openmeteo';
 import type { WeatherData, WeatherLocation } from '@/widgets/weather/model/model.ts';
 
-const OPEN_METEO_DWD_URL = 'https://api.open-meteo.com/v1/dwd-icon';
+const WEATHER_SERVICE_BASE_URL = import.meta.env.VITE_WEATHER_API_BASE_URL ?? 'http://localhost:5010';
 
-const DEFAULT_PARAMS = {
-  /*
-  daily: [
-    'weather_code',
-    'temperature_2m_max',
-    'temperature_2m_min',
-    'apparent_temperature_max',
-    'apparent_temperature_min',
-    'sunrise',
-    'sunset',
-    'daylight_duration',
-    'sunshine_duration',
-  ],
-  hourly: [
-    'temperature_2m',
-    'rain',
-    'showers',
-    'snowfall',
-    'wind_speed_10m',
-    'wind_speed_80m',
-    'wind_speed_120m',
-    'wind_speed_180m',
-    'wind_direction_10m',
-    'temperature_80m',
-  ],
-   */
-  current: [
-    'weather_code',
-    'temperature_2m',
-    'apparent_temperature',
-    'is_day',
-    'precipitation',
-    'relative_humidity_2m',
-    'wind_speed_10m',
-    'wind_direction_10m',
-    'pressure_msl',
-    'cloud_cover',
-  ],
-  timezone: 'Europe/Berlin',
+type WeatherServiceSnapshot = {
+  location: {
+    latitude: number;
+    longitude: number;
+    timezone: string;
+  };
+  current: {
+    weatherCode: number;
+    temperatureC: number;
+    temperatureApparentC: number;
+    isDay: boolean;
+    precipitation: number;
+    relativeHumidity: number;
+    windSpeed: number;
+    windDirection: number;
+    pressure: number;
+    cloudCover: number;
+  };
 };
 
-export async function fetchWeatherData(location: WeatherLocation, signal?: AbortSignal): Promise<WeatherData> {
-  const params = { ...DEFAULT_PARAMS, latitude: location.latitude, longitude: location.longitude };
+type WeatherServiceError = {
+  error?: {
+    message?: string;
+  };
+};
 
-  const responses = await fetchWeatherApi(OPEN_METEO_DWD_URL, params, 0, 0, 0, { signal });
-  if (responses.length === 0) {
-    throw new Error(`Open-Meteo request failed: no data received.`);
+function createWeatherServiceUrl(path: string, location: WeatherLocation): URL {
+  const url = new URL(path, WEATHER_SERVICE_BASE_URL);
+  url.searchParams.set('lat', location.latitude.toString());
+  url.searchParams.set('lon', location.longitude.toString());
+
+  if (location.timezone) {
+    url.searchParams.set('timezone', location.timezone);
   }
 
-  // Return first location. Loop for multiple locations or weather models when necessary.
-  const response = responses[0];
+  return url;
+}
 
-  const current = response.current();
-  if (!current) {
-    throw new Error(`Open-Meteo request failed: no current weather data received.`);
+async function toErrorMessage(response: Response): Promise<string> {
+  try {
+    const payload = (await response.json()) as WeatherServiceError;
+    const message = payload.error?.message;
+    if (message) {
+      return message;
+    }
+  } catch {
+    // ignore JSON parse errors and return generic fallback below
   }
 
-  /*
-  const daily = response.daily();
-  if (!daily) {
-    throw new Error(`Open-Meteo request failed: no daily weather data received.`);
-  }
+  return `Weather service request failed with status ${response.status}.`;
+}
 
-  const hourly = response.hourly();
-  if (!hourly) {
-    throw new Error(`Open-Meteo request failed: no hourly weather data received.`);
-  }
-   */
-
+function toWeatherData(location: WeatherLocation, snapshot: WeatherServiceSnapshot): WeatherData {
   return {
-    location,
+    location: {
+      ...location,
+      latitude: snapshot.location.latitude,
+      longitude: snapshot.location.longitude,
+      timezone: snapshot.location.timezone,
+    },
     current: {
-      weatherCode: current.variables(0)?.value() ?? Number.NaN,
-      temperatureC: current.variables(1)?.value() ?? Number.NaN,
-      temperatureApparentC: current.variables(2)?.value() ?? Number.NaN,
-      isDay: current.variables(3)?.value() === 1,
-      precipitation: current.variables(4)?.value() ?? Number.NaN,
-      relativeHumidity: current.variables(5)?.value() ?? Number.NaN,
-      windSpeed: current.variables(6)?.value() ?? Number.NaN,
-      windDirection: current.variables(7)?.value() ?? Number.NaN,
-      pressure: current.variables(8)?.value() ?? Number.NaN,
-      cloudCover: current.variables(9)?.value() ?? Number.NaN,
+      weatherCode: snapshot.current.weatherCode,
+      temperatureC: snapshot.current.temperatureC,
+      temperatureApparentC: snapshot.current.temperatureApparentC,
+      isDay: snapshot.current.isDay,
+      precipitation: snapshot.current.precipitation,
+      relativeHumidity: snapshot.current.relativeHumidity,
+      windSpeed: snapshot.current.windSpeed,
+      windDirection: snapshot.current.windDirection,
+      pressure: snapshot.current.pressure,
+      cloudCover: snapshot.current.cloudCover,
     },
   };
+}
+
+export async function fetchWeatherData(location: WeatherLocation, signal?: AbortSignal): Promise<WeatherData> {
+  const url = createWeatherServiceUrl('/api/v1/weather/current', location);
+
+  const response = await fetch(url, {
+    signal,
+    headers: {
+      Accept: 'application/json',
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(await toErrorMessage(response));
+  }
+
+  const snapshot = (await response.json()) as WeatherServiceSnapshot;
+  return toWeatherData(location, snapshot);
 }

@@ -14,7 +14,7 @@
     "run": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "docker run --rm --name ${POSTGRES_CONTAINER_NAME:-central-i12e-postgres} -p ${POSTGRES_PORT:-5432}:5432 -e POSTGRES_USER=central -e POSTGRES_PASSWORD=central -e POSTGRES_DB=central -v central_postgres_data:/var/lib/postgresql/data central/i12e/postgres:16.4"
+        "command": "docker run --rm --name ${POSTGRES_CONTAINER_NAME:-central-i12e-postgres} -p ${POSTGRES_PORT:-5001}:5432 -e POSTGRES_USER=central -e POSTGRES_PASSWORD=central -e POSTGRES_DB=central -v central_postgres_data:/var/lib/postgresql/data central/i12e/postgres:16.4"
       }
     },
     "migrate": {

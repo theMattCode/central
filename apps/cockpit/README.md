@@ -62,6 +62,8 @@ const BERLIN: WeatherLocation = {
 <WeatherWidget location={BERLIN} />;
 ```
 
+Weather snapshots refresh automatically every 5 minutes and can also be refreshed manually via the widget header action.
+
 To show multiple locations, render one widget per location:
 
 ```tsx

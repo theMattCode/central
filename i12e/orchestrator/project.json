@@ -8,13 +8,13 @@
     "up-dev": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "docker compose --env-file i12e/orchestrator/.env.dev --file i12e/orchestrator/docker-compose.yml up --detach --build postgres && docker compose --env-file i12e/orchestrator/.env.dev --file i12e/orchestrator/docker-compose.yml run --rm --no-deps postgres-migrate && docker compose --env-file i12e/orchestrator/.env.dev --file i12e/orchestrator/docker-compose.yml up --detach --build cockpit"
+        "command": "docker compose --env-file i12e/orchestrator/.env.dev --file i12e/orchestrator/docker-compose.yml up --detach --build postgres && docker compose --env-file i12e/orchestrator/.env.dev --file i12e/orchestrator/docker-compose.yml run --rm --no-deps postgres-migrate && docker compose --env-file i12e/orchestrator/.env.dev --file i12e/orchestrator/docker-compose.yml up --detach --build weather cockpit"
       }
     },
     "up-prod": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "docker compose --env-file i12e/orchestrator/.env.prod --file i12e/orchestrator/docker-compose.yml up --detach --build postgres && docker compose --env-file i12e/orchestrator/.env.prod --file i12e/orchestrator/docker-compose.yml run --rm --no-deps postgres-migrate && docker compose --env-file i12e/orchestrator/.env.prod --file i12e/orchestrator/docker-compose.yml up --detach --build cockpit"
+        "command": "docker compose --env-file i12e/orchestrator/.env.prod --file i12e/orchestrator/docker-compose.yml up --detach --build postgres && docker compose --env-file i12e/orchestrator/.env.prod --file i12e/orchestrator/docker-compose.yml run --rm --no-deps postgres-migrate && docker compose --env-file i12e/orchestrator/.env.prod --file i12e/orchestrator/docker-compose.yml up --detach --build weather cockpit"
       }
     },
     "down-dev": {

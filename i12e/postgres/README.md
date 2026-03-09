@@ -14,6 +14,8 @@ pnpm nx build i12e-postgres
 pnpm nx run i12e-postgres:run
 ```
 
+Default host-to-container mapping is `5001:5432`.
+
 Override defaults when needed:
 
 ```bash

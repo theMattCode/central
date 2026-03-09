@@ -9,7 +9,7 @@ type WeatherCurrentSummaryProps = {
 };
 
 export function WeatherCurrentSummary({ weather }: WeatherCurrentSummaryProps) {
-  const weatherCode = WMO_CODE_INFO[0];
+  const weatherCode = WMO_CODE_INFO[weather.current.weatherCode] ?? WMO_CODE_INFO[0];
   const icon = weather.current.isDay ? weatherCode.day : weatherCode.night;
   const interpretation = TRANSLATION[weatherCode.i18nKey].de;
 

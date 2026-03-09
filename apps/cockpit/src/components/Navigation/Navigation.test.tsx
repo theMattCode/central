@@ -1,10 +1,14 @@
 /* @vitest-environment jsdom */
 
-import { describe, expect, it } from 'vitest';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { afterEach, describe, expect, it } from 'vitest';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { Navigation } from '@/components/Navigation/Navigation';
 
 describe('Navigation', () => {
+  afterEach(() => {
+    cleanup();
+  });
+
   it('keeps the logo visible and toggles desktop brand copy with drawer state', () => {
     render(<Navigation />);
 

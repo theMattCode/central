@@ -5,6 +5,7 @@
 - Monorepo: Nx (integrated workspace)
 - Package manager: pnpm
 - Frontend framework: TanStack Start (React) + TypeScript
+- Backend services: Rust (Axum)
 - Routing: TanStack Router
 - Build/dev server: Vite (via TanStack Start)
 - Styling: Tailwind CSS
@@ -75,6 +76,8 @@ Run the persistence-layer PostgreSQL container:
 pnpm nx run i12e-postgres:run
 ```
 
+The standalone PostgreSQL run target publishes `5001:5432` by default.
+
 Override standalone container name/port when needed:
 
 ```bash
@@ -107,11 +110,31 @@ Run the cockpit container image:
 pnpm nx run cockpit:container-run
 ```
 
-For tailscale exposure run:
+The standalone cockpit dev server (`pnpm nx run cockpit:start`) runs on `5000`.
+The cockpit container run target publishes `5000:3000`.
 
+For tailscale exposure:
+
+Cockpit (`5000`):
 ```
-tailscale serve --tcp 3001 http://127.0.0.1:3001
+tailscale serve --tcp 5000 http://127.0.0.1:5000
 ```
+
+### Weather service container
+
+Build the weather service container image:
+
+```bash
+pnpm nx run weather-service:container-build
+```
+
+Run the weather service container image:
+
+```bash
+pnpm nx run weather-service:container-run
+```
+
+The weather container run target publishes `5010:8080`.
 
 ### Orchestrator project
 
@@ -128,6 +151,8 @@ pnpm nx run i12e-orchestrator:up-prod
 ```
 
 The migration step runs as a one-off `postgres-migrate` container and is removed after completion.
+
+For a complete list of orchestrated services and their port mappings, see [Service Catalog](./service-catalog.md).
 
 Stop all orchestrated services:
 

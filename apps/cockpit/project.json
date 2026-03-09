@@ -30,13 +30,13 @@
     "container-build": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "docker build --file apps/cockpit/Dockerfile --tag central/apps/cockpit:latest ."
+        "command": "docker build --build-arg VITE_WEATHER_API_BASE_URL=${VITE_WEATHER_API_BASE_URL:-http://localhost:5010} --file apps/cockpit/Dockerfile --tag central/apps/cockpit:latest ."
       }
     },
     "container-run": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "docker run --rm --name central-cockpit -p 3000:3000 central/apps/cockpit:latest"
+        "command": "docker run --rm --name central-cockpit -p 5000:3000 central/apps/cockpit:latest"
       }
     },
     "test": {

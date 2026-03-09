@@ -7,14 +7,14 @@ import { tanstackStart } from '@tanstack/react-start/plugin/vite'
 import viteReact from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 
-const config = defineConfig({
+const config = defineConfig(({ mode }) => ({
   plugins: [
     devtools(),
     tsconfigPaths({ projects: ['./tsconfig.json'] }),
     tailwindcss(),
-    tanstackStart(),
+    ...(mode === 'test' ? [] : [tanstackStart()]),
     viteReact(),
   ],
-})
+}))
 
 export default config
