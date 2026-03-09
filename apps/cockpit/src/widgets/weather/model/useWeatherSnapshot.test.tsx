@@ -3,10 +3,10 @@
 import { act, cleanup, renderHook, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { WeatherData, WeatherLocation } from '@/widgets/weather/model/model.ts';
-import { fetchWeatherData } from '@/widgets/weather/model/open-meteo.ts';
+import { fetchWeatherData } from '@/widgets/weather/model/fetchWeatherData.ts';
 import { useWeatherSnapshot } from '@/widgets/weather/model/useWeatherSnapshot.ts';
 
-vi.mock('@/widgets/weather/model/open-meteo.ts', () => ({
+vi.mock('@/widgets/weather/model/fetchWeatherData.ts', () => ({
   fetchWeatherData: vi.fn(),
 }));
 

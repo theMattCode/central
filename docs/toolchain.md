@@ -16,7 +16,7 @@
 
 ## Command Reference
 
-Run commands from repository root.
+Run commands from the repository root.
 
 ### Setup
 
@@ -28,14 +28,23 @@ pnpm install
 ### Nx task execution
 
 ```bash
-pnpm nx <target> <project>
-pnpm nx run-many -t <target1> <target2>
+nx <target> <project>
+nx run-many -t <target1> <target2>
 ```
+
+### Nx in sandboxed environments
+
+Nx plugin workers use Unix domain sockets for IPC. In restricted sandboxes this can fail with errors like:
+
+- `Failed to start plugin worker for plugin ...`
+- `listen EPERM ... /tmp/.../d.sock`
+
+If this occurs, run Nx commands outside the sandbox. As a fallback for quick validation, run the underlying project commands directly (for example `pnpm exec vitest run`, `pnpm exec tsc --noEmit`, `pnpm run build`).
 
 ### CI-equivalent local check
 
 ```bash
-pnpm nx run-many -t lint test build typecheck
+nx run-many -t lint test build typecheck
 ```
 
 ### Generate a new TypeScript library
@@ -67,13 +76,13 @@ These targets are either [inferred automatically](https://nx.dev/concepts/inferr
 Build the persistence-layer PostgreSQL image:
 
 ```bash
-pnpm nx build i12e-postgres
+nx build i12e-postgres
 ```
 
 Run the persistence-layer PostgreSQL container:
 
 ```bash
-pnpm nx run i12e-postgres:run
+nx run i12e-postgres:run
 ```
 
 The standalone PostgreSQL run target publishes `5001:5432` by default.
@@ -87,7 +96,7 @@ POSTGRES_PORT=55432 POSTGRES_CONTAINER_NAME=central-i12e-postgres-dev pnpm nx ru
 Apply SQL migrations against the running PostgreSQL container:
 
 ```bash
-pnpm nx run i12e-postgres:migrate
+nx run i12e-postgres:migrate
 ```
 
 Create a new SQL migration file:
@@ -101,13 +110,13 @@ MIGRATION_NAME=create_users pnpm nx run i12e-postgres:create-migration
 Build the cockpit container image:
 
 ```bash
-pnpm nx run cockpit:container-build
+nx run cockpit:container-build
 ```
 
 Run the cockpit container image:
 
 ```bash
-pnpm nx run cockpit:container-run
+nx run cockpit:container-run
 ```
 
 The standalone cockpit dev server (`pnpm nx run cockpit:start`) runs on `5000`.
@@ -125,13 +134,13 @@ tailscale serve --tcp 5000 http://127.0.0.1:5000
 Build the weather service container image:
 
 ```bash
-pnpm nx run weather-service:container-build
+nx run weather-service:container-build
 ```
 
 Run the weather service container image:
 
 ```bash
-pnpm nx run weather-service:container-run
+nx run weather-service:container-run
 ```
 
 The weather container run target publishes `5010:8080`.
@@ -141,13 +150,13 @@ The weather container run target publishes `5010:8080`.
 Start complete the complete development environment with all required services run:
 
 ```bash
-pnpm nx run i12e-orchestrator:up-dev
+nx run i12e-orchestrator:up-dev
 ```
 
 To start the production environment use:
 
 ```bash
-pnpm nx run i12e-orchestrator:up-prod
+nx run i12e-orchestrator:up-prod
 ```
 
 The migration step runs as a one-off `postgres-migrate` container and is removed after completion.
@@ -158,12 +167,12 @@ Stop all orchestrated services:
 
 Dev:
 ```bash
-pnpm nx run i12e-orchestrator:down-dev
+nx run i12e-orchestrator:down-dev
 ```
 
 Prod:
 ```bash
-pnpm nx run i12e-orchestrator:down-prod
+nx run i12e-orchestrator:down-prod
 ```
 
 Re-run migrations:
@@ -173,12 +182,12 @@ Requires PostgreSQL to already be running.
 Dev:
 
 ```bash
-pnpm nx run i12e-orchestrator:migrate-dev
+nx run i12e-orchestrator:migrate-dev
 ```
 
 Prod:
 ```bash
-pnpm nx run i12e-orchestrator:migrate-prod
+nx run i12e-orchestrator:migrate-prod
 ```
 
 ### Versioning and releasing

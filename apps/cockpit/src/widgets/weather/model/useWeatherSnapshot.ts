@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { WeatherDataState, WeatherLocation } from '@/widgets/weather/model/model.ts';
-import { fetchWeatherData } from '@/widgets/weather/model/open-meteo.ts';
+import { fetchWeatherData } from '@/widgets/weather/model/fetchWeatherData.ts';
 
 //const WEATHER_REFRESH_INTERVAL_MS = 3 * 1000;
 const WEATHER_REFRESH_INTERVAL_MS = 5 * 60 * 1000;

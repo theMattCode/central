@@ -39,11 +39,11 @@ pnpm nx build cockpit
 
 ## Weather Widget
 
-`WeatherWidget` uses Open-Meteo's DWD endpoint (`https://api.open-meteo.com/v1/dwd-icon`) and requests:
+`WeatherWidget` reads weather snapshots from the weather service via:
 
-- `current`: `temperature_2m`, `weather_code`
-- `hourly`: `temperature_2m`, `rain`, `snowfall`
-- `forecast_days=1` for a full-day hourly view
+- `GET /api/v1/weather/current?lat=<latitude>&lon=<longitude>&timezone=<tz>`
+
+Configure the weather service base URL through `VITE_WEATHER_API_BASE_URL` (defaults to `http://localhost:5010`).
 
 The widget accepts one `location` prop per instance:
 
@@ -85,13 +85,13 @@ Weather state changes in `WeatherWidget` use a shared fade transition wrapper at
 Build the cockpit container image:
 
 ```bash
-pnpm nx run cockpit:container-build
+nx run cockpit:container-build
 ```
 
 Run the cockpit container image:
 
 ```bash
-pnpm nx run cockpit:container-run
+nx run cockpit:container-run
 ```
 
 ## Styling

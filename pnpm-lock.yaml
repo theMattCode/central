@@ -56,9 +56,6 @@ importers:
       '@tanstack/router-plugin':
         specifier: 1.163.2
         version: 1.163.2(@tanstack/react-router@1.163.2(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(vite@7.3.1(@types/node@24.1.0)(jiti@2.6.1)(lightningcss@1.31.1)(tsx@4.21.0)(yaml@2.8.2))
-      openmeteo:
-        specifier: ^1.2.3
-        version: 1.2.3
       react:
         specifier: 19.2.4
         version: 19.2.4
@@ -1009,10 +1006,6 @@ packages:
   '@oozcitak/util@10.0.0':
     resolution: {integrity: sha512-hAX0pT/73190NLqBPPWSdBVGtbY6VOhWYK3qqHqtXQ1gK7kS2yz4+ivsN07hpJ6I3aeMtKP6J6npsEKOAzuTLA==}
     engines: {node: '>=20.0'}
-
-  '@openmeteo/sdk@1.25.0':
-    resolution: {integrity: sha512-tpX2d/HOPn95NIU+/IU1VFFzOM3m/PqSpPSJnWuGQGEW5GogB50xUOUMrsD2N/6LCMy12e3cZEQd6c3Gb0lmtA==}
-    engines: {node: '>=12.0'}
 
   '@oxc-resolver/binding-android-arm-eabi@11.18.0':
     resolution: {integrity: sha512-EhwJNzbfLwQQIeyak3n08EB3UHknMnjy1dFyL98r3xlorje2uzHOT2vkB5nB1zqtTtzT31uSot3oGZFfODbGUg==}
@@ -2197,9 +2190,6 @@ packages:
     resolution: {integrity: sha512-b6suED+5/3rTpUBdG1gupIl8MPFCAMA0QXwmljLhvCUKcUvdE4gWky9zpuGCcXHOsz4J9wPGNWq6OKpmIzz3hQ==}
     hasBin: true
 
-  flatbuffers@25.9.23:
-    resolution: {integrity: sha512-MI1qs7Lo4Syw0EOzUl0xjs2lsoeqFku44KpngfIduHBYvzm8h2+7K8YMQh1JtVVVrUvhLpNwqVi4DERegUJhPQ==}
-
   follow-redirects@1.15.11:
     resolution: {integrity: sha512-deG2P0JfjrTxl50XGCDyfI97ZGVCxIpfKYmfyrQ54n5FO/0gfIES8C/Psl6kWVDolizcaaxZJnTS0QSMxvnsBQ==}
     engines: {node: '>=4.0'}
@@ -2609,10 +2599,6 @@ packages:
   open@8.4.2:
     resolution: {integrity: sha512-7x81NCL719oNbsq/3mh+hVrAWmFuEYUqrq/Iw3kUzH8ReypT9QQ0BLoJS7/G9k6N81XjW4qHWtjWwe/9eLy1EQ==}
     engines: {node: '>=12'}
-
-  openmeteo@1.2.3:
-    resolution: {integrity: sha512-3updmgCMnCAAjAgV3RfhMdIBPi/43RtbjQ4CizHGn52RP9SpgmVCDRpun+Ex75NG3jTF3pZp+d1BPlP9DWMHiQ==}
-    engines: {node: '>=12.0'}
 
   ora@5.3.0:
     resolution: {integrity: sha512-zAKMgGXUim0Jyd6CXK9lraBnD3H5yPGBPPOkC23a2BG6hsm4Zu6OQSjQuEtV0BHDf4aKHcUFvJiGRrFuW3MG8g==}
@@ -4226,10 +4212,6 @@ snapshots:
 
   '@oozcitak/util@10.0.0': {}
 
-  '@openmeteo/sdk@1.25.0':
-    dependencies:
-      flatbuffers: 25.9.23
-
   '@oxc-resolver/binding-android-arm-eabi@11.18.0':
     optional: true
 
@@ -5456,8 +5438,6 @@ snapshots:
 
   flat@5.0.2: {}
 
-  flatbuffers@25.9.23: {}
-
   follow-redirects@1.15.11: {}
 
   form-data@4.0.5:
@@ -5861,11 +5841,6 @@ snapshots:
       define-lazy-prop: 2.0.0
       is-docker: 2.2.1
       is-wsl: 2.2.0
-
-  openmeteo@1.2.3:
-    dependencies:
-      '@openmeteo/sdk': 1.25.0
-      flatbuffers: 25.9.23
 
   ora@5.3.0:
     dependencies:
