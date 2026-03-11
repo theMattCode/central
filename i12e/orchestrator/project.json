@@ -5,6 +5,30 @@
   "root": "i12e/orchestrator",
   "sourceRoot": "i12e/orchestrator",
   "targets": {
+    "lint": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "docker compose --env-file i12e/orchestrator/.env.dev --file i12e/orchestrator/docker-compose.yml config --quiet"
+      }
+    },
+    "test": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "docker compose --env-file i12e/orchestrator/.env.prod --file i12e/orchestrator/docker-compose.yml config --quiet"
+      }
+    },
+    "build": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "docker compose --env-file i12e/orchestrator/.env.dev --file i12e/orchestrator/docker-compose.yml config --quiet"
+      }
+    },
+    "typecheck": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "docker compose --env-file i12e/orchestrator/.env.prod --file i12e/orchestrator/docker-compose.yml config --quiet"
+      }
+    },
     "up-dev": {
       "executor": "nx:run-commands",
       "options": {

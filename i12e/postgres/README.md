@@ -8,6 +8,14 @@ Nx project for the persistence-layer PostgreSQL image with bootstrap initializat
 pnpm nx build i12e-postgres
 ```
 
+## Validate
+
+```bash
+pnpm nx run i12e-postgres:lint
+pnpm nx run i12e-postgres:test
+pnpm nx run i12e-postgres:typecheck
+```
+
 ## Run
 
 ```bash

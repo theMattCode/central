@@ -10,12 +10,15 @@ The codebase is currently early-stage; agents should favor simple, maintainable 
 
 ## Repo Layout
 
-Create new code under `apps/*` or `libs/*`; keep cross-cutting docs in `docs/`.
+Use the existing project layout and keep cross-cutting docs in `docs/`.
 
 - `apps/`: deployable applications projects.
-- `libs/`: shared libraries
+- `services/`: backend runtime services.
+- `i12e/`: infrastructure and orchestration projects.
+- `libs/`: shared libraries.
 - `docs/`: repository documentation
   - `toolchain.md`: tech stack and toolchain commands
+  - `style.md`: code style and conventions
 - `.github/workflows/`: CI definitions
 
 ## Core Working Agreement for Agents
@@ -31,6 +34,15 @@ Create new code under `apps/*` or `libs/*`; keep cross-cutting docs in `docs/`.
 
 ## Code Quality Standards
 
+### Common
+
+Always use the basic design principles:
+
+- **KISS**: Keep it simple
+- **DRY**: Don't repeat yourself
+- **YAGNI**: You ain't gonna need it
+- **SOLID**: Single Responsibility, Open/Closed, Liskov Substitution, Interface Segregation, Dependency Inversion
+
 ### TypeScript
 
 - Keep `strict` compatibility.
@@ -39,7 +51,7 @@ Create new code under `apps/*` or `libs/*`; keep cross-cutting docs in `docs/`.
 
 ### Architecture
 
-- Keep shared logic in `libs/`, app-specific wiring in `apps/`.
+- Keep shared logic in `libs/`, app-specific wiring in `apps/`, backend-specific logic in `services/`, and infrastructure concerns in `i12e/`.
 - Avoid circular dependencies between libs.
 - Prefer composable modules over monolithic utility files.
 

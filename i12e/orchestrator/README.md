@@ -2,6 +2,15 @@
 
 Nx project for orchestrating local infrastructure and app containers.
 
+## Validate
+
+```bash
+pnpm nx run i12e-orchestrator:lint
+pnpm nx run i12e-orchestrator:test
+pnpm nx run i12e-orchestrator:typecheck
+pnpm nx run i12e-orchestrator:build
+```
+
 ## Start all services (dev)
 
 ```bash
@@ -16,10 +25,10 @@ pnpm nx run i12e-orchestrator:up-prod
 
 This brings up:
 
-- Cockpit app (`cockpit` service)
-- PostgreSQL (`postgres` service)
-- Migration runner (`postgres-migrate`) as a one-off container (`--rm`)
-- Weather backend (`weather` service)
+- Cockpit app (`app-cockpit` service)
+- PostgreSQL (`i12e-postgres` service)
+- Migration runner (`i12e-postgres-migrate`) as a one-off container (`--rm`)
+- Weather backend (`service-weather` service)
 
 Environment defaults are stored in:
 
@@ -39,7 +48,7 @@ pnpm nx run i12e-orchestrator:down-prod
 
 ## Re-run migrations
 
-Requires `postgres` to already be running.
+Requires `i12e-postgres` to already be running.
 
 ```bash
 pnpm nx run i12e-orchestrator:migrate-dev

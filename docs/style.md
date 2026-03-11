@@ -1,14 +1,5 @@
 # Style Guide
 
-## Common Conventions
-
-- Always use the basic design principles:
-  - **KISS**: Keep it simple
-  - **DRY**: Don't repeat yourself
-  - **YAGNI**: You ain't gonna need it
-  - **SOLID**: Single Responsibility, Open/Closed, Liskov Substitution, Interface Segregation, Dependency Inversion
-- Always format code with the language-specific formatter.
-
 ## Node & NPM
 
 ### Scripts

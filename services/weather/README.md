@@ -72,7 +72,7 @@ The SSE endpoint emits:
 
 Hourly forecast query defaults and limits:
 
-- Defaults: `hoursPast=48`, `hoursFuture=240`
+- Defaults: `hoursPast=1`, `hoursFuture=168` (7 days)
 - Limits: `hoursPast <= 720`, `hoursFuture <= 384`
 - At least one of `hoursPast` or `hoursFuture` must be greater than `0`
 
@@ -92,8 +92,8 @@ Exposed tool:
   - `lat` (number, required)
   - `lon` (number, required)
   - `timezone` (string, optional, defaults to `auto`)
-  - `hoursPast` (integer, optional, defaults to `48`)
-  - `hoursFuture` (integer, optional, defaults to `240`)
+  - `hoursPast` (integer, optional, defaults to `1`)
+  - `hoursFuture` (integer, optional, defaults to `168`)
 
 ## Configuration
 

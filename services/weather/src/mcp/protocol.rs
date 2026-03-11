@@ -88,11 +88,11 @@ pub(super) fn forecast_tool_definition(forecast_tool_name: &str) -> Value {
                 },
                 "hoursPast": {
                     "type": "integer",
-                    "description": "How many past hours to include. Defaults to 48."
+                    "description": "How many past hours to include. Defaults to 1."
                 },
                 "hoursFuture": {
                     "type": "integer",
-                    "description": "How many future hours to include. Defaults to 240."
+                    "description": "How many future hours to include. Defaults to 168."
                 }
             },
             "required": ["lat", "lon"],

@@ -5,6 +5,18 @@
   "root": "i12e/postgres",
   "sourceRoot": "i12e/postgres",
   "targets": {
+    "lint": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "sh -n i12e/postgres/scripts/apply-migrations.sh"
+      }
+    },
+    "test": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "sh -c 'set -eu; set -- i12e/postgres/migrations/*.sql; [ \"$1\" != \"i12e/postgres/migrations/*.sql\" ]; test -f i12e/postgres/init/001_extensions.sql'"
+      }
+    },
     "build": {
       "executor": "nx:run-commands",
       "options": {
@@ -27,6 +39,12 @@
       "executor": "nx:run-commands",
       "options": {
         "command": "sh -c 'name=${MIGRATION_NAME:?Set MIGRATION_NAME=<description>}; slug=$(echo \"$name\" | tr \" -\" \"__\" | tr -cd \"[:alnum:]_\"); ts=$(date +%Y%m%d%H%M%S); file=i12e/postgres/migrations/${ts}_${slug}.sql; touch \"$file\"; echo \"Created $file\"'"
+      }
+    },
+    "typecheck": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "sh -n i12e/postgres/scripts/apply-migrations.sh"
       }
     }
   },
