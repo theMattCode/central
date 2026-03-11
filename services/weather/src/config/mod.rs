@@ -2,6 +2,8 @@ use std::{env, time::Duration};
 
 use tracing::warn;
 
+const DEFAULT_DATABASE_URL: &str = "postgres://central:central@localhost:3001/central";
+
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub enum RuntimeMode {
     Http,
@@ -43,7 +45,7 @@ impl Config {
         let database_url = env::var("WEATHER_DATABASE_URL")
             .ok()
             .filter(|value| !value.trim().is_empty())
-            .unwrap_or_else(|| "postgres://central:central@postgres:5432/central".to_string());
+            .unwrap_or_else(|| DEFAULT_DATABASE_URL.to_string());
 
         let cors_allow_origin = env::var("WEATHER_CORS_ALLOW_ORIGIN")
             .ok()

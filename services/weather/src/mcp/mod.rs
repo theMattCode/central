@@ -7,19 +7,27 @@ use serde_json::{json, Value};
 use tokio::io::BufReader;
 use tracing::{debug, info, warn};
 
-use crate::domain::{model::WeatherQueryInput, service::WeatherSnapshotService};
+use crate::domain::{
+    model::{WeatherForecastQueryInput, WeatherQueryInput},
+    service::WeatherSnapshotService,
+};
 
 use self::protocol::{
-    error_response, success_response, tool_error_result, tool_success_result, JsonRpcRequest,
-    ToolCallParams,
+    error_response, forecast_tool_definition, success_response, tool_error_result,
+    tool_success_result, JsonRpcRequest, ToolCallParams,
 };
 use self::transport::{read_frame, write_frame};
 
 const MCP_PROTOCOL_VERSION: &str = "2024-11-05";
-const WEATHER_TOOL_NAME: &str = "get_current_weather";
+const CURRENT_WEATHER_TOOL_NAME: &str = "get_current_weather";
+const FORECAST_WEATHER_TOOL_NAME: &str = "get_weather_forecast";
 
 fn weather_tool_definition() -> Value {
-    protocol::weather_tool_definition(WEATHER_TOOL_NAME)
+    protocol::weather_tool_definition(CURRENT_WEATHER_TOOL_NAME)
+}
+
+fn weather_forecast_tool_definition() -> Value {
+    forecast_tool_definition(FORECAST_WEATHER_TOOL_NAME)
 }
 
 pub async fn run_server(weather_service: WeatherSnapshotService) -> io::Result<()> {
@@ -91,7 +99,8 @@ async fn process_request(
                 request_id,
                 json!({
                     "tools": [
-                        weather_tool_definition()
+                        weather_tool_definition(),
+                        weather_forecast_tool_definition()
                     ]
                 }),
             )
@@ -131,61 +140,128 @@ async fn handle_tool_call(
         }
     };
 
-    if parsed.name != WEATHER_TOOL_NAME {
-        warn!(tool = %parsed.name, "Unknown MCP tool requested");
-        return success_response(
-            request_id,
-            tool_error_result(format!("Unknown tool '{}'", parsed.name)),
-        );
-    }
+    match parsed.name.as_str() {
+        CURRENT_WEATHER_TOOL_NAME => {
+            let query_input: WeatherQueryInput = match serde_json::from_value(parsed.arguments) {
+                Ok(query) => query,
+                Err(error) => {
+                    warn!(error = %error, "Invalid MCP weather tool arguments");
+                    return success_response(
+                        request_id,
+                        tool_error_result(format!("Invalid tool arguments: {error}")),
+                    );
+                }
+            };
 
-    let query_input: WeatherQueryInput = match serde_json::from_value(parsed.arguments) {
-        Ok(query) => query,
-        Err(error) => {
-            warn!(error = %error, "Invalid MCP weather tool arguments");
-            return success_response(
-                request_id,
-                tool_error_result(format!("Invalid tool arguments: {error}")),
-            );
-        }
-    };
+            let location = match query_input.into_location() {
+                Ok(location) => location,
+                Err(error) => {
+                    warn!(code = error.code(), error = %error, "Invalid MCP weather query");
+                    return success_response(request_id, tool_error_result(error.to_string()));
+                }
+            };
 
-    let location = match query_input.into_location() {
-        Ok(location) => location,
-        Err(error) => {
-            warn!(code = error.code(), error = %error, "Invalid MCP weather query");
-            return success_response(request_id, tool_error_result(error.to_string()));
-        }
-    };
-
-    info!(
-        lat = location.latitude,
-        lon = location.longitude,
-        timezone = %location.timezone,
-        "Executing MCP weather tool"
-    );
-
-    match weather_service.fetch_and_store_snapshot(&location).await {
-        Ok(snapshot) => {
             info!(
-                lat = snapshot.location.latitude,
-                lon = snapshot.location.longitude,
-                timezone = %snapshot.location.timezone,
-                source_time = %snapshot.meta.source_time,
-                "MCP weather tool succeeded"
-            );
-            success_response(request_id, tool_success_result(snapshot))
-        }
-        Err(error) => {
-            warn!(
                 lat = location.latitude,
                 lon = location.longitude,
                 timezone = %location.timezone,
-                code = error.code(),
-                error = %error,
-                "MCP weather tool failed"
+                "Executing MCP weather tool"
             );
-            success_response(request_id, tool_error_result(error.to_string()))
+
+            match weather_service.get_current_snapshot(&location).await {
+                Ok(snapshot) => {
+                    info!(
+                        lat = snapshot.location.latitude,
+                        lon = snapshot.location.longitude,
+                        timezone = %snapshot.location.timezone,
+                        source_time = %snapshot.meta.source_time,
+                        "MCP weather tool succeeded"
+                    );
+                    success_response(request_id, tool_success_result(snapshot))
+                }
+                Err(error) => {
+                    warn!(
+                        lat = location.latitude,
+                        lon = location.longitude,
+                        timezone = %location.timezone,
+                        code = error.code(),
+                        error = %error,
+                        "MCP weather tool failed"
+                    );
+                    success_response(request_id, tool_error_result(error.to_string()))
+                }
+            }
+        }
+        FORECAST_WEATHER_TOOL_NAME => {
+            let query_input: WeatherForecastQueryInput =
+                match serde_json::from_value(parsed.arguments) {
+                    Ok(query) => query,
+                    Err(error) => {
+                        warn!(error = %error, "Invalid MCP forecast tool arguments");
+                        return success_response(
+                            request_id,
+                            tool_error_result(format!("Invalid tool arguments: {error}")),
+                        );
+                    }
+                };
+
+            let forecast_query = match query_input.into_forecast_query() {
+                Ok(query) => query,
+                Err(error) => {
+                    warn!(code = error.code(), error = %error, "Invalid MCP forecast query");
+                    return success_response(request_id, tool_error_result(error.to_string()));
+                }
+            };
+            let location = forecast_query.location;
+            let hours_past = forecast_query.hours_past;
+            let hours_future = forecast_query.hours_future;
+
+            info!(
+                lat = location.latitude,
+                lon = location.longitude,
+                timezone = %location.timezone,
+                hours_past,
+                hours_future,
+                "Executing MCP weather forecast tool"
+            );
+
+            match weather_service
+                .get_hourly_forecast(&location, hours_past, hours_future)
+                .await
+            {
+                Ok(forecast) => {
+                    info!(
+                        lat = forecast.location.latitude,
+                        lon = forecast.location.longitude,
+                        timezone = %forecast.location.timezone,
+                        hours_past,
+                        hours_future,
+                        hourly_points = forecast.hourly.len(),
+                        "MCP weather forecast tool succeeded"
+                    );
+                    success_response(request_id, tool_success_result(forecast))
+                }
+                Err(error) => {
+                    warn!(
+                        lat = location.latitude,
+                        lon = location.longitude,
+                        timezone = %location.timezone,
+                        hours_past,
+                        hours_future,
+                        code = error.code(),
+                        error = %error,
+                        "MCP weather forecast tool failed"
+                    );
+                    success_response(request_id, tool_error_result(error.to_string()))
+                }
+            }
+        }
+        _ => {
+            warn!(tool = %parsed.name, "Unknown MCP tool requested");
+            success_response(
+                request_id,
+                tool_error_result(format!("Unknown tool '{}'", parsed.name)),
+            )
         }
     }
 }

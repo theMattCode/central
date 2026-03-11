@@ -8,6 +8,7 @@ async-stream = "0.3.6"
 async-trait = "0.1.89"
 axum = { version = "0.8.4", features = ["json", "macros"] }
 chrono = { version = "0.4.42", features = ["serde", "clock"] }
+chrono-tz = "0.10.4"
 futures-core = "0.3.31"
 reqwest = { version = "0.12.23", default-features = false, features = ["json", "rustls-tls", "http2"] }
 serde = { version = "1.0.226", features = ["derive"] }

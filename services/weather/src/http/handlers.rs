@@ -13,7 +13,9 @@ use tracing::{info, warn};
 
 use crate::{
     context::Context,
-    domain::model::{WeatherQueryInput, WeatherSnapshotResponse},
+    domain::model::{
+        WeatherForecastQueryInput, WeatherForecastResponse, WeatherQueryInput, WeatherSnapshotResponse,
+    },
     error::ApiError,
 };
 
@@ -53,7 +55,7 @@ pub(super) async fn current_weather(
         "Received manual weather refresh request"
     );
 
-    let snapshot = match context.weather_service.fetch_and_store_snapshot(&location).await {
+    let snapshot = match context.weather_service.get_current_snapshot(&location).await {
         Ok(snapshot) => snapshot,
         Err(error) => {
             warn!(
@@ -77,6 +79,55 @@ pub(super) async fn current_weather(
     );
 
     Ok(Json(snapshot))
+}
+
+pub(super) async fn forecast_weather(
+    State(context): State<Context>,
+    Query(query): Query<WeatherForecastQueryInput>,
+) -> Result<Json<WeatherForecastResponse>, ApiError> {
+    let forecast_query = query.into_forecast_query()?;
+    let hours_past = forecast_query.hours_past;
+    let hours_future = forecast_query.hours_future;
+    let location = forecast_query.location;
+    info!(
+        lat = location.latitude,
+        lon = location.longitude,
+        timezone = %location.timezone,
+        hours_past,
+        hours_future,
+        "Received forecast refresh request"
+    );
+
+    let forecast = match context
+        .weather_service
+        .get_hourly_forecast(&location, hours_past, hours_future)
+        .await
+    {
+        Ok(forecast) => forecast,
+        Err(error) => {
+            warn!(
+                lat = location.latitude,
+                lon = location.longitude,
+                timezone = %location.timezone,
+                hours_past,
+                hours_future,
+                code = error.code(),
+                error = %error,
+                "Forecast refresh request failed"
+            );
+            return Err(error);
+        }
+    };
+
+    info!(
+        lat = forecast.location.latitude,
+        lon = forecast.location.longitude,
+        timezone = %forecast.location.timezone,
+        hourly_points = forecast.hourly.len(),
+        "Forecast refresh request succeeded"
+    );
+
+    Ok(Json(forecast))
 }
 
 pub(super) async fn stream_weather(
@@ -105,7 +156,7 @@ pub(super) async fn stream_weather(
         interval.tick().await;
 
         loop {
-            match context.weather_service.fetch_and_store_snapshot(&location).await {
+            match context.weather_service.get_current_snapshot(&location).await {
                 Ok(snapshot) => {
                     info!(
                         lat = latitude,

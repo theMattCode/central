@@ -1,8 +1,6 @@
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 
-use crate::domain::model::WeatherSnapshotResponse;
-
 const JSON_RPC_VERSION: &str = "2.0";
 
 #[derive(Debug, Deserialize)]
@@ -69,11 +67,45 @@ pub(super) fn weather_tool_definition(weather_tool_name: &str) -> Value {
     })
 }
 
-pub(super) fn tool_success_result(snapshot: WeatherSnapshotResponse) -> Value {
-    let structured_content =
-        serde_json::to_value(&snapshot).unwrap_or_else(|_| json!({"error": "serialization_error"}));
+pub(super) fn forecast_tool_definition(forecast_tool_name: &str) -> Value {
+    json!({
+        "name": forecast_tool_name,
+        "description": "Fetches hourly weather forecast data for the provided coordinates.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "lat": {
+                    "type": "number",
+                    "description": "Latitude in decimal degrees, from -90 to 90."
+                },
+                "lon": {
+                    "type": "number",
+                    "description": "Longitude in decimal degrees, from -180 to 180."
+                },
+                "timezone": {
+                    "type": "string",
+                    "description": "IANA timezone like Europe/Berlin. Defaults to auto."
+                },
+                "hoursPast": {
+                    "type": "integer",
+                    "description": "How many past hours to include. Defaults to 48."
+                },
+                "hoursFuture": {
+                    "type": "integer",
+                    "description": "How many future hours to include. Defaults to 240."
+                }
+            },
+            "required": ["lat", "lon"],
+            "additionalProperties": false
+        }
+    })
+}
 
-    let text = serde_json::to_string(&snapshot)
+pub(super) fn tool_success_result<T: Serialize>(result: T) -> Value {
+    let structured_content =
+        serde_json::to_value(&result).unwrap_or_else(|_| json!({"error": "serialization_error"}));
+
+    let text = serde_json::to_string(&result)
         .unwrap_or_else(|_| "{\"error\":\"serialization_error\"}".to_string());
 
     json!({

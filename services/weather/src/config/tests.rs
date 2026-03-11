@@ -1,4 +1,4 @@
-use super::{parse_runtime_mode, RuntimeMode};
+use super::{DEFAULT_DATABASE_URL, RuntimeMode, parse_runtime_mode};
 
 #[test]
 fn parses_runtime_mode() {
@@ -11,4 +11,12 @@ fn parses_runtime_mode() {
 #[test]
 fn unknown_runtime_mode_defaults_to_http() {
     assert_eq!(parse_runtime_mode("invalid"), RuntimeMode::Http);
+}
+
+#[test]
+fn default_database_url_points_to_local_dev_port() {
+    assert_eq!(
+        DEFAULT_DATABASE_URL,
+        "postgres://central:central@localhost:3001/central"
+    );
 }

@@ -3,9 +3,17 @@
 .idea
 .nx
 .vscode
+.pnpm-store
 node_modules
 tmp
 **/node_modules
 **/dist
+**/target
 **/.turbo
+**/.cache
+**/.vite
+**/coverage
+**/*.tsbuildinfo
+**/*.log
+**/.eslintcache
 .DS_Store

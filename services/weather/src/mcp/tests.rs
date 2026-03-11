@@ -2,15 +2,17 @@ use std::sync::{
     atomic::{AtomicUsize, Ordering},
     Arc,
 };
+use std::time::Duration;
 
-use chrono::Utc;
+use chrono::{DateTime, Utc};
 use serde_json::{json, Value};
 
 use crate::{
     domain::{
-        contracts::{WeatherSnapshotFetcher, WeatherSnapshotStore},
+        contracts::{WeatherDataFetcher, WeatherDataStore},
         model::{
-            CurrentWeatherPayload, WeatherLocationPayload, WeatherLocationQuery,
+            CurrentWeatherPayload, HourlyWeatherPayload, WeatherForecastMetaPayload,
+            WeatherForecastResponse, WeatherLocationPayload, WeatherLocationQuery,
             WeatherMetaPayload, WeatherSnapshotResponse,
         },
         service::WeatherSnapshotService,
@@ -23,37 +25,135 @@ use super::{process_request, tool_error_result, weather_tool_definition, JsonRpc
 #[derive(Clone)]
 struct FakeFetcher {
     snapshot: WeatherSnapshotResponse,
-    calls: Arc<AtomicUsize>,
+    forecast: WeatherForecastResponse,
+    current_calls: Arc<AtomicUsize>,
+    forecast_calls: Arc<AtomicUsize>,
 }
 
 #[async_trait::async_trait]
-impl WeatherSnapshotFetcher for FakeFetcher {
+impl WeatherDataFetcher for FakeFetcher {
     async fn fetch_weather_snapshot(
         &self,
         _location: &WeatherLocationQuery,
     ) -> Result<WeatherSnapshotResponse, ApiError> {
-        self.calls.fetch_add(1, Ordering::SeqCst);
+        self.current_calls.fetch_add(1, Ordering::SeqCst);
         Ok(self.snapshot.clone())
+    }
+
+    async fn fetch_hourly_forecast(
+        &self,
+        _location: &WeatherLocationQuery,
+        _hours_past: u16,
+        _hours_future: u16,
+    ) -> Result<WeatherForecastResponse, ApiError> {
+        self.forecast_calls.fetch_add(1, Ordering::SeqCst);
+        Ok(self.forecast.clone())
     }
 }
 
 #[derive(Clone)]
 struct FakeStore {
-    fail_message: Option<String>,
-    calls: Arc<AtomicUsize>,
+    current_fail_message: Option<String>,
+    forecast_fail_message: Option<String>,
+    load_fail_message: Option<String>,
+    current_calls: Arc<AtomicUsize>,
+    forecast_calls: Arc<AtomicUsize>,
+    load_calls: Arc<AtomicUsize>,
+    loaded_forecast: Arc<Vec<HourlyWeatherPayload>>,
 }
 
 #[async_trait::async_trait]
-impl WeatherSnapshotStore for FakeStore {
+impl WeatherDataStore for FakeStore {
     async fn upsert_current_snapshot(
         &self,
         _snapshot: &WeatherSnapshotResponse,
     ) -> Result<(), ApiError> {
-        self.calls.fetch_add(1, Ordering::SeqCst);
-        if let Some(message) = &self.fail_message {
+        self.current_calls.fetch_add(1, Ordering::SeqCst);
+        if let Some(message) = &self.current_fail_message {
             return Err(ApiError::Internal(message.clone()));
         }
         Ok(())
+    }
+
+    async fn upsert_hourly_forecast(
+        &self,
+        _forecast: &WeatherForecastResponse,
+    ) -> Result<(), ApiError> {
+        self.forecast_calls.fetch_add(1, Ordering::SeqCst);
+        if let Some(message) = &self.forecast_fail_message {
+            return Err(ApiError::Internal(message.clone()));
+        }
+        Ok(())
+    }
+
+    async fn load_current_snapshot(
+        &self,
+        _location: &WeatherLocationQuery,
+    ) -> Result<Option<WeatherSnapshotResponse>, ApiError> {
+        Ok(None)
+    }
+
+    async fn load_hourly_forecast_snapshot(
+        &self,
+        _location: &WeatherLocationQuery,
+        _start_inclusive: chrono::DateTime<chrono::Utc>,
+        _end_inclusive: chrono::DateTime<chrono::Utc>,
+    ) -> Result<Option<WeatherForecastResponse>, ApiError> {
+        self.load_calls.fetch_add(1, Ordering::SeqCst);
+        if let Some(message) = &self.load_fail_message {
+            return Err(ApiError::Internal(message.clone()));
+        }
+        Ok(None)
+    }
+
+    async fn load_hourly_forecast_range(
+        &self,
+        _location: &WeatherLocationQuery,
+        _start_inclusive: chrono::DateTime<chrono::Utc>,
+        _end_inclusive: chrono::DateTime<chrono::Utc>,
+    ) -> Result<Vec<HourlyWeatherPayload>, ApiError> {
+        self.load_calls.fetch_add(1, Ordering::SeqCst);
+        if let Some(message) = &self.load_fail_message {
+            return Err(ApiError::Internal(message.clone()));
+        }
+        Ok(self.loaded_forecast.as_ref().clone())
+    }
+}
+
+fn test_hourly_payload(forecast_at: &str, weather_code: i32) -> HourlyWeatherPayload {
+    HourlyWeatherPayload {
+        forecast_at: DateTime::parse_from_rfc3339(forecast_at)
+            .expect("parse forecast timestamp")
+            .with_timezone(&Utc),
+        weather_code,
+        temperature_c: 8.0,
+        temperature_apparent_c: 6.0,
+        is_day: true,
+        precipitation_mm: 0.4,
+        rain_mm: 0.3,
+        snowfall_cm: 0.0,
+        relative_humidity_pct: 68.0,
+        wind_speed_kmh: 14.0,
+        wind_gusts_kmh: 21.0,
+        wind_direction_deg: 140.0,
+        pressure_msl_hpa: 1014.0,
+        cloud_cover_pct: 55.0,
+    }
+}
+
+fn test_forecast(hourly: Vec<HourlyWeatherPayload>) -> WeatherForecastResponse {
+    WeatherForecastResponse {
+        location: WeatherLocationPayload {
+            latitude: 48.4057,
+            longitude: 9.0542,
+            timezone: "Europe/Berlin".to_string(),
+        },
+        hourly,
+        meta: WeatherForecastMetaPayload {
+            provider: "open-meteo".to_string(),
+            model: "dwd-icon".to_string(),
+            fetched_at: Utc::now(),
+        },
     }
 }
 
@@ -85,6 +185,18 @@ fn test_snapshot() -> WeatherSnapshotResponse {
     }
 }
 
+fn fake_store(loaded_forecast: Vec<HourlyWeatherPayload>) -> FakeStore {
+    FakeStore {
+        current_fail_message: None,
+        forecast_fail_message: None,
+        load_fail_message: None,
+        current_calls: Arc::new(AtomicUsize::new(0)),
+        forecast_calls: Arc::new(AtomicUsize::new(0)),
+        load_calls: Arc::new(AtomicUsize::new(0)),
+        loaded_forecast: Arc::new(loaded_forecast),
+    }
+}
+
 #[test]
 fn weather_tool_definition_contains_expected_name() {
     let tool = weather_tool_definition();
@@ -98,23 +210,61 @@ fn tool_error_result_sets_is_error_flag() {
 }
 
 #[tokio::test]
-async fn tools_call_returns_snapshot_and_persists() {
-    let fetch_calls = Arc::new(AtomicUsize::new(0));
-    let store_calls = Arc::new(AtomicUsize::new(0));
+async fn tools_list_returns_current_and_forecast_tools() {
     let weather_service = WeatherSnapshotService::new(
         Arc::new(FakeFetcher {
             snapshot: test_snapshot(),
-            calls: Arc::clone(&fetch_calls),
+            forecast: test_forecast(vec![test_hourly_payload("2026-03-09T13:00:00Z", 0)]),
+            current_calls: Arc::new(AtomicUsize::new(0)),
+            forecast_calls: Arc::new(AtomicUsize::new(0)),
         }),
-        Arc::new(FakeStore {
-            fail_message: None,
-            calls: Arc::clone(&store_calls),
-        }),
+        Arc::new(fake_store(vec![test_hourly_payload(
+            "2026-03-09T13:00:00Z",
+            0,
+        )])),
     );
 
     let request = JsonRpcRequest {
         jsonrpc: Some("2.0".to_string()),
         id: Some(json!(1)),
+        method: "tools/list".to_string(),
+        params: json!({}),
+    };
+
+    let response = process_request(request, &weather_service)
+        .await
+        .expect("mcp response");
+    let names = response
+        .pointer("/result/tools")
+        .and_then(Value::as_array)
+        .expect("tools list")
+        .iter()
+        .filter_map(|tool| tool.get("name"))
+        .filter_map(Value::as_str)
+        .collect::<Vec<_>>();
+
+    assert!(names.contains(&"get_current_weather"));
+    assert!(names.contains(&"get_weather_forecast"));
+}
+
+#[tokio::test]
+async fn tools_call_returns_snapshot_and_persists() {
+    let current_fetch_calls = Arc::new(AtomicUsize::new(0));
+    let forecast_fetch_calls = Arc::new(AtomicUsize::new(0));
+    let store = fake_store(vec![test_hourly_payload("2026-03-09T13:00:00Z", 0)]);
+    let weather_service = WeatherSnapshotService::new(
+        Arc::new(FakeFetcher {
+            snapshot: test_snapshot(),
+            forecast: test_forecast(vec![test_hourly_payload("2026-03-09T13:00:00Z", 0)]),
+            current_calls: Arc::clone(&current_fetch_calls),
+            forecast_calls: Arc::clone(&forecast_fetch_calls),
+        }),
+        Arc::new(store.clone()),
+    );
+
+    let request = JsonRpcRequest {
+        jsonrpc: Some("2.0".to_string()),
+        id: Some(json!(2)),
         method: "tools/call".to_string(),
         params: json!({
           "name": "get_current_weather",
@@ -129,9 +279,13 @@ async fn tools_call_returns_snapshot_and_persists() {
     let response = process_request(request, &weather_service)
         .await
         .expect("mcp response");
+    tokio::time::sleep(Duration::from_millis(20)).await;
 
-    assert_eq!(fetch_calls.load(Ordering::SeqCst), 1);
-    assert_eq!(store_calls.load(Ordering::SeqCst), 1);
+    assert_eq!(current_fetch_calls.load(Ordering::SeqCst), 1);
+    assert_eq!(forecast_fetch_calls.load(Ordering::SeqCst), 0);
+    assert_eq!(store.current_calls.load(Ordering::SeqCst), 1);
+    assert_eq!(store.forecast_calls.load(Ordering::SeqCst), 0);
+    assert_eq!(store.load_calls.load(Ordering::SeqCst), 0);
     assert_eq!(
         response.pointer("/result/structuredContent/current/weatherCode"),
         Some(&Value::from(0))
@@ -139,21 +293,78 @@ async fn tools_call_returns_snapshot_and_persists() {
 }
 
 #[tokio::test]
-async fn tools_call_returns_tool_error_when_persist_fails() {
+async fn forecast_tool_returns_hourly_payload_and_persists() {
+    let current_fetch_calls = Arc::new(AtomicUsize::new(0));
+    let forecast_fetch_calls = Arc::new(AtomicUsize::new(0));
+    let loaded_forecast = vec![
+        test_hourly_payload("2026-03-09T13:00:00Z", 2),
+        test_hourly_payload("2026-03-09T14:00:00Z", 61),
+    ];
+    let store = fake_store(loaded_forecast.clone());
     let weather_service = WeatherSnapshotService::new(
         Arc::new(FakeFetcher {
             snapshot: test_snapshot(),
-            calls: Arc::new(AtomicUsize::new(0)),
+            forecast: test_forecast(loaded_forecast.clone()),
+            current_calls: Arc::clone(&current_fetch_calls),
+            forecast_calls: Arc::clone(&forecast_fetch_calls),
         }),
-        Arc::new(FakeStore {
-            fail_message: Some("persist failed".to_string()),
-            calls: Arc::new(AtomicUsize::new(0)),
-        }),
+        Arc::new(store.clone()),
     );
 
     let request = JsonRpcRequest {
         jsonrpc: Some("2.0".to_string()),
-        id: Some(json!(2)),
+        id: Some(json!(3)),
+        method: "tools/call".to_string(),
+        params: json!({
+          "name": "get_weather_forecast",
+          "arguments": {
+            "lat": 48.4057,
+            "lon": 9.0542,
+            "timezone": "Europe/Berlin",
+            "hoursPast": 24,
+            "hoursFuture": 48
+          }
+        }),
+    };
+
+    let response = process_request(request, &weather_service)
+        .await
+        .expect("mcp response");
+    tokio::time::sleep(Duration::from_millis(20)).await;
+
+    assert_eq!(current_fetch_calls.load(Ordering::SeqCst), 0);
+    assert_eq!(forecast_fetch_calls.load(Ordering::SeqCst), 1);
+    assert_eq!(store.current_calls.load(Ordering::SeqCst), 0);
+    assert_eq!(store.forecast_calls.load(Ordering::SeqCst), 1);
+    assert_eq!(store.load_calls.load(Ordering::SeqCst), 1);
+    assert_eq!(
+        response.pointer("/result/structuredContent/hourly/0/weatherCode"),
+        Some(&Value::from(2))
+    );
+    assert_eq!(
+        response.pointer("/result/structuredContent/hourly/1/weatherCode"),
+        Some(&Value::from(61))
+    );
+}
+
+#[tokio::test]
+async fn tools_call_returns_snapshot_even_when_async_persist_fails() {
+    let mut store = fake_store(vec![test_hourly_payload("2026-03-09T13:00:00Z", 0)]);
+    store.current_fail_message = Some("persist failed".to_string());
+
+    let weather_service = WeatherSnapshotService::new(
+        Arc::new(FakeFetcher {
+            snapshot: test_snapshot(),
+            forecast: test_forecast(vec![test_hourly_payload("2026-03-09T13:00:00Z", 0)]),
+            current_calls: Arc::new(AtomicUsize::new(0)),
+            forecast_calls: Arc::new(AtomicUsize::new(0)),
+        }),
+        Arc::new(store),
+    );
+
+    let request = JsonRpcRequest {
+        jsonrpc: Some("2.0".to_string()),
+        id: Some(json!(4)),
         method: "tools/call".to_string(),
         params: json!({
           "name": "get_current_weather",
@@ -167,14 +378,11 @@ async fn tools_call_returns_tool_error_when_persist_fails() {
     let response = process_request(request, &weather_service)
         .await
         .expect("mcp response");
+    tokio::time::sleep(Duration::from_millis(20)).await;
 
+    assert_eq!(response.pointer("/result/isError"), None);
     assert_eq!(
-        response.pointer("/result/isError"),
-        Some(&Value::from(true))
+        response.pointer("/result/structuredContent/current/weatherCode"),
+        Some(&Value::from(0))
     );
-    assert!(response
-        .pointer("/result/content/0/text")
-        .and_then(Value::as_str)
-        .unwrap_or_default()
-        .contains("persist failed"));
 }

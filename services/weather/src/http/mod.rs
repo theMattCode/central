@@ -19,6 +19,7 @@ pub fn build_router(context: Context) -> Router {
     Router::new()
         .route("/healthz", get(handlers::healthz))
         .route("/api/v1/weather/current", get(handlers::current_weather))
+        .route("/api/v1/weather/forecast", get(handlers::forecast_weather))
         .route("/api/v1/weather/stream", get(handlers::stream_weather))
         .with_state(context)
         .layer(cors)

@@ -1,5 +1,14 @@
 # Style Guide
 
+## Common Conventions
+
+- Always use the basic design principles:
+  - **KISS**: Keep it simple
+  - **DRY**: Don't repeat yourself
+  - **YAGNI**: You ain't gonna need it
+  - **SOLID**: Single Responsibility, Open/Closed, Liskov Substitution, Interface Segregation, Dependency Inversion
+- Always format code with the language-specific formatter.
+
 ## Node & NPM
 
 ### Scripts
@@ -45,3 +54,7 @@
 - **Options:** Additional options that don’t fit under the other modifiers.
 
 - **Watch:** If a script watches the filesystem and responds to changes, add `:watch` to the script name.
+
+## Rust & Cargo
+
+- Follow the common Rust conventions and [RFCs](https://github.com/rust-lang/rfcs).

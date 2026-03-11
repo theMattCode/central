@@ -1,29 +1,8 @@
 name: ${COMPOSE_PROJECT_NAME:-central-i12e}
-services:
-  weather:
-    build:
-      context: ../..
-      dockerfile: services/weather/Dockerfile
-    image: central/services/weather:latest
-    depends_on:
-      postgres:
-        condition: service_healthy
-    environment:
-      WEATHER_PORT: '8080'
-      WEATHER_REFRESH_INTERVAL_SECONDS: ${WEATHER_REFRESH_INTERVAL_SECONDS:-900}
-      WEATHER_REQUEST_TIMEOUT_SECONDS: ${WEATHER_REQUEST_TIMEOUT_SECONDS:-10}
-      WEATHER_DATABASE_URL: ${WEATHER_DATABASE_URL:-postgres://central:central@postgres:5432/central}
-      WEATHER_CORS_ALLOW_ORIGIN: ${WEATHER_CORS_ALLOW_ORIGIN:-*}
-    ports:
-      - '${WEATHER_PORT:-3010}:8080'
-    healthcheck:
-      test: ['CMD', 'wget', '-qO', '-', 'http://127.0.0.1:8080/healthz']
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 10s
 
-  postgres:
+services:
+
+  i12e-postgres:
     build:
       context: ../postgres
       dockerfile: Dockerfile
@@ -35,7 +14,7 @@ services:
     ports:
       - '${POSTGRES_PORT:-3001}:5432'
     volumes:
-      - central_postgres_data:/var/lib/postgresql/data
+      - central_i12e-postgres_data:/var/lib/postgresql/data
     healthcheck:
       test: ['CMD-SHELL', 'pg_isready -U "$$POSTGRES_USER" -d "$$POSTGRES_DB"']
       interval: 10s
@@ -43,13 +22,13 @@ services:
       retries: 5
       start_period: 30s
 
-  postgres-migrate:
+  i12e-postgres-migrate:
     image: central/i12e/postgres:16.4
     depends_on:
-      postgres:
+      i12e-postgres:
         condition: service_healthy
     environment:
-      PGHOST: postgres
+      PGHOST: i12e-postgres
       PGPORT: '5432'
       PGDATABASE: central
       PGUSER: central
@@ -57,7 +36,30 @@ services:
     command: ['apply-migrations.sh']
     restart: 'no'
 
-  cockpit:
+  service-weather:
+    build:
+      context: ../..
+      dockerfile: services/weather/Dockerfile
+    image: central/services/weather:latest
+    depends_on:
+      i12e-postgres:
+        condition: service_healthy
+    environment:
+      WEATHER_PORT: '8080'
+      WEATHER_REFRESH_INTERVAL_SECONDS: ${WEATHER_REFRESH_INTERVAL_SECONDS:-900}
+      WEATHER_REQUEST_TIMEOUT_SECONDS: ${WEATHER_REQUEST_TIMEOUT_SECONDS:-10}
+      WEATHER_DATABASE_URL: ${WEATHER_DATABASE_URL:-postgres://central:central@i12e-postgres:5432/central}
+      WEATHER_CORS_ALLOW_ORIGIN: ${WEATHER_CORS_ALLOW_ORIGIN:-*}
+    ports:
+      - '${WEATHER_PORT:-3010}:8080'
+    healthcheck:
+      test: ['CMD', 'wget', '-qO', '-', 'http://127.0.0.1:8080/healthz']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  app-cockpit:
     build:
       context: ../..
       dockerfile: apps/cockpit/Dockerfile
@@ -65,9 +67,9 @@ services:
         VITE_WEATHER_API_BASE_URL: ${WEATHER_API_BASE_URL:-http://localhost:3010}
     image: central/apps/cockpit:latest
     depends_on:
-      postgres:
+      i12e-postgres:
         condition: service_healthy
-      weather:
+      service-weather:
         condition: service_healthy
     environment:
       DATABASE_URL: postgres://central:central@postgres:5432/central
@@ -76,4 +78,4 @@ services:
       - '${COCKPIT_PORT:-3000}:3000'
 
 volumes:
-  central_postgres_data:
+  central_i12e-postgres_data:
