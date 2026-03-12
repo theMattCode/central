@@ -9,23 +9,26 @@ describe('Navigation', () => {
     cleanup();
   });
 
-  it('keeps the logo visible and toggles desktop brand copy with drawer state', () => {
+  it('keeps the logo visible while toggling desktop navigation width state', () => {
     render(<Navigation />);
 
+    const collapseButton = screen.getByLabelText('Collapse navigation');
+    const desktopNavigation = collapseButton.closest('aside');
+
+    expect(desktopNavigation).toBeDefined();
+    expect(desktopNavigation?.className).toContain('w-72');
     expect(screen.getAllByLabelText('Central logo').length).toBeGreaterThan(0);
-    expect(screen.getByText('Central')).toBeDefined();
-    expect(screen.getByText('Dashboard')).toBeDefined();
 
-    fireEvent.click(screen.getByLabelText('Collapse navigation'));
+    fireEvent.click(collapseButton);
 
-    expect(screen.queryByText('Central')).toBeNull();
-    expect(screen.queryByText('Dashboard')).toBeNull();
+    expect(screen.getByLabelText('Expand navigation')).toBeDefined();
+    expect(desktopNavigation?.className).toContain('w-20');
     expect(screen.getAllByLabelText('Central logo').length).toBeGreaterThan(0);
 
     fireEvent.click(screen.getByLabelText('Expand navigation'));
 
-    expect(screen.getByText('Central')).toBeDefined();
-    expect(screen.getByText('Dashboard')).toBeDefined();
+    expect(screen.getByLabelText('Collapse navigation')).toBeDefined();
+    expect(desktopNavigation?.className).toContain('w-72');
   });
 
   it('opens and closes the mobile drawer', () => {

@@ -5,6 +5,13 @@
   "root": "apps/cockpit",
   "sourceRoot": "apps/cockpit/src",
   "targets": {
+    "lint": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "apps/cockpit",
+        "command": "pnpm exec prettier --check \"src/components/**/*.{ts,tsx}\" \"src/widgets/**/*.{ts,tsx}\" \"src/utils/**/*.ts\" \"src/routes/**/*.tsx\" \"src/styles.css\" \"src/i18n/**/*.ts\" \"src/router.tsx\""
+      }
+    },
     "start": {
       "executor": "nx:run-commands",
       "options": {

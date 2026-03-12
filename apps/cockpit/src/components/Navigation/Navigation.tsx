@@ -11,9 +11,7 @@ import { PiSidebarSimpleDuotone as NavigationToggleIcon } from 'react-icons/pi';
 import { NavigationGroup } from '@/components/Navigation/NavigationGroup.tsx';
 import { useState } from 'react';
 import { cx } from '@/utils/styles.ts';
-
-const brandLabel = 'Central';
-const productName = 'Dashboard';
+import { BrandIdentity } from '@/components/Brand/Name.tsx';
 
 export function Navigation() {
   const [isDesktopOpen, setIsDesktopOpen] = useState(true);
@@ -45,7 +43,7 @@ export function Navigation() {
           />
           <aside className="absolute left-0 top-0 h-dvh w-72 max-w-[calc(100vw-2rem)] border-r border-(--color-section-border) bg-(--color-bg) p-4 flex flex-col gap-4">
             <div className="w-full flex items-center justify-between gap-2">
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3 @container">
                 <Logo />
                 <BrandIdentity />
               </div>
@@ -65,18 +63,22 @@ export function Navigation() {
 
       <aside
         className={cx(
-          'hidden md:flex h-dvh min-h-0 shrink-0 flex-col gap-4 bg-(--color-bg) p-2 transition-[width] duration-300 ease-out',
-          isDesktopOpen ? 'w-72' : 'w-20',
+          'hidden md:flex h-dvh min-h-0 shrink-0 flex-col gap-4 overflow-hidden bg-(--color-bg) p-2 transition-[width] duration-300 ease-out @container',
+          isDesktopOpen ? 'w-64' : 'w-16',
         )}
       >
-        <div className={cx('w-full flex items-center p-2', isDesktopOpen ? 'gap-3' : 'justify-center')}>
+        <div className="w-full h-14 flex items-center gap-0 p-2 @[14rem]:gap-4">
           <Logo />
-          {isDesktopOpen && <BrandIdentity />}
+          <div className="hidden @[14rem]:block">
+            <BrandIdentity />
+          </div>
         </div>
 
-        {isDesktopOpen && <DrawerContent />}
+        <div className="hidden min-h-0 flex-1 @[14rem]:flex">
+          <DrawerContent />
+        </div>
 
-        <div className={cx('w-full mt-auto flex', isDesktopOpen ? 'justify-end' : 'justify-center')}>
+        <div className="w-full mt-auto flex justify-center @[14rem]:justify-end">
           <button
             type="button"
             aria-label={isDesktopOpen ? 'Collapse navigation' : 'Expand navigation'}
@@ -88,15 +90,6 @@ export function Navigation() {
         </div>
       </aside>
     </>
-  );
-}
-
-function BrandIdentity() {
-  return (
-    <div className="flex flex-col leading-none">
-      <span className="text-sm uppercase tracking-[0.2em] text-(--color-txt-sec)">{brandLabel}</span>
-      <span className="text-md uppercase tracking-[0.2em] text-(--color-txt) font-semibold">{productName}</span>
-    </div>
   );
 }
 

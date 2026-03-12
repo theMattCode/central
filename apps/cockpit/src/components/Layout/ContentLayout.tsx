@@ -2,7 +2,7 @@ import { Fragment, type PropsWithChildren } from 'react';
 
 export function ContentLayout({ children }: PropsWithChildren) {
   return (
-    <main className="w-full min-h-0 p-4 flex flex-col lg:flex-row gap-4 overflow-hidden">
+    <main className="w-full min-h-0 py-4 pr-4 flex flex-col lg:flex-row gap-4 overflow-hidden">
       <div className="flex-1 min-h-0 py-4 bg-[linear-gradient(to_bottom_right,var(--color-content-bg-start),var(--color-content-bg-end))] rounded-lg lg:rounded-xl flex flex-col gap-4 overflow-hidden @container">
         <div className="px-4">
           <Breadcrumb />
@@ -32,7 +32,7 @@ export function Breadcrumb() {
 }
 
 export function BreadcrumbItem({ text }: { text: string }) {
-  return <span className="text-sm font-medium text-gray-500">{text}</span>;
+  return <span className="text-sm font-medium">{text}</span>;
 }
 
 export function BreadcrumbDelimiter() {

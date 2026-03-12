@@ -10,14 +10,14 @@ type Props = {
 export function Header({ location: { label, latitude, longitude }, data }: Props) {
   const locationUrl = `https://www.google.com/maps?q=${latitude.toFixed(4)},${longitude.toFixed(4)}`;
   return (
-    <header className="flex flex-col gap-2">
+    <header className="flex flex-col">
       <div className="flex flex-row items-center justify-between">
-        <span className="text-lg text-(--color-txt)">{label}</span>
+        <span className="text-lg">{label}</span>
         <button className="text-2xl px-2 py-1 hover:text-(--color-pri)" onClick={data.refresh} type="button">
           <UpdateIcon />
         </button>
       </div>
-      <div className="flex flex-row items-center justify-between text-(--color-txt-sec)">
+      <div className="flex flex-row items-center justify-between text-(--color-txt-sec) text-xs">
         <div className="flex flex-row items-center gap-1">
           <LocationIcon />
           <a href={locationUrl} target="_blank">

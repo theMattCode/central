@@ -17,9 +17,9 @@ export function WeatherCurrentSummary({ weather }: WeatherCurrentSummaryProps) {
     <div className="flex flex-row gap-4">
       <img src={`/weather/${icon}.svg`} alt={weatherCode.i18nKey} className="h-48 text-(--color-txt)" />
       <div className="flex flex-col grow gap-2">
-        <p className="text-4xl text-right font-semibold text-(--color-txt)">
+        <span className="text-4xl text-right font-semibold text-(--color-txt)">
           {weather.current.temperatureC.toFixed(1)} °C
-        </p>
+        </span>
         <Detail label="" value={interpretation} />
         <Detail label="Gefühlt" value={weather.current.temperatureApparentC.toFixed(1) + ' °C'} />
         <Detail
@@ -37,8 +37,8 @@ export function WeatherCurrentSummary({ weather }: WeatherCurrentSummaryProps) {
 function Detail({ label, value }: { label: string; value: string | ReactNode }) {
   return (
     <div className="flex flex-row justify-between text-sm gap-4">
-      <p className="text-(--color-txt-sec)">{label}</p>
-      <p className="text-(--color-txt)">{value}</p>
+      <span className="text-(--color-txt-sec)">{label}</span>
+      <span className="text-(--color-txt)">{value}</span>
     </div>
   );
 }
@@ -53,7 +53,7 @@ function WindDetails({ windSpeed, windDirection }: { windSpeed: number; windDire
           transformOrigin: 'center',
         }}
       />
-      <p>{windSpeed.toFixed(1) + ' km/h'}</p>
+      <span className="text-(--color-txt)">{windSpeed.toFixed(1) + ' km/h'}</span>
     </div>
   );
 }

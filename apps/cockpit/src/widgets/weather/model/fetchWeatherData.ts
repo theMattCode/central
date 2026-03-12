@@ -1,6 +1,6 @@
 import type { WeatherData, WeatherLocation } from '@/widgets/weather/model/model.ts';
 
-const WEATHER_SERVICE_BASE_URL = import.meta.env.VITE_WEATHER_API_BASE_URL ?? 'http://localhost:5010';
+const WEATHER_SERVICE_BASE_URL = import.meta.env.VITE_WEATHER_API_BASE_URL ?? 'http://localhost:3010';
 
 type WeatherServiceSnapshot = {
   location: {
