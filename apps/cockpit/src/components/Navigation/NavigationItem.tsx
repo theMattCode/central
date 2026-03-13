@@ -12,14 +12,14 @@ export function NavigationItem({ Icon, children, href = '/', onClick, compact = 
   return (
     <a
       className={cx(
-        'w-full flex flex-row items-center hover:bg-(--color-pri)/10 rounded-lg transition-colors',
-        compact ? 'justify-center p-2' : 'gap-2 p-2',
+        'w-full flex flex-row items-center hover:bg-(--color-pri)/10 rounded-lg transition-colors px-2 py-1',
+        compact ? 'justify-center' : 'gap-2 ',
       )}
       href={href}
       onClick={onClick}
     >
       {Icon && <Icon className="w-6 h-6 text-(--color-txt-sec)" />}
-      {!compact && <div className="truncate">{children}</div>}
+      {!compact && <div className="truncate hidden @[14rem]:block">{children}</div>}
     </a>
   );
 }

@@ -4,14 +4,16 @@ import {
   MdClose as CloseIcon,
   MdMenu as MenuIcon,
   MdOutlineHome as HomeIcon,
+  MdOutlineMail as MailIcon,
   MdOutlineMonitorWeight as MonitorModeIcon,
   MdSettings as SettingsIcon,
 } from 'react-icons/md';
+import { RiArrowLeftRightLine as IncomeAndExpenseIcon, RiStockLine as InvestIcon } from 'react-icons/ri';
 import { PiSidebarSimpleDuotone as NavigationToggleIcon } from 'react-icons/pi';
 import { NavigationGroup } from '@/components/Navigation/NavigationGroup.tsx';
 import { useState } from 'react';
 import { cx } from '@/utils/styles.ts';
-import { BrandIdentity } from '@/components/Brand/Name.tsx';
+import { BrandIdentity } from '@/components/Brand/BrandIdentity.tsx';
 
 export function Navigation() {
   const [isDesktopOpen, setIsDesktopOpen] = useState(true);
@@ -41,7 +43,7 @@ export function Navigation() {
             className="absolute inset-0 bg-black/40"
             onClick={closeMobileDrawer}
           />
-          <aside className="absolute left-0 top-0 h-dvh w-72 max-w-[calc(100vw-2rem)] border-r border-(--color-section-border) bg-(--color-bg) p-4 flex flex-col gap-4">
+          <aside className="absolute left-0 top-0 h-dvh w-72 max-w-[calc(100vw-2rem)] border-r border-(--color-section-border) bg-(--color-bg) p-4 flex flex-col gap-4 @container">
             <div className="w-full flex items-center justify-between gap-2">
               <div className="flex items-center gap-3 @container">
                 <Logo />
@@ -74,9 +76,7 @@ export function Navigation() {
           </div>
         </div>
 
-        <div className="hidden min-h-0 flex-1 @[14rem]:flex">
-          <DrawerContent />
-        </div>
+        <DrawerContent />
 
         <div className="w-full mt-auto flex justify-center @[14rem]:justify-end">
           <button
@@ -95,16 +95,24 @@ export function Navigation() {
 
 function DrawerContent({ onNavigate }: { onNavigate?: () => void }) {
   return (
-    <div className="w-full min-h-0 flex-1 flex flex-col gap-4">
-      <nav className="w-full flex flex-col gap-4 overflow-y-auto">
+    <div className="w-full min-h-0 flex-1 flex flex-col gap-2">
+      <nav className="w-full flex flex-col gap-2 overflow-y-auto">
         <NavigationItem Icon={HomeIcon} onClick={onNavigate}>
           Overview
         </NavigationItem>
-        <NavigationGroup title="Finance">
-          <NavigationItem onClick={onNavigate}>item 1</NavigationItem>
-          <NavigationItem onClick={onNavigate}>item 2 with long name name name name</NavigationItem>
+        <NavigationGroup title="Communication">
+          <NavigationItem Icon={MailIcon} onClick={onNavigate}>
+            E-Mail
+          </NavigationItem>
         </NavigationGroup>
-        <NavigationGroup title="Tools" />
+        <NavigationGroup title="Finance">
+          <NavigationItem Icon={IncomeAndExpenseIcon} onClick={onNavigate}>
+            Income & Expense
+          </NavigationItem>
+          <NavigationItem Icon={InvestIcon} onClick={onNavigate}>
+            Invest
+          </NavigationItem>
+        </NavigationGroup>
       </nav>
       <div className="w-full mt-auto pt-4 flex flex-col gap-1">
         <NavigationItem Icon={SettingsIcon} onClick={onNavigate}>

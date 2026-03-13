@@ -16,19 +16,19 @@ describe('Navigation', () => {
     const desktopNavigation = collapseButton.closest('aside');
 
     expect(desktopNavigation).toBeDefined();
-    expect(desktopNavigation?.className).toContain('w-72');
+    expect(desktopNavigation?.className).toContain('w-64');
     expect(screen.getAllByLabelText('Central logo').length).toBeGreaterThan(0);
 
     fireEvent.click(collapseButton);
 
     expect(screen.getByLabelText('Expand navigation')).toBeDefined();
-    expect(desktopNavigation?.className).toContain('w-20');
+    expect(desktopNavigation?.className).toContain('w-16');
     expect(screen.getAllByLabelText('Central logo').length).toBeGreaterThan(0);
 
     fireEvent.click(screen.getByLabelText('Expand navigation'));
 
     expect(screen.getByLabelText('Collapse navigation')).toBeDefined();
-    expect(desktopNavigation?.className).toContain('w-72');
+    expect(desktopNavigation?.className).toContain('w-64');
   });
 
   it('opens and closes the mobile drawer', () => {
