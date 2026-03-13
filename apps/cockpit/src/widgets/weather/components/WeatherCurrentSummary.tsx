@@ -15,8 +15,8 @@ export function WeatherCurrentSummary({ weather }: WeatherCurrentSummaryProps) {
 
   return (
     <div className="flex flex-row gap-4">
-      <img src={`/weather/${icon}.svg`} alt={weatherCode.i18nKey} className="h-48 text-(--color-txt)" />
-      <div className="flex flex-col grow gap-2">
+      <img src={`/weather/${icon}.svg`} alt={weatherCode.i18nKey} className="h-40 text-(--color-txt)" />
+      <div className="flex flex-col grow gap-0.5">
         <span className="text-4xl text-right font-semibold text-(--color-txt)">
           {weather.current.temperatureC.toFixed(1)} °C
         </span>
@@ -47,7 +47,7 @@ function WindDetails({ windSpeed, windDirection }: { windSpeed: number; windDire
   return (
     <div className="flex flex-row gap-2">
       <DirectionIcon
-        className="inline-block text-2xl"
+        className="inline-block text-xl"
         style={{
           transform: `rotate(${windDirection.toFixed(1)}deg)`,
           transformOrigin: 'center',

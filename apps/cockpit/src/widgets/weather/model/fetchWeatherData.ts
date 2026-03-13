@@ -1,6 +1,7 @@
-import type { WeatherData, WeatherLocation } from '@/widgets/weather/model/model.ts';
-
-const WEATHER_SERVICE_BASE_URL = import.meta.env.VITE_WEATHER_API_BASE_URL ?? 'http://localhost:3010';
+import { createServerFn } from '@tanstack/react-start';
+import { LOGGER } from '@/widgets/weather/log.ts';
+import type { WeatherData, WeatherLocation } from './model.ts';
+import { resolveWeatherServiceBaseUrl } from './weatherServiceBaseUrl.ts';
 
 type WeatherServiceSnapshot = {
   location: {
@@ -28,8 +29,8 @@ type WeatherServiceError = {
   };
 };
 
-function createWeatherServiceUrl(path: string, location: WeatherLocation): URL {
-  const url = new URL(path, WEATHER_SERVICE_BASE_URL);
+function createWeatherServiceUrl(baseUrl: string, path: string, location: WeatherLocation): URL {
+  const url = new URL(path, baseUrl);
   url.searchParams.set('lat', location.latitude.toString());
   url.searchParams.set('lon', location.longitude.toString());
 
@@ -77,20 +78,65 @@ function toWeatherData(location: WeatherLocation, snapshot: WeatherServiceSnapsh
   };
 }
 
-export async function fetchWeatherData(location: WeatherLocation, signal?: AbortSignal): Promise<WeatherData> {
-  const url = createWeatherServiceUrl('/api/v1/weather/current', location);
+export function validateWeatherLocation(input: unknown): WeatherLocation {
+  if (!input || typeof input !== 'object') {
+    LOGGER.error('invalid-location-payload', { payload: input });
+    throw new Error('Invalid weather location payload.');
+  }
 
-  const response = await fetch(url, {
-    signal,
-    headers: {
-      Accept: 'application/json',
-    },
-  });
+  const location = input as Partial<WeatherLocation>;
 
+  if (
+    typeof location.id !== 'string' ||
+    typeof location.label !== 'string' ||
+    typeof location.latitude !== 'number' ||
+    typeof location.longitude !== 'number' ||
+    (location.timezone !== undefined && typeof location.timezone !== 'string')
+  ) {
+    LOGGER.error('invalid-location-payload', { payload: input });
+    throw new Error('Invalid weather location payload.');
+  }
+
+  return {
+    id: location.id,
+    label: location.label,
+    latitude: location.latitude,
+    longitude: location.longitude,
+    timezone: location.timezone,
+  };
+}
+
+async function requestWeatherData(location: WeatherLocation): Promise<WeatherData> {
+  const baseUrl = resolveWeatherServiceBaseUrl();
+  const url = createWeatherServiceUrl(baseUrl, 'api/v1/weather/current', location);
+
+  let response: Response;
+  try {
+    response = await fetch(url, { headers: { Accept: 'application/json' } });
+  } catch (error) {
+    LOGGER.error('request-current-weather-failed', { url: url.toString(), location }, error);
+    throw new Error(error instanceof Error && error.message ? error.message : 'Failed to fetch weather data');
+  }
   if (!response.ok) {
-    throw new Error(await toErrorMessage(response));
+    const message = await toErrorMessage(response);
+    LOGGER.error(
+      'request-current-weather-response-error',
+      {
+        ...{ url: url.toString(), location },
+        status: response.status,
+        statusText: response.statusText,
+      },
+      message,
+    );
+    throw new Error(message);
   }
 
   const snapshot = (await response.json()) as WeatherServiceSnapshot;
+
+  LOGGER.info('requested current weather', { url: url.toString(), location: location.label });
   return toWeatherData(location, snapshot);
 }
+
+export const fetchWeatherData = createServerFn({ method: 'GET' })
+  .inputValidator(validateWeatherLocation)
+  .handler(async ({ data }) => requestWeatherData(data));

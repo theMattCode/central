@@ -1,0 +1,35 @@
+{
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "name": "ts-log",
+  "projectType": "library",
+  "root": "libs/ts-log",
+  "sourceRoot": "libs/ts-log/src",
+  "targets": {
+    "lint": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "pnpm exec prettier --check \"libs/ts-log/src/**/*.ts\" \"libs/ts-log/*.json\""
+      }
+    },
+    "test": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "apps/cockpit/node_modules/.bin/vitest run libs/ts-log/src/index.test.ts"
+      }
+    },
+    "typecheck": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "pnpm exec tsc --noEmit -p libs/ts-log/tsconfig.json"
+      }
+    },
+    "build": {
+      "executor": "nx:run-commands",
+      "outputs": ["{workspaceRoot}/dist/libs/ts-log"],
+      "options": {
+        "command": "pnpm exec tsc -p libs/ts-log/tsconfig.lib.json"
+      }
+    }
+  },
+  "tags": []
+}

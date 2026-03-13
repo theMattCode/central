@@ -7,7 +7,7 @@ The repository is organized as a multi-project Nx workspace:
 - `apps/*`: user-facing applications (currently `apps/cockpit`)
 - `services/*`: backend runtime services (currently `services/weather`)
 - `i12e/*`: infrastructure and orchestration projects (`postgres`, `orchestrator`)
-- `libs/*`: shared reusable libraries (currently reserved for future extraction)
+- `libs/*`: shared reusable libraries (currently `ts-log` for cross-cutting TypeScript logging)
 - `docs/*`: cross-cutting repository documentation
 
 ## Runtime Components
@@ -15,8 +15,9 @@ The repository is organized as a multi-project Nx workspace:
 ### Cockpit (`apps/cockpit`)
 
 - TanStack Start + React frontend.
-- Calls the weather service over HTTP (`/api/v1/weather/current` and `/api/v1/weather/forecast`).
-- Runtime weather service base URL is configured via `VITE_WEATHER_API_BASE_URL`.
+- Fetches weather data on the cockpit server via TanStack Start loaders/server functions, then sends the result to the browser.
+- Cockpit reaches the weather service over HTTP (`/api/v1/weather/current` and `/api/v1/weather/forecast`).
+- Runtime weather service base URL is configured via `WEATHER_SERVICE_BASE_URL` with `VITE_WEATHER_API_BASE_URL` as a build-time fallback. If neither is set, cockpit defaults to `http://localhost:3010` for local orchestrator-driven development.
 
 ### Weather Service (`services/weather`)
 
@@ -40,11 +41,11 @@ The repository is organized as a multi-project Nx workspace:
 
 ## Data Flow
 
-1. Cockpit requests weather data from weather-service.
+1. Browser requests cockpit.
 2. Weather-service checks PostgreSQL cache first.
 3. If cache is stale or missing, weather-service fetches fresh data from Open-Meteo.
 4. Fresh responses are returned immediately; persistence writes happen asynchronously.
-5. Cockpit renders snapshots and can manually refresh.
+5. Cockpit serializes widget data to the client and can refresh through server functions without exposing weather-service to the browser.
 
 ## Boundary Rules
 
@@ -52,3 +53,9 @@ The repository is organized as a multi-project Nx workspace:
 - Keep backend business logic and adapters in `services/*`.
 - Keep infrastructure/container/migration concerns in `i12e/*`.
 - Promote cross-project reusable code into `libs/*` when duplication appears.
+
+## Shared Library Packaging
+
+- Workspace libraries can be consumed directly as `workspace:*` packages when the caller's toolchain can compile TypeScript source from the linked package.
+- `@central/ts-log` is currently consumed this way by `apps/cockpit`: the package export points at source, and cockpit's Vite build bundles it without a separate library build step.
+- If a shared library later needs to be consumed as a prebuilt artifact, switch its package exports to `dist/*`, add the relevant library build as a prerequisite for consumers, and keep Docker dependency-install layers aware of the workspace package manifest.

@@ -33,7 +33,7 @@ export interface HourlyPrecipitationPoint {
   snowfallCm: number;
 }
 
-interface CurrentWeather {
+export interface CurrentWeather {
   weatherCode: number;
   temperatureC: number;
   temperatureApparentC: number;

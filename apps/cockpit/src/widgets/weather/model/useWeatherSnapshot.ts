@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { WeatherDataState, WeatherLocation } from '@/widgets/weather/model/model.ts';
 import { fetchWeatherData } from '@/widgets/weather/model/fetchWeatherData.ts';
+import { LOGGER } from '@/widgets/weather/log.ts';
 
 //const WEATHER_REFRESH_INTERVAL_MS = 3 * 1000;
 const WEATHER_REFRESH_INTERVAL_MS = 15 * 60 * 1000;
@@ -18,7 +19,7 @@ function getLocationDependencyKey(location: WeatherLocation): string {
 
 export function useWeatherSnapshot(location: WeatherLocation): WeatherDataState {
   const [refreshVersion, setRefreshVersion] = useState(0);
-  const [state, setState] = useState<WeatherDataState>(() => ({ status: 'loading' }));
+  const [state, setState] = useState<WeatherDataState>({ status: 'loading' });
   const previousLocationDependencyKeyRef = useRef(getLocationDependencyKey(location));
 
   const locationDependencyKey = getLocationDependencyKey(location);
@@ -45,12 +46,13 @@ export function useWeatherSnapshot(location: WeatherLocation): WeatherDataState 
 
     const loadWeather = async () => {
       try {
-        const weatherData = await fetchWeatherData(location, abortController.signal);
+        const weatherData = await fetchWeatherData({ data: location, signal: abortController.signal });
         setState({ status: 'loaded', weatherData, refresh });
       } catch (error) {
         if (abortController.signal.aborted) {
           return;
         }
+        LOGGER.error('weather-refresh-failed', { location }, error);
         setState({ status: 'error', errorMessage: toErrorMessage(error), refresh });
       }
     };
@@ -58,7 +60,7 @@ export function useWeatherSnapshot(location: WeatherLocation): WeatherDataState 
     void loadWeather();
 
     return () => abortController.abort();
-  }, [locationDependencyKey, refreshVersion]);
+  }, [location, locationDependencyKey, refresh, refreshVersion]);
 
   return state;
 }

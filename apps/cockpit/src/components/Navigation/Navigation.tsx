@@ -6,6 +6,7 @@ import {
   MdOutlineHome as HomeIcon,
   MdOutlineMail as MailIcon,
   MdOutlineMonitorWeight as MonitorModeIcon,
+  MdOutlineTask as TaskIcon,
   MdSettings as SettingsIcon,
 } from 'react-icons/md';
 import { RiArrowLeftRightLine as IncomeAndExpenseIcon, RiStockLine as InvestIcon } from 'react-icons/ri';
@@ -100,7 +101,10 @@ function DrawerContent({ onNavigate }: { onNavigate?: () => void }) {
         <NavigationItem Icon={HomeIcon} onClick={onNavigate}>
           Overview
         </NavigationItem>
-        <NavigationGroup title="Communication">
+        <NavigationGroup title="Work">
+          <NavigationItem Icon={TaskIcon} onClick={onNavigate}>
+            Tasks
+          </NavigationItem>
           <NavigationItem Icon={MailIcon} onClick={onNavigate}>
             E-Mail
           </NavigationItem>

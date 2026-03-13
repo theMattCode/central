@@ -2,12 +2,22 @@
 
 import { act, cleanup, renderHook, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { LOGGER } from '@/widgets/weather/log.ts';
 import type { WeatherData, WeatherLocation } from '@/widgets/weather/model/model.ts';
 import { fetchWeatherData } from '@/widgets/weather/model/fetchWeatherData.ts';
 import { useWeatherSnapshot } from '@/widgets/weather/model/useWeatherSnapshot.ts';
 
 vi.mock('@/widgets/weather/model/fetchWeatherData.ts', () => ({
   fetchWeatherData: vi.fn(),
+}));
+
+vi.mock('@/widgets/weather/log.ts', () => ({
+  LOGGER: {
+    debug: vi.fn(),
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+  },
 }));
 
 const WEATHER_REFRESH_INTERVAL_MS = 15 * 60 * 1000;
@@ -38,8 +48,10 @@ const TEST_WEATHER_DATA: WeatherData = {
 
 describe('useWeatherSnapshot', () => {
   const fetchWeatherDataMock = vi.mocked(fetchWeatherData);
+  const loggerErrorMock = vi.mocked(LOGGER.error);
 
   beforeEach(() => {
+    loggerErrorMock.mockClear();
     fetchWeatherDataMock.mockResolvedValue(TEST_WEATHER_DATA);
   });
 
@@ -59,10 +71,35 @@ describe('useWeatherSnapshot', () => {
     expect(fetchWeatherDataMock).toHaveBeenCalledTimes(1);
   });
 
+  it('returns an error state when the request fails', async () => {
+    fetchWeatherDataMock.mockRejectedValueOnce(new Error('fetch failed'));
+
+    const { result } = renderHook(() => useWeatherSnapshot(TEST_LOCATION));
+
+    await waitFor(() => {
+      expect(result.current.status).toBe('error');
+    });
+
+    if (result.current.status === 'error') {
+      expect(result.current.errorMessage).toBe('fetch failed');
+    }
+    expect(fetchWeatherDataMock).toHaveBeenCalledTimes(1);
+    expect(loggerErrorMock).toHaveBeenCalledTimes(1);
+    expect(loggerErrorMock).toHaveBeenCalledWith(
+      'weather-refresh-failed',
+      { location: TEST_LOCATION },
+      expect.objectContaining({ message: 'fetch failed' }),
+    );
+  });
+
   it('refreshes weather data every 15 minutes', async () => {
     vi.useFakeTimers();
 
     renderHook(() => useWeatherSnapshot(TEST_LOCATION));
+
+    await act(async () => {
+      await Promise.resolve();
+    });
 
     expect(fetchWeatherDataMock).toHaveBeenCalledTimes(1);
 
@@ -114,5 +151,33 @@ describe('useWeatherSnapshot', () => {
 
     expect(fetchWeatherDataMock).toHaveBeenCalledTimes(2);
     expect(result.current.status).toBe('loaded');
+  });
+
+  it('resets to loading and fetches again when the location changes', async () => {
+    const nextLocation: WeatherLocation = {
+      ...TEST_LOCATION,
+      id: 'next-location',
+      label: 'Next Location',
+    };
+
+    const { result, rerender } = renderHook(({ location }) => useWeatherSnapshot(location), {
+      initialProps: { location: TEST_LOCATION },
+    });
+
+    await waitFor(() => {
+      expect(result.current.status).toBe('loaded');
+    });
+
+    expect(fetchWeatherDataMock).toHaveBeenCalledTimes(1);
+
+    rerender({ location: nextLocation });
+
+    expect(result.current.status).toBe('loading');
+
+    await waitFor(() => {
+      expect(result.current.status).toBe('loaded');
+    });
+
+    expect(fetchWeatherDataMock).toHaveBeenCalledTimes(2);
   });
 });

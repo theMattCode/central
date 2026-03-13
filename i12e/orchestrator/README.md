@@ -35,6 +35,8 @@ Environment defaults are stored in:
 - `i12e/orchestrator/.env.dev`
 - `i12e/orchestrator/.env.prod`
 
+When cockpit runs inside the compose network, it must reach weather-service through the internal endpoint `http://service-weather:8080`, configured via `WEATHER_SERVICE_BASE_URL`.
+
 Service and port mapping details (including dev/prod differences) are documented in [`docs/service-catalog.md`](../../docs/service-catalog.md).
 
 The compose project names keep dev/prod container names isolated.

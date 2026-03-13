@@ -26,11 +26,11 @@ Defaults come from:
 
 ## Related environment differences
 
-| Variable               | Dev                      | Prod                    |
-|------------------------|--------------------------|-------------------------|
-| `COMPOSE_PROJECT_NAME` | `central-i12e-dev`       | `central-i12e-prod`     |
-| `COCKPIT_NODE_ENV`     | `development`            | `production`            |
-| `WEATHER_API_BASE_URL` | `http://localhost:3010`  | `http://localhost:4010` |
+| Variable                   | Dev                           | Prod                          |
+|----------------------------|-------------------------------|-------------------------------|
+| `COMPOSE_PROJECT_NAME`     | `central-i12e-dev`            | `central-i12e-prod`           |
+| `COCKPIT_NODE_ENV`         | `development`                 | `production`                  |
+| `WEATHER_SERVICE_BASE_URL` | `http://service-weather:8080` | `http://service-weather:8080` |
 
 ## Internal service endpoints (compose network)
 

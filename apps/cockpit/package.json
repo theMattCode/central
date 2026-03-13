@@ -12,6 +12,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@central/ts-log": "workspace:*",
     "@tailwindcss/vite": "4.2.1",
     "@tanstack/react-devtools": "0.9.6",
     "@tanstack/react-router": "1.163.2",
