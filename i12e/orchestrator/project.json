@@ -32,13 +32,31 @@
     "up-dev": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "docker compose --env-file i12e/orchestrator/.env.dev --file i12e/orchestrator/docker-compose.yml up --detach --build i12e-postgres && docker compose --env-file i12e/orchestrator/.env.dev --file i12e/orchestrator/docker-compose.yml run --rm --no-deps i12e-postgres-migrate && docker compose --env-file i12e/orchestrator/.env.dev --file i12e/orchestrator/docker-compose.yml up --detach --build service-weather app-cockpit"
+        "command": "docker compose --env-file i12e/orchestrator/.env.dev --file i12e/orchestrator/docker-compose.yml up --detach --build i12e-postgres && docker compose --env-file i12e/orchestrator/.env.dev --file i12e/orchestrator/docker-compose.yml run --rm --no-deps i12e-postgres-migrate && docker compose --env-file i12e/orchestrator/.env.dev --file i12e/orchestrator/docker-compose.yml up --detach --build service-weather service-voice app-cockpit"
+      }
+    },
+    "up-dev-local-voice": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "docker compose --env-file i12e/orchestrator/.env.dev --file i12e/orchestrator/docker-compose.yml up --detach --build i12e-postgres && docker compose --env-file i12e/orchestrator/.env.dev --file i12e/orchestrator/docker-compose.yml run --rm --no-deps i12e-postgres-migrate && VOICE_BACKEND_MODE=proxy VOICE_STT_URL=http://service-voice-local-stt:8081/transcribe VOICE_TTS_URL=http://service-voice-local-tts:8082/synthesize docker compose --env-file i12e/orchestrator/.env.dev --file i12e/orchestrator/docker-compose.yml up --detach --build service-weather service-voice-local-stt service-voice-local-tts service-voice app-cockpit"
+      }
+    },
+    "up-dev-all-local-voice": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "docker compose --env-file i12e/orchestrator/.env.dev --file i12e/orchestrator/docker-compose.yml up --detach --build i12e-postgres && docker compose --env-file i12e/orchestrator/.env.dev --file i12e/orchestrator/docker-compose.yml run --rm --no-deps i12e-postgres-migrate && docker compose --env-file i12e/orchestrator/.env.dev --file i12e/orchestrator/docker-compose.yml up --detach service-voice-local-llm-runtime && docker compose --env-file i12e/orchestrator/.env.dev --file i12e/orchestrator/docker-compose.yml run --rm --no-deps service-voice-local-llm-pull && VOICE_BACKEND_MODE=proxy VOICE_REQUEST_TIMEOUT_SECONDS=${VOICE_REQUEST_TIMEOUT_SECONDS:-120} VOICE_STT_URL=http://service-voice-local-stt:8081/transcribe VOICE_TTS_URL=http://service-voice-local-tts:8082/synthesize VOICE_LLM_BASE_URL=http://service-voice-local-llm:8083 VOICE_LLM_MODEL=${VOICE_LOCAL_LLM_MODEL:-qwen2.5:3b} docker compose --env-file i12e/orchestrator/.env.dev --file i12e/orchestrator/docker-compose.yml up --detach --build service-weather service-voice-local-stt service-voice-local-tts service-voice-local-llm-runtime service-voice-local-llm service-voice app-cockpit"
+      }
+    },
+    "smoke-dev-all-local-voice": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "pnpm nx run i12e-orchestrator:up-dev-all-local-voice && python3 i12e/orchestrator/scripts/smoke_all_local_voice.py"
       }
     },
     "up-prod": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "docker compose --env-file i12e/orchestrator/.env.prod --file i12e/orchestrator/docker-compose.yml up --detach --build i12e-postgres && docker compose --env-file i12e/orchestrator/.env.prod --file i12e/orchestrator/docker-compose.yml run --rm --no-deps i12e-postgres-migrate && docker compose --env-file i12e/orchestrator/.env.prod --file i12e/orchestrator/docker-compose.yml up --detach --build service-weather app-cockpit"
+        "command": "docker compose --env-file i12e/orchestrator/.env.prod --file i12e/orchestrator/docker-compose.yml up --detach --build i12e-postgres && docker compose --env-file i12e/orchestrator/.env.prod --file i12e/orchestrator/docker-compose.yml run --rm --no-deps i12e-postgres-migrate && docker compose --env-file i12e/orchestrator/.env.prod --file i12e/orchestrator/docker-compose.yml up --detach --build service-weather service-voice app-cockpit"
       }
     },
     "down-dev": {

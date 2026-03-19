@@ -42,4 +42,18 @@ describe('Navigation', () => {
     fireEvent.click(screen.getByLabelText('Close mobile navigation'));
     expect(screen.queryByLabelText('Close mobile navigation')).toBeNull();
   });
+
+  it('renders the Jarvis link directly after Overview', () => {
+    render(<Navigation />);
+
+    const linkLabels = screen.getAllByRole('link').map((link) => ({
+      href: link.getAttribute('href'),
+      label: link.textContent?.trim(),
+    }));
+
+    expect(linkLabels).toEqual([
+      { href: '/', label: 'Overview' },
+      { href: '/jarvis', label: 'Jarvis' },
+    ]);
+  });
 });

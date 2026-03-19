@@ -2,6 +2,11 @@
 
 TanStack Start frontend application for the Central dashboard.
 
+Current primary routes:
+
+- `/` for the overview dashboard
+- `/jarvis` for the dedicated Jarvis workspace
+
 ## Run
 
 From repository root:
@@ -33,33 +38,43 @@ The weather widget module owns its loading contract:
 
 - The route loader calls weather-module helpers for the initial widget data on the cockpit server.
 - Widget refreshes continue through a TanStack Start server function, so browsers never call weather-service directly.
-- `WeatherWidgetContainer` owns loading and refresh state; `WeatherWidget` is presentational.
-- Cockpit then reads weather-service via `GET /api/v1/weather/current?lat=<latitude>&lon=<longitude>&timezone=<tz>`.
-
-Configure the weather-service base URL on the cockpit server with `WEATHER_SERVICE_BASE_URL` (runtime) or `VITE_WEATHER_API_BASE_URL` (build-time fallback).
+- Cockpit reads weather-service via `GET /api/v1/weather/current?lat=<latitude>&lon=<longitude>&timezone=<tz>`.
+- Configure the weather-service base URL on the cockpit server with `WEATHER_SERVICE_BASE_URL` (runtime) or `VITE_WEATHER_API_BASE_URL` (build-time fallback).
 
 If neither is set, cockpit uses `http://localhost:3010` as the local orchestrator default. Other runtimes should set `WEATHER_SERVICE_BASE_URL` explicitly instead of relying on endpoint probing.
 
 Weather widget diagnostics are written by cockpit as structured `@central/ts-log` records with scope `cockpit.weather.*`, including invalid location payloads, outbound request attempts, and upstream request failures.
 
-Example:
+## Voice Widget
 
-```tsx
-import { WeatherWidgetContainer } from '@/widgets/weather/components/WeatherWidgetContainer.tsx';
-import type { WeatherLocation } from '@/widgets/weather/model/model.ts';
+The voice widget keeps `service-voice` as the backend boundary, but its primary turn path is now streamed:
 
-const BERLIN: WeatherLocation = {
-  id: 'berlin',
-  label: 'Berlin',
-  latitude: 52.52,
-  longitude: 13.41,
-  timezone: 'Europe/Berlin',
-};
+- Browser speech segments are cut locally with browser VAD.
+- Browser VAD model/worklet assets are self-hosted from cockpit under `public/vendor/` instead of loading from a CDN.
+- The ONNX runtime module and WASM binary are self-hosted as Vite-managed app assets, so dev/build keep working without CDN requests.
+- The browser streams turns directly to `service-voice` via `POST /api/v1/voice/turn/stream`.
+- `service-voice` then performs `STT -> streamed LLM -> chunked TTS`.
+- Cockpit starts audio playback as soon as the first synthesized chunk arrives.
 
-<WeatherWidgetContainer location={BERLIN} />;
+`POST /api/v1/voice/turn` remains available as a non-streaming fallback.
+
+Configure the voice-service base URL on the cockpit server with `VOICE_SERVICE_BASE_URL` (runtime) or `VITE_VOICE_API_BASE_URL` (build-time fallback).
+
+If neither is set, cockpit uses `http://localhost:3020` as the local orchestrator default.
+
+Voice widget diagnostics are written as structured `@central/ts-log` records with scope `cockpit.voice.*`.
+
+For local debugging in Node-backed voice turns, cockpit dumps artifacts into `apps/cockpit/tmp/` as input audio, per-chunk output audio files, and a JSON metadata file.
+
+Self-hosted voice assets are synchronized from the installed `@ricky0123/vad-web` and `onnxruntime-web` packages by:
+
+```bash
+pnpm --dir apps/cockpit run sync:voice-vad-assets
 ```
 
-Widgets are rendered in `ContentLayout` in a responsive wrapping container.
+The workspace `postinstall` runs that sync automatically after `pnpm install` or dependency updates from the repository root.
+
+`build`, `start:dev`, `start:preview`, `test`, and `typecheck` also run the sync automatically before execution, so the matching runtime assets are always refreshed without manual copying.
 
 ## Container
 

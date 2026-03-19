@@ -142,7 +142,7 @@ function formatLogLine(record: LogRecord): string {
   const level = colorize(toLevelLabel(record.level), LEVEL_COLORS[record.level]);
   const scope = colorize(record.scope, toScopeColor(record.scope));
 
-  return `${timestamp} ${level} | ${scope}: ${record.event} - ${toContextFragment(record.context)}${record.error ? `\n    error: ${toErrorFragment(record.error)}` : ''}`;
+  return `${timestamp} ${level} | ${scope} | ${record.event}\n    context: ${toContextFragment(record.context)}${record.error ? `\n    error: ${toErrorFragment(record.error)}` : ''}`;
 }
 
 function toLogValue(value: unknown): LogValue {

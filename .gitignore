@@ -6,6 +6,8 @@ dist-ssr
 tmp
 out-tsc
 .output
+apps/cockpit/public/vendor
+apps/cockpit/src/widgets/voice/generated
 
 # dependencies
 node_modules

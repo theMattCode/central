@@ -1,0 +1,43 @@
+{
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "name": "voice-local-llm",
+  "projectType": "application",
+  "root": "services/voice-local-llm",
+  "sourceRoot": "services/voice-local-llm/src",
+  "targets": {
+    "lint": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "services/voice-local-llm",
+        "command": "python3 -m py_compile src/service.py tests/test_service.py"
+      }
+    },
+    "test": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "services/voice-local-llm",
+        "command": "python3 -m unittest discover -s tests -p 'test_*.py'"
+      }
+    },
+    "typecheck": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "services/voice-local-llm",
+        "command": "python3 -m py_compile src/service.py tests/test_service.py"
+      }
+    },
+    "build": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "docker build --file services/voice-local-llm/Dockerfile --tag central/services/voice-local-llm:latest ."
+      }
+    },
+    "container-run": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "docker run --rm -i --name central-voice-local-llm -p 5050:8083 central/services/voice-local-llm:latest"
+      }
+    }
+  },
+  "tags": ["scope:platform", "type:service"]
+}

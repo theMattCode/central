@@ -1,4 +1,5 @@
 import { Fragment, type PropsWithChildren } from 'react';
+import { useRouterState } from '@tanstack/react-router';
 
 export function ContentLayout({ children }: PropsWithChildren) {
   return (
@@ -7,7 +8,7 @@ export function ContentLayout({ children }: PropsWithChildren) {
         <div className="px-4">
           <Breadcrumb />
         </div>
-        <div className="flex flex-row flex-wrap gap-4 overflow-y-auto px-4">{children}</div>
+        <div className="h-full flex flex-row flex-wrap gap-4 overflow-y-auto px-4">{children}</div>
       </div>
       <div className="h-12 lg:h-full lg:w-64 rounded-lg lg:rounded-xl border-2 border-(--color-pri)/60 bg-(--color-pri)/10 overflow-y-auto px-2 lg:px-4">
         Chat & Agent Logs
@@ -16,12 +17,22 @@ export function ContentLayout({ children }: PropsWithChildren) {
   );
 }
 
-const BREADCRUMB = ['Home', 'Dashboard'];
+const BREADCRUMB_BY_PATH: Record<string, readonly string[]> = {
+  '/': ['Home', 'Dashboard'],
+  '/jarvis': ['Home', 'Jarvis'],
+};
+
+export function getBreadcrumbItems(pathname: string) {
+  return BREADCRUMB_BY_PATH[pathname] ?? BREADCRUMB_BY_PATH['/'];
+}
 
 export function Breadcrumb() {
+  const pathname = useRouterState({ select: (state) => state.location.pathname });
+  const items = getBreadcrumbItems(pathname);
+
   return (
     <div className="w-full flex gap-2">
-      {BREADCRUMB.map((item, index) => (
+      {items.map((item, index) => (
         <Fragment key={item}>
           {index > 0 && <BreadcrumbDelimiter />}
           <BreadcrumbItem text={item} />

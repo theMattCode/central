@@ -2,7 +2,9 @@
   "name": "@central/source",
   "version": "0.0.0",
   "license": "MIT",
-  "scripts": {},
+  "scripts": {
+    "postinstall": "pnpm --dir apps/cockpit run sync:voice-vad-assets"
+  },
   "private": true,
   "packageManager": "pnpm@10.15.0",
   "engines": {

@@ -2,7 +2,7 @@
 
 import { act, cleanup, renderHook, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { LOGGER } from '@/widgets/weather/log.ts';
+import { getLogger } from '@/widgets/weather/log.ts';
 import type { WeatherData, WeatherLocation } from '@/widgets/weather/model/model.ts';
 import { fetchWeatherData } from '@/widgets/weather/model/fetchWeatherData.ts';
 import { useWeatherSnapshot } from '@/widgets/weather/model/useWeatherSnapshot.ts';
@@ -12,12 +12,12 @@ vi.mock('@/widgets/weather/model/fetchWeatherData.ts', () => ({
 }));
 
 vi.mock('@/widgets/weather/log.ts', () => ({
-  LOGGER: {
+  getLogger: () => ({
     debug: vi.fn(),
     info: vi.fn(),
     warn: vi.fn(),
     error: vi.fn(),
-  },
+  }),
 }));
 
 const WEATHER_REFRESH_INTERVAL_MS = 15 * 60 * 1000;
@@ -48,7 +48,7 @@ const TEST_WEATHER_DATA: WeatherData = {
 
 describe('useWeatherSnapshot', () => {
   const fetchWeatherDataMock = vi.mocked(fetchWeatherData);
-  const loggerErrorMock = vi.mocked(LOGGER.error);
+  const loggerErrorMock = vi.mocked(getLogger().error);
 
   beforeEach(() => {
     loggerErrorMock.mockClear();

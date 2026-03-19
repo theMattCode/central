@@ -6,13 +6,21 @@
     "#/*": "./src/*"
   },
   "scripts": {
-    "start:dev": "vite dev --port 5000",
-    "start:preview": "vite preview",
+    "sync:voice-vad-assets": "node ./scripts/sync-voice-vad-assets.mjs",
+    "prebuild": "pnpm run sync:voice-vad-assets",
     "build": "vite build",
-    "test": "vitest run"
+    "prestart:dev": "pnpm run sync:voice-vad-assets",
+    "start:dev": "vite dev --port 5000",
+    "prestart:preview": "pnpm run sync:voice-vad-assets",
+    "start:preview": "vite preview",
+    "pretest": "pnpm run sync:voice-vad-assets",
+    "test": "vitest run",
+    "pretypecheck": "pnpm run sync:voice-vad-assets",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
   },
   "dependencies": {
     "@central/ts-log": "workspace:*",
+    "@ricky0123/vad-react": "0.0.33",
     "@tailwindcss/vite": "4.2.1",
     "@tanstack/react-devtools": "0.9.6",
     "@tanstack/react-router": "1.163.2",

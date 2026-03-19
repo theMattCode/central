@@ -29,7 +29,7 @@ pnpm install
 
 ```bash
 nx <target> <project>
-nx run-many -t <target1> <target2>
+nx run-many -t <target>
 ```
 
 ### Nx in sandboxed environments
@@ -39,7 +39,9 @@ Nx plugin workers use Unix domain sockets for IPC. In restricted sandboxes this 
 - `Failed to start plugin worker for plugin ...`
 - `listen EPERM ... /tmp/.../d.sock`
 
-If this occurs, run Nx commands outside the sandbox. As a fallback for quick validation, run the underlying project commands directly (for example `pnpm exec vitest run`, `pnpm exec tsc --noEmit`, `pnpm run build`).
+If this occurs, run Nx commands outside the sandbox.
+
+As a fallback for quick validation, run the underlying project commands directly (for example `pnpm exec vitest run`, `pnpm exec tsc --noEmit`, `pnpm run build`).
 
 ### CI-equivalent local check
 
@@ -52,24 +54,6 @@ nx run-many -t lint test build typecheck
 ```bash
 npx nx g @nx/js:lib libs/<name> --publishable --importPath=@central/<name>
 ```
-
-### Run tasks
-
-To build the library use:
-
-```sh
-npx nx build pkg1
-```
-
-To run any task with Nx use:
-
-```sh
-npx nx <target> <project-name>
-```
-
-These targets are either [inferred automatically](https://nx.dev/concepts/inferred-tasks?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) or defined in the `project.json` or `package.json` files.
-
-[More about running tasks in the docs &raquo;](https://nx.dev/features/run-tasks?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
 
 ### Persistence image project
 
@@ -87,7 +71,7 @@ nx run i12e-postgres:run
 
 The standalone PostgreSQL run target publishes `5001:5432` by default.
 
-Override standalone container name/port when needed:
+Override standalone container name and port when needed:
 
 ```bash
 POSTGRES_PORT=55432 POSTGRES_CONTAINER_NAME=central-i12e-postgres-dev pnpm nx run i12e-postgres:run
@@ -120,14 +104,8 @@ nx run cockpit:container-run
 ```
 
 The standalone cockpit dev server (`pnpm nx run cockpit:start`) runs on `5000`.
+
 The cockpit container run target publishes `5000:3000`.
-
-For tailscale exposure:
-
-Cockpit (`5000`):
-```
-tailscale serve --tcp 5000 http://127.0.0.1:5000
-```
 
 ### Weather service container
 
@@ -147,13 +125,92 @@ The weather container run target publishes `5010:8080`.
 
 Weather update polling defaults to 15 minutes (`WEATHER_REFRESH_INTERVAL_SECONDS=900`), and successful updates are persisted to PostgreSQL via `WEATHER_DATABASE_URL`.
 
+### Voice service container
+
+Build the voice service container image:
+
+```bash
+nx run voice-service:container-build
+```
+
+Run the voice service container image:
+
+```bash
+nx run voice-service:container-run
+```
+
+The voice container run target publishes `5020:8080`.
+
+`VOICE_BACKEND_MODE=mock` is the safest first boot path for local UI integration. Use `VOICE_BACKEND_MODE=llm-proxy` to validate a real LLM first, `VOICE_BACKEND_MODE=openai` for a full OpenAI voice stack, then `VOICE_BACKEND_MODE=proxy` when STT / TTS / LLM upstreams are provided by separate runtimes.
+
+### Local STT and TTS containers
+
+Build the local faster-whisper STT container image:
+
+```bash
+nx run voice-local-stt:build
+```
+
+Build the local Piper TTS container image:
+
+```bash
+nx run voice-local-tts:build
+```
+
+Run them standalone when needed:
+
+```bash
+nx run voice-local-stt:container-run
+nx run voice-local-tts:container-run
+```
+
+The standalone local STT and TTS containers publish `5030:8081` and `5040:8082`.
+
+### Local LLM container
+
+Build the local Ollama wrapper container image:
+
+```bash
+nx run voice-local-llm:build
+```
+
+Run it standalone when needed:
+
+```bash
+nx run voice-local-llm:container-run
+```
+
+The standalone local LLM wrapper publishes `5050:8083`.
+
 ### Orchestrator project
 
-Start complete the complete development environment with all required services run:
+Start the complete development environment with all required services:
 
 ```bash
 nx run i12e-orchestrator:up-dev
 ```
+
+Start the development environment with local faster-whisper and Piper adapters wired into `service-voice`:
+
+```bash
+nx run i12e-orchestrator:up-dev-local-voice
+```
+
+Start the development environment with local faster-whisper, local Piper, and a local Qwen LLM through Ollama:
+
+```bash
+nx run i12e-orchestrator:up-dev-all-local-voice
+```
+
+This target defaults to `VOICE_LOCAL_LLM_MODEL=qwen2.5:3b` and raises the `service-voice` request timeout to 120 seconds for local inference. Override `VOICE_LOCAL_LLM_MODEL` when you want a larger or different Qwen variant.
+
+Run a full local voice smoke test, including stack startup, STT, LLM, and TTS:
+
+```bash
+nx run i12e-orchestrator:smoke-dev-all-local-voice
+```
+
+Override `SMOKE_VOICE_TEXT` and `SMOKE_VOICE_LANGUAGE` when you want to exercise a different sample input.
 
 To start the production environment use:
 
@@ -167,105 +224,30 @@ For a complete list of orchestrated services and their port mappings, see [Servi
 
 Stop all orchestrated services:
 
-Dev:
 ```bash
 nx run i12e-orchestrator:down-dev
-```
-
-Prod:
-```bash
 nx run i12e-orchestrator:down-prod
 ```
 
-Re-run migrations:
-
-Requires PostgreSQL to already be running.
-
-Dev:
+Re-run migrations (requires PostgreSQL to already be running):
 
 ```bash
 nx run i12e-orchestrator:migrate-dev
-```
-
-Prod:
-```bash
 nx run i12e-orchestrator:migrate-prod
 ```
 
-### Versioning and releasing
-
-To version and release the library use
-
-```
-npx nx release
-```
-
-Pass `--dry-run` to see what would happen without actually releasing the library.
-
-[Learn more about Nx release &raquo;](https://nx.dev/features/manage-releases?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-
 ### Keep TypeScript project references up to date
 
-Nx automatically updates TypeScript [project references](https://www.typescriptlang.org/docs/handbook/project-references.html) in `tsconfig.json` files to ensure they remain accurate based on your project dependencies (`import` or `require` statements). This sync is automatically done when running tasks such as `build` or `typecheck`, which require updated references to function correctly.
+Nx automatically updates TypeScript project references in `tsconfig.json` files to ensure they remain accurate based on project dependencies.
 
-To manually trigger the process to sync the project graph dependencies information to the TypeScript project references, run the following command:
+To manually trigger sync:
 
-```sh
+```bash
 npx nx sync
 ```
 
-You can enforce that the TypeScript project references are always in the correct state when running in CI by adding a step to your CI job configuration that runs the following command:
+To check sync state:
 
-```sh
+```bash
 npx nx sync:check
 ```
-
-[Learn more about nx sync](https://nx.dev/reference/nx-commands#sync)
-
-### CI setup
-
-#### Step 1
-
-To connect to Nx Cloud, run the following command:
-
-```sh
-npx nx connect
-```
-
-Connecting to Nx Cloud ensures a [fast and scalable CI](https://nx.dev/ci/intro/why-nx-cloud?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) pipeline. It includes features such as:
-
-- [Remote caching](https://nx.dev/ci/features/remote-cache?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [Task distribution across multiple machines](https://nx.dev/ci/features/distribute-task-execution?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [Automated e2e test splitting](https://nx.dev/ci/features/split-e2e-tasks?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [Task flakiness detection and rerunning](https://nx.dev/ci/features/flaky-tasks?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-
-#### Step 2
-
-Use the following command to configure a CI workflow for your workspace:
-
-```sh
-npx nx g ci-workflow
-```
-
-[Learn more about Nx on CI](https://nx.dev/ci/intro/ci-with-nx#ready-get-started-with-your-provider?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-
-### Install Nx Console
-
-Nx Console is an editor extension that enriches your developer experience. It lets you run tasks, generate code, and improves code autocompletion in your IDE. It is available for VSCode and IntelliJ.
-
-[Install Nx Console &raquo;](https://nx.dev/getting-started/editor-setup?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-
-### Useful links
-
-Learn more:
-
-- [Learn more about this workspace setup](https://nx.dev/nx-api/js?utm_source=nx_project&amp;utm_medium=readme&amp;utm_campaign=nx_projects)
-- [Learn about Nx on CI](https://nx.dev/ci/intro/ci-with-nx?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [Releasing Packages with Nx release](https://nx.dev/features/manage-releases?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [What are Nx plugins?](https://nx.dev/concepts/nx-plugins?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-
-And join the Nx community:
-- [Discord](https://go.nx.dev/community)
-- [Follow us on X](https://twitter.com/nxdevtools) or [LinkedIn](https://www.linkedin.com/company/nrwl)
-- [Our Youtube channel](https://www.youtube.com/@nxdevtools)
-- [Our blog](https://nx.dev/blog?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)

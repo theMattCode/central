@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { WeatherDataState, WeatherLocation } from '@/widgets/weather/model/model.ts';
 import { fetchWeatherData } from '@/widgets/weather/model/fetchWeatherData.ts';
-import { LOGGER } from '@/widgets/weather/log.ts';
+import { getLogger } from '@/widgets/weather/log.ts';
 
 //const WEATHER_REFRESH_INTERVAL_MS = 3 * 1000;
 const WEATHER_REFRESH_INTERVAL_MS = 15 * 60 * 1000;
@@ -52,7 +52,7 @@ export function useWeatherSnapshot(location: WeatherLocation): WeatherDataState 
         if (abortController.signal.aborted) {
           return;
         }
-        LOGGER.error('weather-refresh-failed', { location }, error);
+        getLogger().error('weather-refresh-failed', { location }, error);
         setState({ status: 'error', errorMessage: toErrorMessage(error), refresh });
       }
     };

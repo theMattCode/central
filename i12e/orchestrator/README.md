@@ -17,6 +17,44 @@ pnpm nx run i12e-orchestrator:build
 pnpm nx run i12e-orchestrator:up-dev
 ```
 
+## Start dev with local faster-whisper and Piper
+
+```bash
+pnpm nx run i12e-orchestrator:up-dev-local-voice
+```
+
+This keeps `service-voice` in `proxy` mode and points it at:
+
+- `http://service-voice-local-stt:8081/transcribe`
+- `http://service-voice-local-tts:8082/synthesize`
+
+## Start dev with local faster-whisper, Piper, and Qwen via Ollama
+
+```bash
+pnpm nx run i12e-orchestrator:up-dev-all-local-voice
+```
+
+This keeps `service-voice` in `proxy` mode and points it at:
+
+- `http://service-voice-local-stt:8081/transcribe`
+- `http://service-voice-local-tts:8082/synthesize`
+- `http://service-voice-local-llm:8083/chat/completions`
+
+The default local model is `qwen2.5:3b`. Override it with `VOICE_LOCAL_LLM_MODEL` when you want a different Qwen variant.
+
+## Smoke-test the complete local voice stack
+
+```bash
+pnpm nx run i12e-orchestrator:smoke-dev-all-local-voice
+```
+
+This target starts the complete local voice stack if needed, then runs one spoken roundtrip through local STT, local Qwen via Ollama, and local TTS.
+
+Override these environment variables when needed:
+
+- `SMOKE_VOICE_TEXT`
+- `SMOKE_VOICE_LANGUAGE`
+
 ## Start all services (prod)
 
 ```bash
@@ -29,17 +67,16 @@ This brings up:
 - PostgreSQL (`i12e-postgres` service)
 - Migration runner (`i12e-postgres-migrate`) as a one-off container (`--rm`)
 - Weather backend (`service-weather` service)
+- Voice backend (`service-voice` service)
 
 Environment defaults are stored in:
 
 - `i12e/orchestrator/.env.dev`
 - `i12e/orchestrator/.env.prod`
 
-When cockpit runs inside the compose network, it must reach weather-service through the internal endpoint `http://service-weather:8080`, configured via `WEATHER_SERVICE_BASE_URL`.
+When cockpit runs inside the compose network, it must reach weather-service through `http://service-weather:8080` and voice-service through `http://service-voice:8080`.
 
 Service and port mapping details (including dev/prod differences) are documented in [`docs/service-catalog.md`](../../docs/service-catalog.md).
-
-The compose project names keep dev/prod container names isolated.
 
 ## Stop all services
 

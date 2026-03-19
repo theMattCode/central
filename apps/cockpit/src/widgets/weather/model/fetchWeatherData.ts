@@ -1,5 +1,5 @@
 import { createServerFn } from '@tanstack/react-start';
-import { LOGGER } from '@/widgets/weather/log.ts';
+import { getLogger } from '@/widgets/weather/log.ts';
 import type { WeatherData, WeatherLocation } from './model.ts';
 import { resolveWeatherServiceBaseUrl } from './weatherServiceBaseUrl.ts';
 
@@ -80,7 +80,7 @@ function toWeatherData(location: WeatherLocation, snapshot: WeatherServiceSnapsh
 
 export function validateWeatherLocation(input: unknown): WeatherLocation {
   if (!input || typeof input !== 'object') {
-    LOGGER.error('invalid-location-payload', { payload: input });
+    getLogger().error('invalid-location-payload', { payload: input });
     throw new Error('Invalid weather location payload.');
   }
 
@@ -93,7 +93,7 @@ export function validateWeatherLocation(input: unknown): WeatherLocation {
     typeof location.longitude !== 'number' ||
     (location.timezone !== undefined && typeof location.timezone !== 'string')
   ) {
-    LOGGER.error('invalid-location-payload', { payload: input });
+    getLogger().error('invalid-location-payload', { payload: input });
     throw new Error('Invalid weather location payload.');
   }
 
@@ -114,12 +114,12 @@ async function requestWeatherData(location: WeatherLocation): Promise<WeatherDat
   try {
     response = await fetch(url, { headers: { Accept: 'application/json' } });
   } catch (error) {
-    LOGGER.error('request-current-weather-failed', { url: url.toString(), location }, error);
+    getLogger().error('request-current-weather-failed', { url: url.toString(), location }, error);
     throw new Error(error instanceof Error && error.message ? error.message : 'Failed to fetch weather data');
   }
   if (!response.ok) {
     const message = await toErrorMessage(response);
-    LOGGER.error(
+    getLogger().error(
       'request-current-weather-response-error',
       {
         ...{ url: url.toString(), location },
@@ -133,7 +133,7 @@ async function requestWeatherData(location: WeatherLocation): Promise<WeatherDat
 
   const snapshot = (await response.json()) as WeatherServiceSnapshot;
 
-  LOGGER.info('requested current weather', { url: url.toString(), location: location.label });
+  getLogger().info('requested current weather', { url: url.toString(), location: location.label });
   return toWeatherData(location, snapshot);
 }
 

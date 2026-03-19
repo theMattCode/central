@@ -10,7 +10,7 @@ import {
   MdSettings as SettingsIcon,
 } from 'react-icons/md';
 import { RiArrowLeftRightLine as IncomeAndExpenseIcon, RiStockLine as InvestIcon } from 'react-icons/ri';
-import { PiSidebarSimpleDuotone as NavigationToggleIcon } from 'react-icons/pi';
+import { PiSidebarSimpleDuotone as NavigationToggleIcon, PiWaveform as JarvisIcon } from 'react-icons/pi';
 import { NavigationGroup } from '@/components/Navigation/NavigationGroup.tsx';
 import { useState } from 'react';
 import { cx } from '@/utils/styles.ts';
@@ -98,33 +98,24 @@ function DrawerContent({ onNavigate }: { onNavigate?: () => void }) {
   return (
     <div className="w-full min-h-0 flex-1 flex flex-col gap-2">
       <nav className="w-full flex flex-col gap-2 overflow-y-auto">
-        <NavigationItem Icon={HomeIcon} onClick={onNavigate}>
+        <NavigationItem Icon={HomeIcon} href="/" onClick={onNavigate}>
           Overview
         </NavigationItem>
+        <NavigationItem Icon={JarvisIcon} href="/jarvis" onClick={onNavigate}>
+          Jarvis
+        </NavigationItem>
         <NavigationGroup title="Work">
-          <NavigationItem Icon={TaskIcon} onClick={onNavigate}>
-            Tasks
-          </NavigationItem>
-          <NavigationItem Icon={MailIcon} onClick={onNavigate}>
-            E-Mail
-          </NavigationItem>
+          <NavigationItem Icon={TaskIcon}>Tasks</NavigationItem>
+          <NavigationItem Icon={MailIcon}>E-Mail</NavigationItem>
         </NavigationGroup>
         <NavigationGroup title="Finance">
-          <NavigationItem Icon={IncomeAndExpenseIcon} onClick={onNavigate}>
-            Income & Expense
-          </NavigationItem>
-          <NavigationItem Icon={InvestIcon} onClick={onNavigate}>
-            Invest
-          </NavigationItem>
+          <NavigationItem Icon={IncomeAndExpenseIcon}>Income & Expense</NavigationItem>
+          <NavigationItem Icon={InvestIcon}>Invest</NavigationItem>
         </NavigationGroup>
       </nav>
       <div className="w-full mt-auto pt-4 flex flex-col gap-1">
-        <NavigationItem Icon={SettingsIcon} onClick={onNavigate}>
-          Settings
-        </NavigationItem>
-        <NavigationItem Icon={MonitorModeIcon} onClick={onNavigate}>
-          Display
-        </NavigationItem>
+        <NavigationItem Icon={SettingsIcon}>Settings</NavigationItem>
+        <NavigationItem Icon={MonitorModeIcon}>Display</NavigationItem>
       </div>
     </div>
   );

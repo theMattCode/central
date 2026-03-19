@@ -21,7 +21,7 @@ import { I18NKey } from '@/i18n/translations.ts';
  */
 export const WMO_CODE_INFO: Record<number, { day: string; night: string; i18nKey: I18NKey }> = {
   0: { day: 'clear-day', night: 'clear-night', i18nKey: I18NKey.WmoClearSky },
-  1: { day: 'partly-cloudy-day', night: 'partly-cloudy-night', i18nKey: I18NKey.WmoMainlyClear },
+  1: { day: 'clear-day', night: 'clear-night', i18nKey: I18NKey.WmoMainlyClear },
   2: { day: 'partly-cloudy-day', night: 'partly-cloudy-night', i18nKey: I18NKey.WmoPartlyCloudy },
   3: { day: 'overcast-day', night: 'overcast-night', i18nKey: I18NKey.WmoOvercast },
   45: { day: 'fog-day', night: 'fog-night', i18nKey: I18NKey.WmoFog },
