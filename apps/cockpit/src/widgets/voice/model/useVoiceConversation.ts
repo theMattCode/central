@@ -8,6 +8,7 @@ import {
   WAV_AUDIO_MIME_TYPE,
   type AudioDiagnostics,
 } from './audio.ts';
+import { getByteTimeDomainSignalLevel } from './audioLevel.ts';
 import type { VoiceConversationStatus, VoiceTurnAudioChunk, VoiceTurnInput } from './model.ts';
 import { streamVoiceTurn } from './runVoiceTurn.ts';
 
@@ -17,6 +18,7 @@ type UseVoiceConversationOptions = {
 };
 
 type UseVoiceConversationResult = {
+  playbackLevel: number;
   status: VoiceConversationStatus;
   transcript: string | null;
   responseText: string | null;
@@ -76,6 +78,7 @@ function releaseAudioElement(audioElement: HTMLAudioElement): void {
 }
 
 export function useVoiceConversation(options: UseVoiceConversationOptions = {}): UseVoiceConversationResult {
+  const [playbackLevel, setPlaybackLevel] = useState(0);
   const [status, setStatus] = useState<VoiceConversationStatus>('idle');
   const [transcript, setTranscript] = useState<string | null>(null);
   const [responseText, setResponseText] = useState<string | null>(null);
@@ -84,9 +87,82 @@ export function useVoiceConversation(options: UseVoiceConversationOptions = {}):
   const audioElementRef = useRef<HTMLAudioElement | null>(null);
   const audioQueueRef = useRef<QueuedAudioChunk[]>([]);
   const audioUrlRef = useRef<string | null>(null);
+  const audioAnalyserRef = useRef<AnalyserNode | null>(null);
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const audioSourceNodeRef = useRef<MediaElementAudioSourceNode | null>(null);
   const isStreamCompleteRef = useRef(false);
+  const playbackFrameRef = useRef<number | null>(null);
+
+  const stopPlaybackMonitoring = useCallback(() => {
+    if (playbackFrameRef.current !== null && typeof window !== 'undefined') {
+      window.cancelAnimationFrame(playbackFrameRef.current);
+      playbackFrameRef.current = null;
+    }
+
+    audioAnalyserRef.current?.disconnect();
+    audioAnalyserRef.current = null;
+
+    audioSourceNodeRef.current?.disconnect();
+    audioSourceNodeRef.current = null;
+
+    setPlaybackLevel(0);
+  }, []);
+
+  const attachPlaybackMonitoring = useCallback(
+    (audioElement: HTMLAudioElement) => {
+      if (typeof window === 'undefined' || typeof window.AudioContext === 'undefined') {
+        setPlaybackLevel(0);
+        return;
+      }
+
+      stopPlaybackMonitoring();
+
+      try {
+        const audioContext = audioContextRef.current ?? new window.AudioContext();
+        audioContextRef.current = audioContext;
+
+        const analyser = audioContext.createAnalyser();
+        analyser.fftSize = 256;
+        analyser.smoothingTimeConstant = 0.82;
+
+        const sourceNode = audioContext.createMediaElementSource(audioElement);
+        sourceNode.connect(analyser);
+        analyser.connect(audioContext.destination);
+
+        audioAnalyserRef.current = analyser;
+        audioSourceNodeRef.current = sourceNode;
+
+        void audioContext.resume().catch(() => undefined);
+
+        const buffer = new Uint8Array(analyser.fftSize);
+
+        const measure = () => {
+          if (audioAnalyserRef.current !== analyser) {
+            return;
+          }
+
+          analyser.getByteTimeDomainData(buffer);
+          const nextPlaybackLevel = getByteTimeDomainSignalLevel(buffer);
+          setPlaybackLevel((currentValue) =>
+            Math.abs(currentValue - nextPlaybackLevel) < 0.015 ? currentValue : nextPlaybackLevel,
+          );
+          playbackFrameRef.current = window.requestAnimationFrame(measure);
+        };
+
+        playbackFrameRef.current = window.requestAnimationFrame(measure);
+      } catch (error) {
+        getLogger().info('voice-playback-monitor-unavailable', {
+          reason: toErrorMessage(error),
+        });
+        setPlaybackLevel(0);
+      }
+    },
+    [stopPlaybackMonitoring],
+  );
 
   const clearCurrentAudio = useCallback(() => {
+    stopPlaybackMonitoring();
+
     const audioElement = audioElementRef.current;
     audioElementRef.current = null;
     if (audioElement) {
@@ -98,7 +174,7 @@ export function useVoiceConversation(options: UseVoiceConversationOptions = {}):
     if (audioUrl) {
       URL.revokeObjectURL(audioUrl);
     }
-  }, []);
+  }, [stopPlaybackMonitoring]);
 
   const clearQueuedAudioChunks = useCallback(() => {
     for (const queuedChunk of audioQueueRef.current) {
@@ -134,6 +210,7 @@ export function useVoiceConversation(options: UseVoiceConversationOptions = {}):
     audioElement.preload = 'auto';
     audioElementRef.current = audioElement;
     audioUrlRef.current = nextChunk.audioUrl;
+    attachPlaybackMonitoring(audioElement);
 
     audioElement.onloadedmetadata = () => {
       if (audioElementRef.current !== audioElement) {
@@ -234,10 +311,16 @@ export function useVoiceConversation(options: UseVoiceConversationOptions = {}):
       setErrorMessage(toErrorMessage(error));
       stopPlayback();
     });
-  }, [clearCurrentAudio, stopPlayback]);
+  }, [attachPlaybackMonitoring, clearCurrentAudio, stopPlayback]);
 
   useEffect(() => {
-    return () => stopPlayback();
+    return () => {
+      stopPlayback();
+
+      const audioContext = audioContextRef.current;
+      audioContextRef.current = null;
+      void audioContext?.close().catch(() => undefined);
+    };
   }, [stopPlayback]);
 
   const processSpeech = useCallback(
@@ -350,6 +433,7 @@ export function useVoiceConversation(options: UseVoiceConversationOptions = {}):
   );
 
   return {
+    playbackLevel,
     status,
     transcript,
     responseText,

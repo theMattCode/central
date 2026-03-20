@@ -7,6 +7,14 @@ Current primary routes:
 - `/` for the overview dashboard
 - `/jarvis` for the dedicated Jarvis workspace
 
+## Jarvis Route
+
+The `/jarvis` route is a browser-native voice HUD inspired by the linked Tkinter startup demo:
+
+- Standby keeps the reactor rings and HUD alive while the voice system is armed.
+- Listening and turn-processing drive a more aggressive animation state.
+- Spoken reply playback feeds live output energy back into the center reactor, so the browser animation reacts to the streamed TTS audio.
+
 ## Run
 
 From repository root:
