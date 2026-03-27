@@ -40,7 +40,15 @@ This keeps `service-voice` in `proxy` mode and points it at:
 - `http://service-voice-local-tts:8082/synthesize`
 - `http://service-voice-local-llm:8083/chat/completions`
 
-The default local model is `qwen2.5:3b`. Override it with `VOICE_LOCAL_LLM_MODEL` when you want a different Qwen variant.
+The default local model is `qwen2.5:3b`. Override it with `VOICE_LOCAL_LLM_MODEL` when you want a different Qwen variant. If only `VOICE_LLM_MODEL` is set in `i12e/orchestrator/.env.dev`, the all-local-voice dev target now reuses that value for the local Ollama wrapper as well.
+
+## Start dev with local voice + GPU-backed Ollama
+
+```bash
+pnpm nx run i12e-orchestrator:up-dev-all-local-voice-gpu
+```
+
+This applies [`docker-compose.gpu.yml`](./docker-compose.gpu.yml) and requests `gpus: all` for `service-voice-local-llm-runtime`. It requires Docker GPU support on the host, typically NVIDIA Container Toolkit on Linux.
 
 ## Smoke-test the complete local voice stack
 
@@ -74,7 +82,9 @@ Environment defaults are stored in:
 - `i12e/orchestrator/.env.dev`
 - `i12e/orchestrator/.env.prod`
 
-When cockpit runs inside the compose network, it must reach weather-service through `http://service-weather:8080` and voice-service through `http://service-voice:8080`.
+When cockpit runs inside the compose network, its server-side runtime must reach weather-service through `http://service-weather:8080` and voice-service through `http://service-voice:8080`.
+
+Cockpit's browser bundle is separate: in Compose it should use the published host ports (`http://localhost:3010` and `http://localhost:3020` in dev by default) for any direct browser fetches.
 
 Service and port mapping details (including dev/prod differences) are documented in [`docs/service-catalog.md`](../../docs/service-catalog.md).
 

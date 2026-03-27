@@ -17,10 +17,10 @@ The repository is organized as a multi-project Nx workspace:
 - TanStack Start + React frontend.
 - Fetches data on the cockpit server via TanStack Start loaders/server functions, then sends the result to the browser.
 - Cockpit reaches weather-service over HTTP (`/api/v1/weather/current` and `/api/v1/weather/forecast`).
-- Cockpit reaches voice-service over HTTP (`POST /api/v1/voice/turn`).
+- Cockpit reaches voice-service over HTTP (`POST /api/v1/voice/turn` and `POST /api/v1/voice/turn/stream`).
 - Configuration:
-  - Runtime weather service base URL is configured via `WEATHER_SERVICE_BASE_URL` with `VITE_WEATHER_API_BASE_URL` as a build-time fallback.
-  - Runtime voice service base URL is configured via `VOICE_SERVICE_BASE_URL` with `VITE_VOICE_API_BASE_URL` as a build-time fallback.
+  - Runtime weather service base URL is configured via `WEATHER_SERVICE_BASE_URL` with `VITE_WEATHER_API_BASE_URL` as a browser/build-time fallback.
+  - Runtime voice service base URL is configured via `VOICE_SERVICE_BASE_URL` with `VITE_VOICE_API_BASE_URL` as a browser/build-time fallback.
 - If neither weather variable is set, cockpit defaults to `http://localhost:3010` for local orchestrator-driven development.
 - If neither voice variable is set, cockpit defaults to `http://localhost:3020` for local orchestrator-driven development.
 
@@ -72,11 +72,10 @@ The repository is organized as a multi-project Nx workspace:
 ### Voice
 
 1. Browser VAD cuts a speech segment locally.
-2. Browser posts the segment to a TanStack Start server function in Cockpit.
-3. Cockpit forwards the request to voice-service.
-4. Voice-service performs `STT -> LLM -> TTS`.
-5. Cockpit returns transcript, answer text, and audio payload to the browser.
-6. Browser plays the synthesized answer.
+2. Browser posts the segment directly to voice-service's streaming endpoint.
+3. Voice-service performs `STT -> streamed LLM -> chunked TTS`.
+4. Browser plays synthesized chunks as they arrive.
+5. Cockpit still exposes a non-streaming server function path for fallback flows.
 
 ## Boundary Rules
 
@@ -84,7 +83,7 @@ The repository is organized as a multi-project Nx workspace:
 - Keep backend business logic and adapters in `services/*`.
 - Keep infrastructure/container/migration concerns in `i12e/*`.
 - Promote cross-project reusable code into `libs/*` when duplication appears.
-- Browsers should not call backend services directly when Cockpit server functions already own the boundary.
+- Prefer Cockpit server functions when they already own the boundary; direct browser-to-service calls are reserved for cases like the voice streaming path that need end-to-end streaming semantics.
 
 ## Shared Library Packaging
 

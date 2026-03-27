@@ -66,9 +66,11 @@ The voice widget keeps `service-voice` as the backend boundary, but its primary 
 
 `POST /api/v1/voice/turn` remains available as a non-streaming fallback.
 
-Configure the voice-service base URL on the cockpit server with `VOICE_SERVICE_BASE_URL` (runtime) or `VITE_VOICE_API_BASE_URL` (build-time fallback).
+Configure the voice-service base URL on the cockpit server with `VOICE_SERVICE_BASE_URL` (runtime) or `VITE_VOICE_API_BASE_URL` (browser/build-time fallback).
 
 If neither is set, cockpit uses `http://localhost:3020` as the local orchestrator default.
+
+When cockpit runs in Docker Compose, keep `VOICE_SERVICE_BASE_URL` on the internal service DNS name for server-side calls, but set `VITE_VOICE_API_BASE_URL` to the published host port so browser streaming requests do not try to resolve `service-voice`.
 
 Voice widget diagnostics are written as structured `@central/ts-log` records with scope `cockpit.voice.*`.
 

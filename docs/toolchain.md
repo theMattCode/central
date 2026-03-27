@@ -202,7 +202,15 @@ Start the development environment with local faster-whisper, local Piper, and a 
 nx run i12e-orchestrator:up-dev-all-local-voice
 ```
 
-This target defaults to `VOICE_LOCAL_LLM_MODEL=qwen2.5:3b` and raises the `service-voice` request timeout to 120 seconds for local inference. Override `VOICE_LOCAL_LLM_MODEL` when you want a larger or different Qwen variant.
+This target defaults to `VOICE_LOCAL_LLM_MODEL=qwen2.5:3b` and raises the `service-voice` request timeout to 120 seconds for local inference. Override `VOICE_LOCAL_LLM_MODEL` when you want a larger or different Qwen variant. If you already set `VOICE_LLM_MODEL` in `i12e/orchestrator/.env.dev`, the target reuses that value unless `VOICE_LOCAL_LLM_MODEL` is set explicitly.
+
+Start the same stack with GPU access enabled for the Ollama runtime:
+
+```bash
+nx run i12e-orchestrator:up-dev-all-local-voice-gpu
+```
+
+This uses `i12e/orchestrator/docker-compose.gpu.yml` and requests `gpus: all` for `service-voice-local-llm-runtime`. It requires a Docker host with working GPU container support.
 
 Run a full local voice smoke test, including stack startup, STT, LLM, and TTS:
 

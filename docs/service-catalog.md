@@ -38,17 +38,19 @@ Defaults come from:
 
 ## Related environment differences
 
-| Variable                   | Dev                           | Prod                          |
-|----------------------------|-------------------------------|-------------------------------|
-| `COCKPIT_NODE_ENV`         | `development`                 | `production`                  |
-| `COMPOSE_PROJECT_NAME`     | `central-i12e-dev`            | `central-i12e-prod`           |
-| `WEATHER_SERVICE_BASE_URL` | `http://service-weather:8080` | `http://service-weather:8080` |
-| `VOICE_SERVICE_BASE_URL`   | `http://service-voice:8080`   | `http://service-voice:8080`   |
-| `VOICE_BACKEND_MODE`       | `mock`                        | `mock`                        |
-| `VOICE_LLM_BASE_URL`       | Empty by default              | Empty by default              |
-| `VOICE_LLM_MODEL`          | Empty by default              | Empty by default              |
-| `VOICE_STT_URL`            | Empty by default              | Empty by default              |
-| `VOICE_TTS_URL`            | Empty by default              | Empty by default              |
+| Variable                    | Dev                           | Prod                          |
+|-----------------------------|-------------------------------|-------------------------------|
+| `COCKPIT_NODE_ENV`          | `development`                 | `production`                  |
+| `COMPOSE_PROJECT_NAME`      | `central-i12e-dev`            | `central-i12e-prod`           |
+| `WEATHER_SERVICE_BASE_URL`  | `http://service-weather:8080` | `http://service-weather:8080` |
+| `VOICE_SERVICE_BASE_URL`    | `http://service-voice:8080`   | `http://service-voice:8080`   |
+| `VITE_WEATHER_API_BASE_URL` | `http://localhost:3010`       | `http://localhost:4010`       |
+| `VITE_VOICE_API_BASE_URL`   | `http://localhost:3020`       | `http://localhost:4020`       |
+| `VOICE_BACKEND_MODE`        | `mock`                        | `mock`                        |
+| `VOICE_LLM_BASE_URL`        | Empty by default              | Empty by default              |
+| `VOICE_LLM_MODEL`           | Empty by default              | Empty by default              |
+| `VOICE_STT_URL`             | Empty by default              | Empty by default              |
+| `VOICE_TTS_URL`             | Empty by default              | Empty by default              |
 
 ## Internal service endpoints (compose network)
 

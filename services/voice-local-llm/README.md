@@ -4,7 +4,7 @@ Local OpenAI-compatible chat completion adapter for `service-voice`.
 
 It exposes the `POST /chat/completions` contract expected by `services/voice` and forwards requests to a local Ollama runtime.
 
-The default local model for the orchestrated dev flow is `qwen2.5:3b`, because it keeps local startup and response latency reasonable while still supporting German chat well. Override it with `VOICE_LOCAL_LLM_MODEL` when you want a larger Qwen variant.
+The default local model for the orchestrated dev flow is `qwen2.5:3b`, because it keeps local startup and response latency reasonable while still supporting German chat well. Override it with `VOICE_LOCAL_LLM_MODEL` when you want a larger Qwen variant. When the orchestrator is used, `VOICE_LLM_MODEL` is also accepted as the fallback source so the voice service and local Ollama wrapper stay aligned.
 
 ## Endpoints
 

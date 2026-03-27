@@ -172,8 +172,8 @@ services:
         condition: service_healthy
     environment:
       OLLAMA_HOST: http://service-voice-local-llm-runtime:11434
-      VOICE_LOCAL_LLM_MODEL: ${VOICE_LOCAL_LLM_MODEL:-qwen2.5:3b}
-    command: ['pull', '${VOICE_LOCAL_LLM_MODEL:-qwen2.5:3b}']
+      VOICE_LOCAL_LLM_MODEL: ${VOICE_LOCAL_LLM_MODEL:-${VOICE_LLM_MODEL:-qwen2.5:3b}}
+    command: ['pull', '${VOICE_LOCAL_LLM_MODEL:-${VOICE_LLM_MODEL:-qwen2.5:3b}}']
     restart: 'no'
 
   service-voice-local-llm:
@@ -188,7 +188,7 @@ services:
       VOICE_LOCAL_LLM_PORT: '8083'
       VOICE_LOCAL_LLM_OLLAMA_URL: http://service-voice-local-llm-runtime:11434
       VOICE_LOCAL_LLM_REQUEST_TIMEOUT_SECONDS: ${VOICE_LOCAL_LLM_REQUEST_TIMEOUT_SECONDS:-120}
-      VOICE_LOCAL_LLM_DEFAULT_MODEL: ${VOICE_LOCAL_LLM_MODEL:-qwen2.5:3b}
+      VOICE_LOCAL_LLM_DEFAULT_MODEL: ${VOICE_LOCAL_LLM_MODEL:-${VOICE_LLM_MODEL:-qwen2.5:3b}}
     ports:
       - '${VOICE_LOCAL_LLM_PORT:-3050}:8083'
     healthcheck:
@@ -211,6 +211,8 @@ services:
       args:
         WEATHER_SERVICE_BASE_URL: ${WEATHER_SERVICE_BASE_URL:-http://service-weather:8080}
         VOICE_SERVICE_BASE_URL: ${VOICE_SERVICE_BASE_URL:-http://service-voice:8080}
+        VITE_WEATHER_API_BASE_URL: ${VITE_WEATHER_API_BASE_URL:-http://localhost:${WEATHER_PORT:-3010}}
+        VITE_VOICE_API_BASE_URL: ${VITE_VOICE_API_BASE_URL:-http://localhost:${VOICE_PORT:-3020}}
     image: central/apps/cockpit:latest
     depends_on:
       i12e-postgres:
