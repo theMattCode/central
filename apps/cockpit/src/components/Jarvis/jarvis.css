@@ -60,11 +60,26 @@
   filter: saturate(1.18);
 }
 
-.jarvis-shell__scanline {
+@keyframes scanline-keyframes {
+  from {
+    opacity: 0;
+    transform: translateY(0);
+  }
+
+  10% {
+    opacity: 0.45;
+  }
+
+  to {
+    transform: translateY(64rem);
+  }
+}
+
+.scanline {
   position: absolute;
   inset-inline: 0;
-  top: -14rem;
-  height: 14rem;
+  top: 0;
+  height: 7rem;
   background: linear-gradient(
     180deg,
     rgba(0, 0, 0, 0),
@@ -75,7 +90,7 @@
   );
   mix-blend-mode: screen;
   opacity: 0.45;
-  animation: jarvis-scan 7s linear infinite;
+  animation: scanline-keyframes 7s linear infinite;
 }
 
 .jarvis-shell__header,
@@ -204,19 +219,8 @@
   margin-top: clamp(1.4rem, 2.5vw, 2.2rem);
 }
 
-.jarvis-telemetry,
-.jarvis-panel,
-.jarvis-shell__alert {
-  border: 1px solid var(--jarvis-panel-border);
-  background: linear-gradient(180deg, rgba(8, 31, 54, 0.86), rgba(5, 15, 28, 0.68)), var(--jarvis-panel);
-  backdrop-filter: blur(10px);
-  box-shadow:
-    inset 0 0 0 1px rgba(147, 247, 255, 0.03),
-    0 1.25rem 3rem rgba(0, 0, 0, 0.16);
-}
-
 .jarvis-telemetry {
-  padding: 1rem 1.05rem;
+  padding: 1rem 1rem;
   clip-path: polygon(0 0, calc(100% - 1rem) 0, 100% 1rem, 100% 100%, 1rem 100%, 0 calc(100% - 1rem));
 }
 
@@ -432,21 +436,6 @@
   font-size: 0.98rem;
 }
 
-.jarvis-shell__footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  margin-top: 1rem;
-  padding-top: 0.9rem;
-  border-top: 1px solid rgba(92, 209, 255, 0.14);
-  color: rgba(164, 220, 233, 0.6);
-  font-family: 'Orbitron', 'Rajdhani', sans-serif;
-  font-size: 0.72rem;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-}
-
 @media (max-width: 960px) {
   #jarvis {
     min-height: 0;
@@ -516,12 +505,4 @@
   }
 }
 
-@keyframes jarvis-scan {
-  from {
-    transform: translateY(0);
-  }
 
-  to {
-    transform: translateY(64rem);
-  }
-}
