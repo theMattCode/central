@@ -25,7 +25,10 @@ class Config:
     speaker: str | None
     data_dir: str | None
     download_dir: str | None
+    sentence_silence: float
     use_cuda: bool
+    volume: float
+    normalize_audio: bool
 
 
 def parse_int_env(name: str, default: int) -> int:
@@ -42,6 +45,13 @@ def parse_bool_env(name: str, default: bool) -> bool:
     return value in {"1", "true", "yes", "on"}
 
 
+def parse_float_env(name: str, default: float) -> float:
+    value = os.getenv(name, "").strip()
+    if not value:
+        return default
+    return float(value)
+
+
 def load_config() -> Config:
     return Config(
         port=parse_int_env("VOICE_LOCAL_TTS_PORT", 8082),
@@ -51,7 +61,10 @@ def load_config() -> Config:
         speaker=os.getenv("VOICE_LOCAL_TTS_SPEAKER", "").strip() or None,
         data_dir=os.getenv("VOICE_LOCAL_TTS_DATA_DIR", "").strip() or None,
         download_dir=os.getenv("VOICE_LOCAL_TTS_DOWNLOAD_DIR", "").strip() or None,
+        sentence_silence=parse_float_env("VOICE_LOCAL_TTS_SENTENCE_SILENCE", 0.0),
         use_cuda=parse_bool_env("VOICE_LOCAL_TTS_USE_CUDA", False),
+        volume=parse_float_env("VOICE_LOCAL_TTS_VOLUME", 1.0),
+        normalize_audio=parse_bool_env("VOICE_LOCAL_TTS_NORMALIZE_AUDIO", True),
     )
 
 
@@ -93,8 +106,14 @@ def build_piper_command(config: Config, output_path: Path) -> list[str]:
         command.extend(["--speaker", config.speaker])
     if config.data_dir is not None:
         command.extend(["--data-dir", config.data_dir])
+    if config.sentence_silence > 0:
+        command.extend(["--sentence-silence", str(config.sentence_silence)])
     if config.use_cuda:
         command.append("--cuda")
+    if config.volume != 1.0:
+        command.extend(["--volume", str(config.volume)])
+    if not config.normalize_audio:
+        command.append("--no-normalize")
 
     return command
 
@@ -199,7 +218,10 @@ class Handler(BaseHTTPRequestHandler):
                 "status": "ok",
                 "model": self.config.model,
                 "speaker": self.config.speaker,
+                "sentenceSilence": self.config.sentence_silence,
                 "useCuda": self.config.use_cuda,
+                "volume": self.config.volume,
+                "normalizeAudio": self.config.normalize_audio,
             },
         )
 

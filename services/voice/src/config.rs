@@ -50,6 +50,7 @@ pub struct Config {
     pub port: u16,
     pub backend_mode: BackendMode,
     pub request_timeout: Duration,
+    pub tts_stream_soft_limit_chars: usize,
     pub cors_allow_origin: String,
     pub default_language: String,
     pub default_voice_instruction: String,
@@ -76,6 +77,7 @@ impl Config {
             port: parse_u16("VOICE_PORT", 5020)?,
             backend_mode,
             request_timeout: Duration::from_secs(parse_u64("VOICE_REQUEST_TIMEOUT_SECONDS", 30)?),
+            tts_stream_soft_limit_chars: parse_usize("VOICE_TTS_STREAM_SOFT_LIMIT_CHARS", 220)?,
             cors_allow_origin: env::var("VOICE_CORS_ALLOW_ORIGIN")
                 .unwrap_or_else(|_| "*".to_string()),
             default_language: env::var("VOICE_DEFAULT_LANGUAGE")
@@ -122,6 +124,10 @@ impl Config {
     }
 
     fn validate(&self) -> Result<(), String> {
+        if self.tts_stream_soft_limit_chars == 0 {
+            return Err("VOICE_TTS_STREAM_SOFT_LIMIT_CHARS must be greater than 0".to_string());
+        }
+
         if self.backend_mode.uses_json_stt() && self.stt_url.is_none() {
             return Err(format!(
                 "VOICE_STT_URL is required when VOICE_BACKEND_MODE={}",
@@ -219,6 +225,18 @@ fn parse_u64(key: &str, default: u64) -> Result<u64, String> {
         .unwrap_or(Ok(default))
 }
 
+fn parse_usize(key: &str, default: usize) -> Result<usize, String> {
+    env::var(key)
+        .ok()
+        .filter(|value| !value.is_empty())
+        .map(|value| {
+            value
+                .parse::<usize>()
+                .map_err(|error| format!("Failed to parse {key} as usize: {error}"))
+        })
+        .unwrap_or(Ok(default))
+}
+
 #[cfg(test)]
 mod tests {
     use super::{
@@ -231,6 +249,7 @@ mod tests {
             port: 5020,
             backend_mode,
             request_timeout: std::time::Duration::from_secs(30),
+            tts_stream_soft_limit_chars: 220,
             cors_allow_origin: "*".to_string(),
             default_language: "de".to_string(),
             default_voice_instruction:
@@ -345,6 +364,17 @@ mod tests {
         assert_eq!(
             build_default_llm_system_prompt("Al"),
             "Du bist Al, ein deutscher Sprachassistent in Central. Antworte hilfreich, ruhig und eher knapp."
+        );
+    }
+
+    #[test]
+    fn rejects_zero_tts_stream_soft_limit_chars() {
+        let mut config = base_config(BackendMode::Proxy);
+        config.tts_stream_soft_limit_chars = 0;
+
+        assert_eq!(
+            config.validate(),
+            Err("VOICE_TTS_STREAM_SOFT_LIMIT_CHARS must be greater than 0".to_string())
         );
     }
 }

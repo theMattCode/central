@@ -99,6 +99,12 @@ Required upstream boundaries:
 - `VOICE_LLM_BASE_URL`
 - `VOICE_LLM_MODEL`
 
+`VOICE_LLM_BASE_URL` may be either:
+
+- An OpenAI-compatible base URL such as `https://api.openai.com/v1` or `http://localhost:11434/v1`
+- A service root that exposes `POST /chat/completions`, such as `http://service-voice-local-llm:8083`
+- The full chat completions endpoint itself
+
 ### `VOICE_BACKEND_MODE=openai`
 
 - Uses OpenAI-native speech-to-text and text-to-speech endpoints.
@@ -125,7 +131,7 @@ Uses three upstream boundaries:
 - `VOICE_LLM_BASE_URL`
 - `VOICE_TTS_URL`
 
-`VOICE_LLM_BASE_URL` is expected to expose an OpenAI-compatible `POST /chat/completions` endpoint.
+`VOICE_LLM_BASE_URL` may be either an OpenAI-compatible base URL such as `http://service-voice-local-llm-runtime:11434/v1`, a service root that exposes `POST /chat/completions`, or the full chat completions endpoint itself.
 
 `VOICE_STT_URL` is expected to accept:
 
@@ -164,12 +170,24 @@ and return:
 
 This keeps `central` aligned with its Rust/TypeScript stack while still allowing best-of-breed external model runtimes such as Faster-Whisper, Piper, Ollama, and Qwen models.
 
+For a local LLM-only path in this repository, keep `VOICE_BACKEND_MODE=llm-proxy` and point:
+
+- `VOICE_LLM_BASE_URL` to `http://service-voice-local-llm-runtime:11434/v1`
+- `VOICE_LLM_MODEL` to your local Ollama model name
+
 For a fully local STT/TTS setup in this repository, use the `voice-local-stt` and `voice-local-tts` services, then point:
 
 - `VOICE_STT_URL` to `http://service-voice-local-stt:8081/transcribe`
 - `VOICE_TTS_URL` to `http://service-voice-local-tts:8082/synthesize`
 
-For a fully local STT/TTS/LLM setup in this repository, add the `voice-local-llm` service as well, then point:
+For a fully local STT/TTS/LLM setup in this repository, either point directly at the Ollama runtime:
+
+- `VOICE_STT_URL` to `http://service-voice-local-stt:8081/transcribe`
+- `VOICE_TTS_URL` to `http://service-voice-local-tts:8082/synthesize`
+- `VOICE_LLM_BASE_URL` to `http://service-voice-local-llm-runtime:11434/v1`
+- `VOICE_LLM_MODEL` to your local Ollama model name
+
+Or keep the `voice-local-llm` wrapper when you want lazy model pulls and a repo-owned adapter boundary:
 
 - `VOICE_STT_URL` to `http://service-voice-local-stt:8081/transcribe`
 - `VOICE_TTS_URL` to `http://service-voice-local-tts:8082/synthesize`
@@ -181,11 +199,12 @@ For a fully local STT/TTS/LLM setup in this repository, add the `voice-local-llm
 - `VOICE_PORT` (default: `5020`)
 - `VOICE_BACKEND_MODE` (`mock`, `llm-proxy`, `openai`, or `proxy`, default: `mock`)
 - `VOICE_REQUEST_TIMEOUT_SECONDS` (default: `30`)
+- `VOICE_TTS_STREAM_SOFT_LIMIT_CHARS` (default: `220`, larger values improve local TTS prosody but delay the first streamed audio chunk)
 - `VOICE_CORS_ALLOW_ORIGIN` (default: `*`)
 - `VOICE_DEFAULT_LANGUAGE` (default: `de`)
 - `VOICE_DEFAULT_VOICE_INSTRUCTION` (default: calm German voice instruction)
 - `VOICE_ASSISTANT_NAME` (default: `Jarvis`, only used when `VOICE_LLM_SYSTEM_PROMPT` is unset)
-- `VOICE_LLM_BASE_URL` (required in `llm-proxy`, `openai`, and `proxy` modes)
+- `VOICE_LLM_BASE_URL` (required in `llm-proxy`, `openai`, and `proxy` modes; for example `https://api.openai.com/v1`, `http://localhost:11434/v1`, or `http://service-voice-local-llm:8083`)
 - `VOICE_LLM_API_KEY` (required in `openai` mode, optional otherwise)
 - `VOICE_LLM_MODEL` (required in `llm-proxy`, `openai`, and `proxy` modes)
 - `VOICE_LLM_SYSTEM_PROMPT` (default: concise German assistant prompt)

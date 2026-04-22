@@ -41,6 +41,12 @@
         "command": "docker compose --env-file i12e/orchestrator/.env.dev --file i12e/orchestrator/docker-compose.yml up --detach --build i12e-postgres && docker compose --env-file i12e/orchestrator/.env.dev --file i12e/orchestrator/docker-compose.yml run --rm --no-deps i12e-postgres-migrate && VOICE_BACKEND_MODE=proxy VOICE_STT_URL=http://service-voice-local-stt:8081/transcribe VOICE_TTS_URL=http://service-voice-local-tts:8082/synthesize docker compose --env-file i12e/orchestrator/.env.dev --file i12e/orchestrator/docker-compose.yml up --detach --build service-weather service-voice-local-stt service-voice-local-tts service-voice app-cockpit"
       }
     },
+    "up-dev-llm-proxy-ollama": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "docker compose --env-file i12e/orchestrator/.env.dev --file i12e/orchestrator/docker-compose.yml up --detach --build i12e-postgres && docker compose --env-file i12e/orchestrator/.env.dev --file i12e/orchestrator/docker-compose.yml run --rm --no-deps i12e-postgres-migrate && docker compose --env-file i12e/orchestrator/.env.dev --file i12e/orchestrator/docker-compose.yml up --detach service-voice-local-llm-runtime && docker compose --env-file i12e/orchestrator/.env.dev --file i12e/orchestrator/docker-compose.yml run --rm --no-deps service-voice-local-llm-pull && VOICE_BACKEND_MODE=llm-proxy VOICE_LLM_BASE_URL=http://service-voice-local-llm-runtime:11434/v1 docker compose --env-file i12e/orchestrator/.env.dev --file i12e/orchestrator/docker-compose.yml up --detach --build service-weather service-voice-local-llm-runtime service-voice app-cockpit"
+      }
+    },
     "up-dev-all-local-voice": {
       "executor": "nx:run-commands",
       "options": {

@@ -28,6 +28,18 @@ This keeps `service-voice` in `proxy` mode and points it at:
 - `http://service-voice-local-stt:8081/transcribe`
 - `http://service-voice-local-tts:8082/synthesize`
 
+## Start dev with mock STT/TTS and direct Ollama
+
+```bash
+pnpm nx run i12e-orchestrator:up-dev-llm-proxy-ollama
+```
+
+This keeps `service-voice` in `llm-proxy` mode and points it at:
+
+- `http://service-voice-local-llm-runtime:11434/v1/chat/completions`
+
+This is the thinnest local LLM integration path in the repo because `service-voice` talks to Ollama directly and keeps STT/TTS mocked.
+
 ## Start dev with local faster-whisper, Piper, and Qwen via Ollama
 
 ```bash
@@ -40,7 +52,7 @@ This keeps `service-voice` in `proxy` mode and points it at:
 - `http://service-voice-local-tts:8082/synthesize`
 - `http://service-voice-local-llm:8083/chat/completions`
 
-The default local model is `qwen2.5:3b`. Override it with `VOICE_LOCAL_LLM_MODEL` when you want a different Qwen variant. If only `VOICE_LLM_MODEL` is set in `i12e/orchestrator/.env.dev`, the all-local-voice dev target now reuses that value for the local Ollama wrapper as well.
+This path keeps the `voice-local-llm` wrapper in front of Ollama, which is useful when you want lazy model pulls and a repo-owned adapter boundary. It reuses `VOICE_LLM_MODEL` from `i12e/orchestrator/.env.dev`, with `VOICE_LOCAL_LLM_MODEL` available as an override for the wrapper.
 
 ## Start dev with local voice + GPU-backed Ollama
 

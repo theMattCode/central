@@ -42,6 +42,7 @@ async fn main() {
         backend_mode = ?config.backend_mode,
         port = config.port,
         request_timeout_seconds = config.request_timeout.as_secs(),
+        tts_stream_soft_limit_chars = config.tts_stream_soft_limit_chars,
         stt_url_configured = config.stt_url.is_some(),
         tts_url_configured = config.tts_url.is_some(),
         llm_base_url_configured = config.llm_base_url.is_some(),
@@ -133,6 +134,7 @@ async fn main() {
         speech_to_text,
         chat_completion,
         text_to_speech,
+        config.tts_stream_soft_limit_chars,
         config.default_language.clone(),
         config.default_voice_instruction.clone(),
     );

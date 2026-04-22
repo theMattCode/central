@@ -19,7 +19,6 @@ use crate::{
 const AUDIO_HEADER_BYTE_COUNT: usize = 12;
 const STREAM_EVENT_CHANNEL_CAPACITY: usize = 32;
 const STREAM_TTS_CHANNEL_CAPACITY: usize = 8;
-const TTS_STREAM_SOFT_LIMIT_CHARS: usize = 120;
 
 fn audio_header_ascii(bytes: &[u8]) -> String {
     bytes
@@ -44,13 +43,17 @@ fn audio_header_hex(bytes: &[u8]) -> String {
         .join(" ")
 }
 
-fn take_next_tts_chunk(buffer: &mut String, flush: bool) -> Option<String> {
+fn take_next_tts_chunk(
+    buffer: &mut String,
+    soft_limit_chars: usize,
+    flush: bool,
+) -> Option<String> {
     if let Some(boundary_index) = find_sentence_boundary(buffer) {
         let chunk = buffer.drain(..boundary_index).collect::<String>();
         return normalize_tts_chunk(chunk);
     }
 
-    if let Some(boundary_index) = find_soft_boundary(buffer) {
+    if let Some(boundary_index) = find_soft_boundary(buffer, soft_limit_chars) {
         let chunk = buffer.drain(..boundary_index).collect::<String>();
         return normalize_tts_chunk(chunk);
     }
@@ -89,7 +92,7 @@ fn find_sentence_boundary(text: &str) -> Option<usize> {
     None
 }
 
-fn find_soft_boundary(text: &str) -> Option<usize> {
+fn find_soft_boundary(text: &str, soft_limit_chars: usize) -> Option<usize> {
     let mut character_count = 0usize;
     let mut last_whitespace_boundary = None;
 
@@ -100,7 +103,7 @@ fn find_soft_boundary(text: &str) -> Option<usize> {
             last_whitespace_boundary = Some(index + character.len_utf8());
         }
 
-        if character_count >= TTS_STREAM_SOFT_LIMIT_CHARS {
+        if character_count >= soft_limit_chars {
             return last_whitespace_boundary;
         }
     }
@@ -136,6 +139,7 @@ pub struct VoiceTurnService {
     speech_to_text: Arc<dyn SpeechToText>,
     chat_completion: Arc<dyn ChatCompletion>,
     text_to_speech: Arc<dyn TextToSpeech>,
+    tts_stream_soft_limit_chars: usize,
     default_language: Arc<String>,
     default_voice_instruction: Arc<String>,
 }
@@ -145,6 +149,7 @@ impl VoiceTurnService {
         speech_to_text: Arc<dyn SpeechToText>,
         chat_completion: Arc<dyn ChatCompletion>,
         text_to_speech: Arc<dyn TextToSpeech>,
+        tts_stream_soft_limit_chars: usize,
         default_language: String,
         default_voice_instruction: String,
     ) -> Self {
@@ -152,6 +157,7 @@ impl VoiceTurnService {
             speech_to_text,
             chat_completion,
             text_to_speech,
+            tts_stream_soft_limit_chars,
             default_language: Arc::new(default_language),
             default_voice_instruction: Arc::new(default_voice_instruction),
         }
@@ -427,7 +433,11 @@ impl VoiceTurnService {
                 return;
             }
 
-            while let Some(text_chunk) = take_next_tts_chunk(&mut pending_tts_text, false) {
+            while let Some(text_chunk) = take_next_tts_chunk(
+                &mut pending_tts_text,
+                self.tts_stream_soft_limit_chars,
+                false,
+            ) {
                 if tts_sender
                     .send((audio_chunk_count, text_chunk))
                     .await
@@ -441,7 +451,11 @@ impl VoiceTurnService {
             }
         }
 
-        while let Some(text_chunk) = take_next_tts_chunk(&mut pending_tts_text, true) {
+        while let Some(text_chunk) = take_next_tts_chunk(
+            &mut pending_tts_text,
+            self.tts_stream_soft_limit_chars,
+            true,
+        ) {
             if tts_sender
                 .send((audio_chunk_count, text_chunk))
                 .await
@@ -486,13 +500,15 @@ impl VoiceTurnService {
 
 #[cfg(test)]
 mod tests {
-    use super::{take_next_tts_chunk, TTS_STREAM_SOFT_LIMIT_CHARS};
+    use super::take_next_tts_chunk;
+
+    const TEST_TTS_STREAM_SOFT_LIMIT_CHARS: usize = 120;
 
     #[test]
     fn take_next_tts_chunk_prefers_sentence_boundaries() {
         let mut buffer = "Erster Satz. Zweiter Satz".to_string();
 
-        let first_chunk = take_next_tts_chunk(&mut buffer, false);
+        let first_chunk = take_next_tts_chunk(&mut buffer, TEST_TTS_STREAM_SOFT_LIMIT_CHARS, false);
 
         assert_eq!(first_chunk.as_deref(), Some("Erster Satz."));
         assert_eq!(buffer, "Zweiter Satz");
@@ -500,9 +516,9 @@ mod tests {
 
     #[test]
     fn take_next_tts_chunk_falls_back_to_soft_boundaries() {
-        let mut buffer = format!("{}Danach", "wort ".repeat(TTS_STREAM_SOFT_LIMIT_CHARS));
+        let mut buffer = format!("{}Danach", "wort ".repeat(TEST_TTS_STREAM_SOFT_LIMIT_CHARS));
 
-        let first_chunk = take_next_tts_chunk(&mut buffer, false);
+        let first_chunk = take_next_tts_chunk(&mut buffer, TEST_TTS_STREAM_SOFT_LIMIT_CHARS, false);
 
         assert!(first_chunk.is_some());
         assert!(buffer.contains("Danach"));
@@ -512,9 +528,12 @@ mod tests {
     fn take_next_tts_chunk_flushes_remaining_text() {
         let mut buffer = "Rest ohne Satzzeichen".to_string();
 
-        assert_eq!(take_next_tts_chunk(&mut buffer, false), None);
         assert_eq!(
-            take_next_tts_chunk(&mut buffer, true).as_deref(),
+            take_next_tts_chunk(&mut buffer, TEST_TTS_STREAM_SOFT_LIMIT_CHARS, false),
+            None
+        );
+        assert_eq!(
+            take_next_tts_chunk(&mut buffer, TEST_TTS_STREAM_SOFT_LIMIT_CHARS, true).as_deref(),
             Some("Rest ohne Satzzeichen")
         );
         assert!(buffer.is_empty());

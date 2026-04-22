@@ -196,13 +196,22 @@ Start the development environment with local faster-whisper and Piper adapters w
 nx run i12e-orchestrator:up-dev-local-voice
 ```
 
+Start the development environment with mock STT / TTS and direct Ollama chat completions:
+
+```bash
+nx run i12e-orchestrator:up-dev-llm-proxy-ollama
+```
+
+This keeps `service-voice` in `llm-proxy` mode and points `VOICE_LLM_BASE_URL` at the Ollama runtime's OpenAI-compatible `/v1` endpoint.
+
 Start the development environment with local faster-whisper, local Piper, and a local Qwen LLM through Ollama:
 
 ```bash
 nx run i12e-orchestrator:up-dev-all-local-voice
 ```
 
-This target defaults to `VOICE_LOCAL_LLM_MODEL=qwen2.5:3b` and raises the `service-voice` request timeout to 120 seconds for local inference. Override `VOICE_LOCAL_LLM_MODEL` when you want a larger or different Qwen variant. If you already set `VOICE_LLM_MODEL` in `i12e/orchestrator/.env.dev`, the target reuses that value unless `VOICE_LOCAL_LLM_MODEL` is set explicitly.
+This path keeps the `voice-local-llm` wrapper in front of Ollama for the full local STT / TTS / LLM stack. It reuses `VOICE_LLM_MODEL` from `i12e/orchestrator/.env.dev`, with `VOICE_LOCAL_LLM_MODEL` available as an override for the wrapper.
+The tracked `i12e/orchestrator/.env.dev` now also biases this path toward quality over speed with a larger local STT model, less aggressive extra STT VAD, and slightly less choppy local TTS streaming.
 
 Start the same stack with GPU access enabled for the Ollama runtime:
 

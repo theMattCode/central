@@ -18,6 +18,10 @@ function ActiveMicrophone({ onSpeechSegment, onPhaseChange }: ActiveMicrophonePr
     startOnLoad: true,
     baseAssetPath: VAD_BASE_ASSET_PATH,
     ortConfig: configureVoiceOrt,
+    model: 'v5',
+    minSpeechMs: 500,
+    preSpeechPadMs: 1_000,
+    redemptionMs: 1_600,
     onSpeechStart: () => onPhaseChange('speaking'),
     onSpeechEnd: (audio) => {
       onPhaseChange('ready');

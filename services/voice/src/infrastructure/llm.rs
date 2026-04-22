@@ -91,7 +91,7 @@ impl OpenAiCompatibleChatClient {
     }
 
     fn endpoint(&self) -> String {
-        format!("{}/chat/completions", self.base_url.trim_end_matches('/'))
+        build_chat_completions_endpoint(&self.base_url)
     }
 }
 
@@ -200,6 +200,16 @@ fn parse_sse_data(frame: &[u8]) -> Result<Option<String>, AppError> {
     }
 
     Ok(Some(data_lines.join("\n")))
+}
+
+fn build_chat_completions_endpoint(base_url: &str) -> String {
+    let trimmed_base_url = base_url.trim_end_matches('/');
+
+    if trimmed_base_url.ends_with("/chat/completions") {
+        trimmed_base_url.to_string()
+    } else {
+        format!("{trimmed_base_url}/chat/completions")
+    }
 }
 
 impl OpenAiCompatibleChatClient {
@@ -363,5 +373,36 @@ impl ChatCompletion for OpenAiCompatibleChatClient {
                 }
             }
         }))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::build_chat_completions_endpoint;
+
+    #[test]
+    fn appends_chat_completions_for_wrapper_base_url() {
+        assert_eq!(
+            build_chat_completions_endpoint("http://service-voice-local-llm:8083"),
+            "http://service-voice-local-llm:8083/chat/completions"
+        );
+    }
+
+    #[test]
+    fn appends_chat_completions_for_openai_compatible_v1_base_url() {
+        assert_eq!(
+            build_chat_completions_endpoint("http://service-voice-local-llm-runtime:11434/v1"),
+            "http://service-voice-local-llm-runtime:11434/v1/chat/completions"
+        );
+    }
+
+    #[test]
+    fn preserves_explicit_chat_completions_endpoint() {
+        assert_eq!(
+            build_chat_completions_endpoint(
+                "http://service-voice-local-llm-runtime:11434/v1/chat/completions/"
+            ),
+            "http://service-voice-local-llm-runtime:11434/v1/chat/completions"
+        );
     }
 }

@@ -36,7 +36,10 @@ class ParseSynthesisRequestTest(unittest.TestCase):
             speaker="2",
             data_dir="/models",
             download_dir="/downloads",
+            sentence_silence=0.15,
             use_cuda=True,
+            volume=1.1,
+            normalize_audio=False,
         )
 
         command = build_piper_command(config, pathlib.Path("/tmp/output.wav"))
@@ -53,7 +56,12 @@ class ParseSynthesisRequestTest(unittest.TestCase):
                 "2",
                 "--data-dir",
                 "/models",
+                "--sentence-silence",
+                "0.15",
                 "--cuda",
+                "--volume",
+                "1.1",
+                "--no-normalize",
             ],
         )
 
@@ -65,7 +73,10 @@ class ParseSynthesisRequestTest(unittest.TestCase):
             speaker=None,
             data_dir="/models",
             download_dir="/downloads",
+            sentence_silence=0.0,
             use_cuda=False,
+            volume=1.0,
+            normalize_audio=True,
         )
 
         command = build_piper_download_command(config)

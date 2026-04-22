@@ -39,6 +39,8 @@ Response body:
 
 `VOICE_LOCAL_STT_MODEL` can be a standard `faster-whisper` model name or a local converted model path.
 
+For browser-segmented audio in this repository, better quality usually comes from a larger model such as `medium` or better and disabling the extra `faster-whisper` VAD layer with `VOICE_LOCAL_STT_VAD_FILTER=false`, because the cockpit VAD already trims speech locally.
+
 ## Nx targets
 
 - `pnpm nx run voice-local-stt:lint`
