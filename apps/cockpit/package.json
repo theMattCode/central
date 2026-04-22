@@ -20,6 +20,7 @@
   },
   "dependencies": {
     "@central/ts-log": "workspace:*",
+    "@meteocons/svg": "^0.1.0",
     "@ricky0123/vad-react": "0.0.33",
     "@tailwindcss/vite": "4.2.1",
     "@tanstack/react-devtools": "0.9.6",

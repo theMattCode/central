@@ -15,7 +15,7 @@ export function WeatherCurrentSummary({ weather }: WeatherCurrentSummaryProps) {
 
   return (
     <div className="flex flex-row gap-4">
-      <img src={`/weather/${icon}.svg`} alt={weatherCode.i18nKey} className="h-40 text-(--color-txt)" />
+      <img src={icon} alt={weatherCode.i18nKey} className="h-40 text-(--color-txt)" />
       <div className="flex flex-col grow gap-0.5">
         <span className="text-4xl text-right font-semibold text-(--color-txt)">
           {weather.current.temperatureC.toFixed(1)} °C
