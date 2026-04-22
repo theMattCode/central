@@ -42,6 +42,8 @@ import thunderstormsExtremeNightHailIcon from '@meteocons/svg/fill/thunderstorms
 import thunderstormsNightHailIcon from '@meteocons/svg/fill/thunderstorms-night-hail.svg';
 import thunderstormsNightIcon from '@meteocons/svg/fill/thunderstorms-night.svg';
 
+type WMOCodeInfo = { day: string; night: string; i18nKey: I18NKey };
+
 /**
  * WMO weather interpretation codes
  *
@@ -61,7 +63,7 @@ import thunderstormsNightIcon from '@meteocons/svg/fill/thunderstorms-night.svg'
  * | 95         | Thunderstorm: Slight or moderate                 |
  * | 96, 99     | Thunderstorm with slight and heavy hail          |
  */
-export const WMO_CODE_INFO: Record<number, { day: string; night: string; i18nKey: I18NKey }> = {
+export const WMO_CODE_MAP: Record<number, WMOCodeInfo> = {
   0: { day: clearDayIcon, night: clearNightIcon, i18nKey: I18NKey.WmoClearSky },
   1: { day: mostlyClearDayIcon, night: mostlyClearNightIcon, i18nKey: I18NKey.WmoMainlyClear },
   2: { day: partlyCloudyDayIcon, night: partlyCloudyNightIcon, i18nKey: I18NKey.WmoPartlyCloudy },

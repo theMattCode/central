@@ -1,6 +1,6 @@
 import { LiaArrowAltCircleUp as DirectionIcon } from 'react-icons/lia';
 import type { WeatherData } from '@/widgets/weather/model/model.ts';
-import { WMO_CODE_INFO } from '@/widgets/weather/model/wmo.ts';
+import { WMO_CODE_MAP } from '@/widgets/weather/model/wmo.ts';
 import { TRANSLATION } from '@/i18n/translations.ts';
 import type { ReactNode } from 'react';
 
@@ -9,7 +9,7 @@ type WeatherCurrentSummaryProps = {
 };
 
 export function WeatherCurrentSummary({ weather }: WeatherCurrentSummaryProps) {
-  const weatherCode = WMO_CODE_INFO[weather.current.weatherCode] ?? WMO_CODE_INFO[0];
+  const weatherCode = WMO_CODE_MAP[weather.current.weatherCode] ?? WMO_CODE_MAP[0];
   const icon = weather.current.isDay ? weatherCode.day : weatherCode.night;
   const interpretation = TRANSLATION[weatherCode.i18nKey].de;
 
