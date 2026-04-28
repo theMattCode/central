@@ -47,6 +47,7 @@ The repository is organized as a multi-project Nx workspace:
   - `llm-proxy` mode to call an external LLM while keeping mock STT / TTS boundaries.
   - `openai` mode to use OpenAI-native STT / LLM / TTS endpoints.
   - `proxy` mode to call external STT / LLM / TTS runtimes.
+- The orchestrated dev and prod stacks use `proxy` mode by default, backed by the local faster-whisper STT service, local Piper TTS service, and local Ollama-based LLM wrapper.
 
 ### Persistence (`i12e/postgres`)
 
@@ -56,7 +57,7 @@ The repository is organized as a multi-project Nx workspace:
 ### Orchestration (`i12e/orchestrator`)
 
 - Docker Compose project used to start the full local stack.
-- Separate environment files define dev and prod default port mappings.
+- Separate environment files define dev and prod default port mappings and local voice / LLM model settings.
 
 ## Data Flow
 

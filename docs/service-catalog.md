@@ -10,11 +10,11 @@ Source of truth: `i12e/orchestrator/docker-compose.yml`.
 | `i12e-postgres`                   | PostgreSQL database                            | `5432/tcp`             |
 | `i12e-postgres-migrate`           | One-off migration runner                       | None (no exposed port) |
 | `service-weather`                 | Weather backend HTTP API                       | `8080/tcp`             |
-| `service-voice-local-stt`         | Optional local faster-whisper STT adapter      | `8081/tcp`             |
-| `service-voice-local-tts`         | Optional local Piper TTS adapter               | `8082/tcp`             |
-| `service-voice-local-llm-runtime` | Optional local Ollama runtime                  | `11434/tcp`            |
+| `service-voice-local-stt`         | Default local faster-whisper STT adapter       | `8081/tcp`             |
+| `service-voice-local-tts`         | Default local Piper TTS adapter                | `8082/tcp`             |
+| `service-voice-local-llm-runtime` | Default local Ollama runtime                   | `11434/tcp`            |
 | `service-voice-local-llm-pull`    | One-off local Ollama model puller              | None (no exposed port) |
-| `service-voice-local-llm`         | Optional local OpenAI-compatible LLM adapter   | `8083/tcp`             |
+| `service-voice-local-llm`         | Default local OpenAI-compatible LLM adapter    | `8083/tcp`             |
 | `service-voice`                   | Voice turn orchestration (`STT -> LLM -> TTS`) | `8080/tcp`             |
 
 ## Host port mappings by environment
@@ -30,10 +30,10 @@ Defaults come from:
 | `i12e-postgres`                   | `${POSTGRES_PORT}:5432`                 | `3001 -> 5432`                            | `4001 -> 5432`                   |
 | `i12e-postgres-migrate`           | None                                    | None                                      | None                             |
 | `service-weather`                 | `${WEATHER_PORT}:8080`                  | `3010 -> 8080`                            | `4010 -> 8080`                   |
-| `service-voice-local-stt`         | `${VOICE_LOCAL_STT_PORT}:8081`          | `3030 -> 8081`                            | Not started by default           |
-| `service-voice-local-tts`         | `${VOICE_LOCAL_TTS_PORT}:8082`          | `3040 -> 8082`                            | Not started by default           |
-| `service-voice-local-llm-runtime` | `${VOICE_LOCAL_LLM_RUNTIME_PORT}:11434` | `3051 -> 11434`                           | Not started by default           |
-| `service-voice-local-llm`         | `${VOICE_LOCAL_LLM_PORT}:8083`          | `3050 -> 8083`                            | Not started by default           |
+| `service-voice-local-stt`         | `${VOICE_LOCAL_STT_PORT}:8081`          | `3030 -> 8081`                            | `4030 -> 8081`                   |
+| `service-voice-local-tts`         | `${VOICE_LOCAL_TTS_PORT}:8082`          | `3040 -> 8082`                            | `4040 -> 8082`                   |
+| `service-voice-local-llm-runtime` | `${VOICE_LOCAL_LLM_RUNTIME_PORT}:11434` | `3051 -> 11434`                           | `4051 -> 11434`                  |
+| `service-voice-local-llm`         | `${VOICE_LOCAL_LLM_PORT}:8083`          | `3050 -> 8083`                            | `4050 -> 8083`                   |
 | `service-voice`                   | `${VOICE_PORT}:8080`                    | `3020 -> 8080`                            | `4020 -> 8080`                   |
 
 ## Related environment differences
@@ -46,11 +46,11 @@ Defaults come from:
 | `VOICE_SERVICE_BASE_URL`    | `http://service-voice:8080`   | `http://service-voice:8080`   |
 | `VITE_WEATHER_API_BASE_URL` | `http://localhost:3010`       | `http://localhost:4010`       |
 | `VITE_VOICE_API_BASE_URL`   | `http://localhost:3020`       | `http://localhost:4020`       |
-| `VOICE_BACKEND_MODE`        | `mock`                        | `mock`                        |
-| `VOICE_LLM_BASE_URL`        | Empty by default              | Empty by default              |
-| `VOICE_LLM_MODEL`           | Empty by default              | Empty by default              |
-| `VOICE_STT_URL`             | Empty by default              | Empty by default              |
-| `VOICE_TTS_URL`             | Empty by default              | Empty by default              |
+| `VOICE_BACKEND_MODE`        | `proxy`                       | `proxy`                       |
+| `VOICE_STT_URL`             | `http://service-voice-local-stt:8081/transcribe` | `http://service-voice-local-stt:8081/transcribe` |
+| `VOICE_TTS_URL`             | `http://service-voice-local-tts:8082/synthesize` | `http://service-voice-local-tts:8082/synthesize` |
+| `VOICE_LLM_BASE_URL`        | `http://service-voice-local-llm:8083` | `http://service-voice-local-llm:8083` |
+| `VOICE_LLM_MODEL`           | `qwen3.5:4b`                  | `qwen3:8b`                    |
 
 ## Internal service endpoints (compose network)
 

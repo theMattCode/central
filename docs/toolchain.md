@@ -141,7 +141,7 @@ nx run voice-service:container-run
 
 The voice container run target publishes `5020:8080`.
 
-`VOICE_BACKEND_MODE=mock` is the safest first boot path for local UI integration. Use `VOICE_BACKEND_MODE=llm-proxy` to validate a real LLM first, `VOICE_BACKEND_MODE=openai` for a full OpenAI voice stack, then `VOICE_BACKEND_MODE=proxy` when STT / TTS / LLM upstreams are provided by separate runtimes.
+The standalone voice container still defaults to `VOICE_BACKEND_MODE=mock` unless environment overrides are supplied. The orchestrated dev and prod paths default to `VOICE_BACKEND_MODE=proxy` with local STT, TTS, and LLM services wired in.
 
 ### Local STT and TTS containers
 
@@ -190,7 +190,9 @@ Start the complete development environment with all required services:
 nx run i12e-orchestrator:up-dev
 ```
 
-Start the development environment with local faster-whisper and Piper adapters wired into `service-voice`:
+This is the default local-first path. It starts PostgreSQL, weather, cockpit, local faster-whisper STT, local Piper TTS, the Ollama runtime, the local LLM wrapper, and `service-voice` wired through those local voice and model services.
+
+The explicit local voice target remains available and starts the same local voice and local LLM stack:
 
 ```bash
 nx run i12e-orchestrator:up-dev-local-voice
@@ -210,22 +212,9 @@ Start the development environment with local faster-whisper, local Piper, and a 
 nx run i12e-orchestrator:up-dev-all-local-voice
 ```
 
-This path keeps the `voice-local-llm` wrapper in front of Ollama for the full local STT / TTS / LLM stack. It reuses `VOICE_LLM_MODEL` from `i12e/orchestrator/.env.dev`, with `VOICE_LOCAL_LLM_MODEL` available as an override for the wrapper.
+This target is kept as an explicit alias for the default local stack. It keeps the `voice-local-llm` wrapper in front of Ollama for the full local STT / TTS / LLM stack. It reuses `VOICE_LLM_MODEL` from `i12e/orchestrator/.env.dev`, with `VOICE_LOCAL_LLM_MODEL` available as an override for the wrapper.
 The tracked `i12e/orchestrator/.env.dev` now also biases this path toward quality over speed with a larger local STT model, less aggressive extra STT VAD, and slightly less choppy local TTS streaming.
-
-Start the same stack with GPU access enabled for the Ollama runtime:
-
-```bash
-nx run i12e-orchestrator:up-dev-all-local-voice-gpu
-```
-
-This uses `i12e/orchestrator/docker-compose.gpu.yml` and requests `gpus: all` for `service-voice-local-stt`, `service-voice-local-tts`, and `service-voice-local-llm-runtime`. It also switches local STT to CUDA/FP16 and upgrades local TTS to the `de_DE-thorsten-high` Piper voice. It requires a Docker host with working GPU container support.
-
-To smoke-test the same GPU-backed path end to end:
-
-```bash
-nx run i12e-orchestrator:smoke-dev-all-local-voice-gpu
-```
+The main compose file is GPU-backed by default for local voice services: `service-voice-local-stt`, `service-voice-local-tts`, and `service-voice-local-llm-runtime` request `gpus: all`. Local STT defaults to CUDA/FP16, local TTS defaults to CUDA, and the stack requires a Docker host with working GPU container support.
 
 Run a full local voice smoke test, including stack startup, STT, LLM, and TTS:
 
@@ -240,6 +229,8 @@ To start the production environment use:
 ```bash
 nx run i12e-orchestrator:up-prod
 ```
+
+The production target also starts the local voice and local LLM services by default, using the prod port mappings from `i12e/orchestrator/.env.prod`.
 
 The migration step runs as a one-off `postgres-migrate` container and is removed after completion.
 

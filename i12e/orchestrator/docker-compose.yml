@@ -68,19 +68,19 @@ services:
       VOICE_REQUEST_TIMEOUT_SECONDS: ${VOICE_REQUEST_TIMEOUT_SECONDS:-30}
       VOICE_TTS_STREAM_SOFT_LIMIT_CHARS: ${VOICE_TTS_STREAM_SOFT_LIMIT_CHARS:-220}
       VOICE_CORS_ALLOW_ORIGIN: ${VOICE_CORS_ALLOW_ORIGIN:-*}
-      VOICE_BACKEND_MODE: ${VOICE_BACKEND_MODE:-mock}
+      VOICE_BACKEND_MODE: ${VOICE_BACKEND_MODE:-proxy}
       VOICE_DEFAULT_LANGUAGE: ${VOICE_DEFAULT_LANGUAGE:-de}
       VOICE_DEFAULT_VOICE_INSTRUCTION: ${VOICE_DEFAULT_VOICE_INSTRUCTION:-}
       VOICE_ASSISTANT_NAME: ${VOICE_ASSISTANT_NAME:-}
       VOICE_LLM_SYSTEM_PROMPT: ${VOICE_LLM_SYSTEM_PROMPT:-}
-      VOICE_STT_URL: ${VOICE_STT_URL:-}
+      VOICE_STT_URL: ${VOICE_STT_URL:-http://service-voice-local-stt:8081/transcribe}
       VOICE_STT_MODEL: ${VOICE_STT_MODEL:-}
-      VOICE_TTS_URL: ${VOICE_TTS_URL:-}
+      VOICE_TTS_URL: ${VOICE_TTS_URL:-http://service-voice-local-tts:8082/synthesize}
       VOICE_TTS_MODEL: ${VOICE_TTS_MODEL:-}
       VOICE_TTS_VOICE: ${VOICE_TTS_VOICE:-}
-      VOICE_LLM_BASE_URL: ${VOICE_LLM_BASE_URL:-}
+      VOICE_LLM_BASE_URL: ${VOICE_LLM_BASE_URL:-http://service-voice-local-llm:8083}
       VOICE_LLM_API_KEY: ${VOICE_LLM_API_KEY:-}
-      VOICE_LLM_MODEL: ${VOICE_LLM_MODEL:-}
+      VOICE_LLM_MODEL: ${VOICE_LLM_MODEL:-${VOICE_LOCAL_LLM_MODEL:-qwen2.5:3b}}
     ports:
       - '${VOICE_PORT:-3020}:8080'
     healthcheck:
@@ -94,27 +94,25 @@ services:
     build:
       context: ../..
       dockerfile: services/voice-local-stt/Dockerfile
+      args:
+        VOICE_LOCAL_STT_ENABLE_GPU: 'true'
     image: central/services/voice-local-stt:latest
     environment:
       VOICE_LOCAL_STT_PORT: '8081'
       VOICE_LOCAL_STT_MODEL: ${VOICE_LOCAL_STT_MODEL:-small}
-      VOICE_LOCAL_STT_DEVICE: ${VOICE_LOCAL_STT_DEVICE:-cpu}
-      VOICE_LOCAL_STT_COMPUTE_TYPE: ${VOICE_LOCAL_STT_COMPUTE_TYPE:-int8}
+      VOICE_LOCAL_STT_DEVICE: ${VOICE_LOCAL_STT_DEVICE:-cuda}
+      VOICE_LOCAL_STT_COMPUTE_TYPE: ${VOICE_LOCAL_STT_COMPUTE_TYPE:-float16}
       VOICE_LOCAL_STT_BEAM_SIZE: ${VOICE_LOCAL_STT_BEAM_SIZE:-5}
       VOICE_LOCAL_STT_VAD_FILTER: ${VOICE_LOCAL_STT_VAD_FILTER:-true}
       HF_HOME: ${VOICE_LOCAL_STT_CACHE_DIR:-/models}
+    gpus: all
     ports:
       - '${VOICE_LOCAL_STT_PORT:-3030}:8081'
     volumes:
       - central_voice_local_stt_models:${VOICE_LOCAL_STT_CACHE_DIR:-/models}
     healthcheck:
       test:
-        [
-          'CMD',
-          'python',
-          '-c',
-          'import urllib.request; urllib.request.urlopen("http://127.0.0.1:8081/healthz").read()',
-        ]
+        ['CMD', 'python', '-c', 'import urllib.request; urllib.request.urlopen("http://127.0.0.1:8081/healthz").read()']
       interval: 10s
       timeout: 5s
       retries: 5
@@ -124,6 +122,8 @@ services:
     build:
       context: ../..
       dockerfile: services/voice-local-tts/Dockerfile
+      args:
+        VOICE_LOCAL_TTS_ENABLE_GPU: 'true'
     image: central/services/voice-local-tts:latest
     environment:
       VOICE_LOCAL_TTS_PORT: '8082'
@@ -133,21 +133,17 @@ services:
       VOICE_LOCAL_TTS_DATA_DIR: ${VOICE_LOCAL_TTS_DATA_DIR:-/models}
       VOICE_LOCAL_TTS_DOWNLOAD_DIR: ${VOICE_LOCAL_TTS_DOWNLOAD_DIR:-/models}
       VOICE_LOCAL_TTS_SENTENCE_SILENCE: ${VOICE_LOCAL_TTS_SENTENCE_SILENCE:-0}
-      VOICE_LOCAL_TTS_USE_CUDA: ${VOICE_LOCAL_TTS_USE_CUDA:-false}
+      VOICE_LOCAL_TTS_USE_CUDA: ${VOICE_LOCAL_TTS_USE_CUDA:-true}
       VOICE_LOCAL_TTS_VOLUME: ${VOICE_LOCAL_TTS_VOLUME:-1}
       VOICE_LOCAL_TTS_NORMALIZE_AUDIO: ${VOICE_LOCAL_TTS_NORMALIZE_AUDIO:-true}
+    gpus: all
     ports:
       - '${VOICE_LOCAL_TTS_PORT:-3040}:8082'
     volumes:
       - central_voice_local_tts_models:/models
     healthcheck:
       test:
-        [
-          'CMD',
-          'python',
-          '-c',
-          'import urllib.request; urllib.request.urlopen("http://127.0.0.1:8082/healthz").read()',
-        ]
+        ['CMD', 'python', '-c', 'import urllib.request; urllib.request.urlopen("http://127.0.0.1:8082/healthz").read()']
       interval: 10s
       timeout: 5s
       retries: 5
@@ -158,6 +154,7 @@ services:
     command: ['serve']
     environment:
       OLLAMA_KEEP_ALIVE: ${VOICE_LOCAL_LLM_KEEP_ALIVE:-5m}
+    gpus: all
     ports:
       - '${VOICE_LOCAL_LLM_RUNTIME_PORT:-3051}:11434'
     volumes:
@@ -197,12 +194,7 @@ services:
       - '${VOICE_LOCAL_LLM_PORT:-3050}:8083'
     healthcheck:
       test:
-        [
-          'CMD',
-          'python',
-          '-c',
-          'import urllib.request; urllib.request.urlopen("http://127.0.0.1:8083/healthz").read()',
-        ]
+        ['CMD', 'python', '-c', 'import urllib.request; urllib.request.urlopen("http://127.0.0.1:8083/healthz").read()']
       interval: 10s
       timeout: 5s
       retries: 5

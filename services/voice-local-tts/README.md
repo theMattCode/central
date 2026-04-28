@@ -50,7 +50,7 @@ When a short model name is used, the service downloads the voice on the first sy
 `VOICE_LOCAL_TTS_DOWNLOAD_DIR` (or `VOICE_LOCAL_TTS_DATA_DIR` when no download directory is set), so the first request may take longer.
 After that first request, the loaded Piper model stays resident in the service process and is reused for later requests.
 If quality matters more than cold-start time, prefer a `high` Piper voice when one is available for the language.
-When the GPU orchestrator overlay is used, this service switches to `VOICE_LOCAL_TTS_MODEL=de_DE-thorsten-high` and `VOICE_LOCAL_TTS_USE_CUDA=true`.
+In the orchestrator compose stack, this service is built with GPU runtime dependencies, requests `gpus: all`, and defaults to `VOICE_LOCAL_TTS_USE_CUDA=true`.
 
 `voiceInstruction` is passed through the JSON boundary, but Piper does not follow free-form style instructions the way the OpenAI TTS path does. For local quality tuning, prefer choosing a better voice model and adjusting `VOICE_LOCAL_TTS_SENTENCE_SILENCE`, `VOICE_LOCAL_TTS_VOLUME`, and the streamed chunk size in `service-voice`.
 

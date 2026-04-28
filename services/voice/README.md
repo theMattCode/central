@@ -14,7 +14,7 @@ The intended request path is:
 - Browser clients never call model-serving infrastructure directly.
 - Cockpit stays responsible for app/session/auth boundaries.
 - Model-serving details stay behind a Rust/Axum service, matching the existing `services/weather` pattern.
-- The default `mock` mode lets the UI and orchestration land before expensive model infrastructure is wired.
+- The standalone service can still run in `mock` mode for quick wiring tests, while the orchestrated stack defaults to local STT, TTS, and LLM services.
 
 ## Architecture
 
@@ -86,7 +86,7 @@ Response body:
 
 - Returns deterministic transcript and response text.
 - Generates a short silent WAV payload.
-- Best for wiring cockpit and Docker orchestration first.
+- Best for isolated service tests that should not start model-serving infrastructure.
 
 ### `VOICE_BACKEND_MODE=llm-proxy`
 
@@ -197,7 +197,7 @@ Or keep the `voice-local-llm` wrapper when you want lazy model pulls and a repo-
 ## Configuration
 
 - `VOICE_PORT` (default: `5020`)
-- `VOICE_BACKEND_MODE` (`mock`, `llm-proxy`, `openai`, or `proxy`, default: `mock`)
+- `VOICE_BACKEND_MODE` (`mock`, `llm-proxy`, `openai`, or `proxy`, standalone default: `mock`; orchestrator default: `proxy`)
 - `VOICE_REQUEST_TIMEOUT_SECONDS` (default: `30`)
 - `VOICE_TTS_STREAM_SOFT_LIMIT_CHARS` (default: `220`, larger values improve local TTS prosody but delay the first streamed audio chunk)
 - `VOICE_CORS_ALLOW_ORIGIN` (default: `*`)

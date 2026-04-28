@@ -40,7 +40,7 @@ Response body:
 `VOICE_LOCAL_STT_MODEL` can be a standard `faster-whisper` model name or a local converted model path.
 
 For browser-segmented audio in this repository, better quality usually comes from a larger model such as `medium` or better and disabling the extra `faster-whisper` VAD layer with `VOICE_LOCAL_STT_VAD_FILTER=false`, because the cockpit VAD already trims speech locally.
-When the GPU orchestrator overlay is used, this service switches to `VOICE_LOCAL_STT_DEVICE=cuda` and `VOICE_LOCAL_STT_COMPUTE_TYPE=float16`.
+In the orchestrator compose stack, this service is built with CUDA runtime dependencies, requests `gpus: all`, and defaults to `VOICE_LOCAL_STT_DEVICE=cuda` and `VOICE_LOCAL_STT_COMPUTE_TYPE=float16`.
 
 ## Nx targets
 

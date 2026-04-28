@@ -17,16 +17,31 @@ pnpm nx run i12e-orchestrator:build
 pnpm nx run i12e-orchestrator:up-dev
 ```
 
-## Start dev with local faster-whisper and Piper
+This is the default local-first path. It brings up:
+
+- Cockpit app (`app-cockpit` service)
+- PostgreSQL (`i12e-postgres` service)
+- Migration runner (`i12e-postgres-migrate`) as a one-off container (`--rm`)
+- Weather backend (`service-weather` service)
+- Local faster-whisper STT (`service-voice-local-stt` service)
+- Local Piper TTS (`service-voice-local-tts` service)
+- Ollama runtime (`service-voice-local-llm-runtime` service)
+- Local LLM wrapper (`service-voice-local-llm` service)
+- Voice backend (`service-voice` service)
+
+## Start dev with explicit local voice target
 
 ```bash
 pnpm nx run i12e-orchestrator:up-dev-local-voice
 ```
 
-This keeps `service-voice` in `proxy` mode and points it at:
+This target starts the same local voice and local LLM stack as `up-dev`. It keeps `service-voice` in `proxy` mode and points it at:
 
 - `http://service-voice-local-stt:8081/transcribe`
 - `http://service-voice-local-tts:8082/synthesize`
+- `http://service-voice-local-llm:8083/chat/completions`
+
+The local STT and TTS services use the standard GPU-backed compose configuration. The STT image is built with CUDA runtime dependencies, defaults to `VOICE_LOCAL_STT_DEVICE=cuda` and `VOICE_LOCAL_STT_COMPUTE_TYPE=float16`, and both services request `gpus: all`.
 
 ## Start dev with mock STT/TTS and direct Ollama
 
@@ -38,29 +53,22 @@ This keeps `service-voice` in `llm-proxy` mode and points it at:
 
 - `http://service-voice-local-llm-runtime:11434/v1/chat/completions`
 
-This is the thinnest local LLM integration path in the repo because `service-voice` talks to Ollama directly and keeps STT/TTS mocked.
+This is the thinnest local LLM integration path in the repo because `service-voice` talks to Ollama directly and keeps STT/TTS mocked. The Ollama runtime uses the standard GPU-backed compose configuration and requests `gpus: all`.
 
-## Start dev with local faster-whisper, Piper, and Qwen via Ollama
+## Start dev with GPU-backed local faster-whisper, Piper, and Qwen via Ollama
 
 ```bash
 pnpm nx run i12e-orchestrator:up-dev-all-local-voice
 ```
 
-This keeps `service-voice` in `proxy` mode and points it at:
+This target is kept as an explicit alias for the default local stack. It keeps `service-voice` in `proxy` mode and points it at:
 
 - `http://service-voice-local-stt:8081/transcribe`
 - `http://service-voice-local-tts:8082/synthesize`
 - `http://service-voice-local-llm:8083/chat/completions`
 
 This path keeps the `voice-local-llm` wrapper in front of Ollama, which is useful when you want lazy model pulls and a repo-owned adapter boundary. It reuses `VOICE_LLM_MODEL` from `i12e/orchestrator/.env.dev`, with `VOICE_LOCAL_LLM_MODEL` available as an override for the wrapper.
-
-## Start dev with local voice + GPU-backed Ollama
-
-```bash
-pnpm nx run i12e-orchestrator:up-dev-all-local-voice-gpu
-```
-
-This applies [`docker-compose.gpu.yml`](./docker-compose.gpu.yml) and requests `gpus: all` for the local STT, local TTS, and Ollama runtime services. It also switches the local STT runtime to `device=cuda` with `compute_type=float16` and upgrades the local Piper voice to `de_DE-thorsten-high`. It requires Docker GPU support on the host, typically NVIDIA Container Toolkit on Linux.
+The local STT, local TTS, and Ollama runtime services request `gpus: all` in the main compose file. This requires Docker GPU support on the host, typically NVIDIA Container Toolkit on Linux.
 
 ## Smoke-test the complete local voice stack
 
@@ -69,14 +77,6 @@ pnpm nx run i12e-orchestrator:smoke-dev-all-local-voice
 ```
 
 This target starts the complete local voice stack if needed, then runs one spoken roundtrip through local STT, local Qwen via Ollama, and local TTS.
-
-For the GPU-backed variant, use:
-
-```bash
-pnpm nx run i12e-orchestrator:smoke-dev-all-local-voice-gpu
-```
-
-This starts the same smoke test through the GPU overlay, so local STT runs with CUDA/FP16 and local Piper uses `de_DE-thorsten-high`.
 
 Override these environment variables when needed:
 
@@ -89,12 +89,16 @@ Override these environment variables when needed:
 pnpm nx run i12e-orchestrator:up-prod
 ```
 
-This brings up:
+This brings up the same service classes as `up-dev`, using the prod ports and model settings from `i12e/orchestrator/.env.prod`:
 
 - Cockpit app (`app-cockpit` service)
 - PostgreSQL (`i12e-postgres` service)
 - Migration runner (`i12e-postgres-migrate`) as a one-off container (`--rm`)
 - Weather backend (`service-weather` service)
+- Local faster-whisper STT (`service-voice-local-stt` service)
+- Local Piper TTS (`service-voice-local-tts` service)
+- Ollama runtime (`service-voice-local-llm-runtime` service)
+- Local LLM wrapper (`service-voice-local-llm` service)
 - Voice backend (`service-voice` service)
 
 Environment defaults are stored in:
