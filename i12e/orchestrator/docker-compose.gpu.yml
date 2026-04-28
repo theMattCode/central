@@ -1,3 +1,21 @@
 services:
+  service-voice-local-stt:
+    build:
+      args:
+        VOICE_LOCAL_STT_ENABLE_GPU: "true"
+    environment:
+      VOICE_LOCAL_STT_DEVICE: cuda
+      VOICE_LOCAL_STT_COMPUTE_TYPE: float16
+    gpus: all
+
+  service-voice-local-tts:
+    build:
+      args:
+        VOICE_LOCAL_TTS_ENABLE_GPU: "true"
+    environment:
+      VOICE_LOCAL_TTS_MODEL: ${VOICE_LOCAL_TTS_MODEL:-de_DE-thorsten-medium}
+      VOICE_LOCAL_TTS_USE_CUDA: "true"
+    gpus: all
+
   service-voice-local-llm-runtime:
     gpus: all

@@ -219,7 +219,13 @@ Start the same stack with GPU access enabled for the Ollama runtime:
 nx run i12e-orchestrator:up-dev-all-local-voice-gpu
 ```
 
-This uses `i12e/orchestrator/docker-compose.gpu.yml` and requests `gpus: all` for `service-voice-local-llm-runtime`. It requires a Docker host with working GPU container support.
+This uses `i12e/orchestrator/docker-compose.gpu.yml` and requests `gpus: all` for `service-voice-local-stt`, `service-voice-local-tts`, and `service-voice-local-llm-runtime`. It also switches local STT to CUDA/FP16 and upgrades local TTS to the `de_DE-thorsten-high` Piper voice. It requires a Docker host with working GPU container support.
+
+To smoke-test the same GPU-backed path end to end:
+
+```bash
+nx run i12e-orchestrator:smoke-dev-all-local-voice-gpu
+```
 
 Run a full local voice smoke test, including stack startup, STT, LLM, and TTS:
 

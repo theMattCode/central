@@ -1,20 +1,24 @@
 import base64
+import io
 import json
 import logging
 import os
 import subprocess
 import sys
-import tempfile
 import threading
+import wave
 from dataclasses import dataclass
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
+from typing import Any
 
 LOGGER = logging.getLogger("voice_local_tts")
 JSON_CONTENT_TYPE = "application/json; charset=utf-8"
 VOICE_DOWNLOAD_LOCK = threading.Lock()
 READY_VOICES: set[str] = set()
+VOICE_LOAD_LOCK = threading.Lock()
+LOADED_VOICES: dict[tuple[str, bool], "PiperRuntime"] = {}
 
 
 @dataclass(frozen=True)
@@ -29,6 +33,12 @@ class Config:
     use_cuda: bool
     volume: float
     normalize_audio: bool
+
+
+@dataclass
+class PiperRuntime:
+    voice: Any
+    synthesize_lock: threading.Lock
 
 
 def parse_int_env(name: str, default: int) -> int:
@@ -93,44 +103,31 @@ def parse_synthesis_request(body: bytes) -> tuple[str, str, str]:
     return text.strip(), language, voice_instruction
 
 
-def build_piper_command(config: Config, output_path: Path) -> list[str]:
-    command = [
-        config.executable,
-        "--model",
-        config.model,
-        "--output_file",
-        str(output_path),
-    ]
-
-    if config.speaker is not None:
-        command.extend(["--speaker", config.speaker])
-    if config.data_dir is not None:
-        command.extend(["--data-dir", config.data_dir])
-    if config.sentence_silence > 0:
-        command.extend(["--sentence-silence", str(config.sentence_silence)])
-    if config.use_cuda:
-        command.append("--cuda")
-    if config.volume != 1.0:
-        command.extend(["--volume", str(config.volume)])
-    if not config.normalize_audio:
-        command.append("--no-normalize")
-
-    return command
-
-
 def is_local_model_reference(model: str) -> bool:
     return model.endswith(".onnx") or "/" in model or "\\" in model
 
 
-def build_piper_download_command(config: Config) -> list[str]:
+def resolve_download_dir(config: Config) -> Path:
     download_dir = config.download_dir or config.data_dir or "."
+    return Path(download_dir)
+
+
+def resolve_model_path(config: Config) -> Path:
+    if is_local_model_reference(config.model):
+        return Path(config.model)
+
+    return resolve_download_dir(config) / f"{config.model}.onnx"
+
+
+def build_piper_download_command(config: Config) -> list[str]:
+    download_dir = resolve_download_dir(config)
 
     return [
         sys.executable,
         "-m",
         "piper.download_voices",
         "--download-dir",
-        download_dir,
+        str(download_dir),
         config.model,
     ]
 
@@ -162,33 +159,123 @@ def ensure_piper_voice_available(config: Config) -> None:
         READY_VOICES.add(config.model)
 
 
+def parse_speaker_id(speaker: str | None) -> int | None:
+    if speaker is None:
+        return None
+
+    return int(speaker)
+
+
+def build_silence_bytes(
+    sample_rate: int,
+    sample_width: int,
+    sample_channels: int,
+    sentence_silence: float,
+) -> bytes:
+    if sentence_silence <= 0:
+        return b""
+
+    frame_count = max(0, round(sample_rate * sentence_silence))
+    return b"\x00" * frame_count * sample_width * sample_channels
+
+
+def _load_piper_voice(config: Config, model_path: Path) -> Any:
+    from piper import PiperVoice
+
+    LOGGER.info(
+        "Loading Piper voice model_path=%s use_cuda=%s",
+        model_path,
+        config.use_cuda,
+    )
+    return PiperVoice.load(
+        model_path,
+        use_cuda=config.use_cuda,
+        download_dir=resolve_download_dir(config),
+    )
+
+
+def get_piper_runtime(config: Config) -> PiperRuntime:
+    ensure_piper_voice_available(config)
+    model_path = resolve_model_path(config).resolve()
+    cache_key = (str(model_path), config.use_cuda)
+
+    with VOICE_LOAD_LOCK:
+        runtime = LOADED_VOICES.get(cache_key)
+        if runtime is None:
+            runtime = PiperRuntime(
+                voice=_load_piper_voice(config, model_path),
+                synthesize_lock=threading.Lock(),
+            )
+            LOADED_VOICES[cache_key] = runtime
+
+    return runtime
+
+
+def build_synthesis_config(config: Config) -> Any:
+    from piper.config import SynthesisConfig
+
+    return SynthesisConfig(
+        speaker_id=parse_speaker_id(config.speaker),
+        normalize_audio=config.normalize_audio,
+        volume=config.volume,
+    )
+
+
+def write_piper_wav(
+    voice: Any,
+    text: str,
+    syn_config: Any,
+    wav_file: wave.Wave_write,
+    sentence_silence: float,
+) -> None:
+    first_chunk = True
+    previous_chunk = None
+
+    for audio_chunk in voice.synthesize(text, syn_config=syn_config):
+        if first_chunk:
+            wav_file.setframerate(audio_chunk.sample_rate)
+            wav_file.setsampwidth(audio_chunk.sample_width)
+            wav_file.setnchannels(audio_chunk.sample_channels)
+            first_chunk = False
+
+        if previous_chunk is not None and sentence_silence > 0:
+            wav_file.writeframes(
+                build_silence_bytes(
+                    previous_chunk.sample_rate,
+                    previous_chunk.sample_width,
+                    previous_chunk.sample_channels,
+                    sentence_silence,
+                )
+            )
+
+        wav_file.writeframes(audio_chunk.audio_int16_bytes)
+        previous_chunk = audio_chunk
+
+    if first_chunk:
+        wav_file.setframerate(voice.config.sample_rate)
+        wav_file.setsampwidth(2)
+        wav_file.setnchannels(1)
+
+
 def synthesize_with_piper(config: Config, text: str, voice_instruction: str) -> bytes:
     if voice_instruction:
         LOGGER.info("Ignoring Piper voiceInstruction hint: %s", voice_instruction)
 
-    output_path = None
-    try:
-        ensure_piper_voice_available(config)
+    runtime = get_piper_runtime(config)
+    syn_config = build_synthesis_config(config)
 
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as output_file:
-            output_path = Path(output_file.name)
+    with runtime.synthesize_lock:
+        wav_bytes = io.BytesIO()
+        with wave.open(wav_bytes, "wb") as wav_file:
+            write_piper_wav(
+                runtime.voice,
+                text,
+                syn_config,
+                wav_file,
+                config.sentence_silence,
+            )
 
-        command = build_piper_command(config, output_path)
-        completed = subprocess.run(
-            command,
-            input=text,
-            text=True,
-            capture_output=True,
-            check=False,
-        )
-        if completed.returncode != 0:
-            stderr = completed.stderr.strip() or completed.stdout.strip()
-            raise RuntimeError(f"Piper synthesis failed with exit code {completed.returncode}: {stderr}")
-
-        return output_path.read_bytes()
-    finally:
-        if output_path is not None:
-            output_path.unlink(missing_ok=True)
+        return wav_bytes.getvalue()
 
 
 def json_bytes(payload: dict) -> bytes:

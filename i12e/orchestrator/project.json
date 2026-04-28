@@ -65,6 +65,12 @@
         "command": "pnpm nx run i12e-orchestrator:up-dev-all-local-voice && python3 i12e/orchestrator/scripts/smoke_all_local_voice.py"
       }
     },
+    "smoke-dev-all-local-voice-gpu": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "pnpm nx run i12e-orchestrator:up-dev-all-local-voice-gpu && python3 i12e/orchestrator/scripts/smoke_all_local_voice.py"
+      }
+    },
     "up-prod": {
       "executor": "nx:run-commands",
       "options": {

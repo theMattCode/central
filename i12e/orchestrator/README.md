@@ -60,7 +60,7 @@ This path keeps the `voice-local-llm` wrapper in front of Ollama, which is usefu
 pnpm nx run i12e-orchestrator:up-dev-all-local-voice-gpu
 ```
 
-This applies [`docker-compose.gpu.yml`](./docker-compose.gpu.yml) and requests `gpus: all` for `service-voice-local-llm-runtime`. It requires Docker GPU support on the host, typically NVIDIA Container Toolkit on Linux.
+This applies [`docker-compose.gpu.yml`](./docker-compose.gpu.yml) and requests `gpus: all` for the local STT, local TTS, and Ollama runtime services. It also switches the local STT runtime to `device=cuda` with `compute_type=float16` and upgrades the local Piper voice to `de_DE-thorsten-high`. It requires Docker GPU support on the host, typically NVIDIA Container Toolkit on Linux.
 
 ## Smoke-test the complete local voice stack
 
@@ -69,6 +69,14 @@ pnpm nx run i12e-orchestrator:smoke-dev-all-local-voice
 ```
 
 This target starts the complete local voice stack if needed, then runs one spoken roundtrip through local STT, local Qwen via Ollama, and local TTS.
+
+For the GPU-backed variant, use:
+
+```bash
+pnpm nx run i12e-orchestrator:smoke-dev-all-local-voice-gpu
+```
+
+This starts the same smoke test through the GPU overlay, so local STT runs with CUDA/FP16 and local Piper uses `de_DE-thorsten-high`.
 
 Override these environment variables when needed:
 
