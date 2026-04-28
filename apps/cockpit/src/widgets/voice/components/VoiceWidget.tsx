@@ -107,7 +107,7 @@ export function VoiceWidget() {
             <div>
               <h2 className="text-lg font-semibold text-slate-50">Voice</h2>
               <p className="text-sm text-slate-400">
-                Deutscher Sprachmodus ueber Cockpit -&gt; service-voice mit gestreamter LLM/TTS-Antwort.
+                Deutscher Sprachmodus ueber Cockpit -&gt; service-assistant mit gestreamter LLM/TTS-Antwort.
               </p>
             </div>
           </div>
@@ -148,7 +148,7 @@ export function VoiceWidget() {
 
           <p className="mt-3 text-sm text-slate-400">
             Sprich nach dem Aktivieren frei in das Mikrofon. Das Widget trennt Sprache lokal im Browser, sendet nur
-            erkannte Sprachsegmente an den Voice-Service und startet die Sprachausgabe bereits waehrend der Antwort.
+            erkannte Sprachsegmente an den Assistant-Service und startet die Sprachausgabe bereits waehrend der Antwort.
           </p>
         </div>
 

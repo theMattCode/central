@@ -125,62 +125,62 @@ The weather container run target publishes `5010:8080`.
 
 Weather update polling defaults to 15 minutes (`WEATHER_REFRESH_INTERVAL_SECONDS=900`), and successful updates are persisted to PostgreSQL via `WEATHER_DATABASE_URL`.
 
-### Voice service container
+### Assistant service container
 
-Build the voice service container image:
+Build the assistant service container image:
 
 ```bash
-nx run voice-service:container-build
+nx run assistant-service:container-build
 ```
 
-Run the voice service container image:
+Run the assistant service container image:
 
 ```bash
-nx run voice-service:container-run
+nx run assistant-service:container-run
 ```
 
-The voice container run target publishes `5020:8080`.
+The assistant container run target publishes `5020:8080`.
 
-The standalone voice container still defaults to `VOICE_BACKEND_MODE=mock` unless environment overrides are supplied. The orchestrated dev and prod paths default to `VOICE_BACKEND_MODE=proxy` with local STT, TTS, and LLM services wired in.
+The standalone assistant container still defaults to `ASSISTANT_BACKEND_MODE=mock` unless environment overrides are supplied. The orchestrated dev and prod paths default to `ASSISTANT_BACKEND_MODE=proxy` with STT, TTS, and LLM services wired in.
 
-### Local STT and TTS containers
+### STT and TTS containers
 
-Build the local faster-whisper STT container image:
+Build the faster-whisper STT container image:
 
 ```bash
-nx run voice-local-stt:build
+nx run stt-service:build
 ```
 
-Build the local Piper TTS container image:
+Build the Piper TTS container image:
 
 ```bash
-nx run voice-local-tts:build
+nx run tts-service:build
 ```
 
 Run them standalone when needed:
 
 ```bash
-nx run voice-local-stt:container-run
-nx run voice-local-tts:container-run
+nx run stt-service:container-run
+nx run tts-service:container-run
 ```
 
-The standalone local STT and TTS containers publish `5030:8081` and `5040:8082`.
+The standalone STT and TTS containers publish `5030:8081` and `5040:8082`.
 
-### Local LLM container
+### LLM container
 
-Build the local Ollama wrapper container image:
+Build the Ollama wrapper container image:
 
 ```bash
-nx run voice-local-llm:build
+nx run llm-service:build
 ```
 
 Run it standalone when needed:
 
 ```bash
-nx run voice-local-llm:container-run
+nx run llm-service:container-run
 ```
 
-The standalone local LLM wrapper publishes `5050:8083`.
+The standalone LLM wrapper publishes `5050:8083`.
 
 ### Orchestrator project
 
@@ -190,12 +190,14 @@ Start the complete development environment with all required services:
 nx run i12e-orchestrator:up-dev
 ```
 
-This is the default local-first path. It starts PostgreSQL, weather, cockpit, local faster-whisper STT, local Piper TTS, the Ollama runtime, the local LLM wrapper, and `service-voice` wired through those local voice and model services.
+This is the default development path. It starts PostgreSQL, weather, cockpit, faster-whisper STT, Piper TTS, the Ollama runtime, the LLM wrapper, and `service-assistant`.
 
-The explicit local voice target remains available and starts the same local voice and local LLM stack:
+The orchestrator `up-*` targets share startup sequencing through `i12e/orchestrator/scripts/up_stack.sh`.
+
+The explicit voice target remains available and starts the same assistant stack:
 
 ```bash
-nx run i12e-orchestrator:up-dev-local-voice
+nx run i12e-orchestrator:up-dev-voice
 ```
 
 Start the development environment with mock STT / TTS and direct Ollama chat completions:
@@ -204,22 +206,22 @@ Start the development environment with mock STT / TTS and direct Ollama chat com
 nx run i12e-orchestrator:up-dev-llm-proxy-ollama
 ```
 
-This keeps `service-voice` in `llm-proxy` mode and points `VOICE_LLM_BASE_URL` at the Ollama runtime's OpenAI-compatible `/v1` endpoint.
+This keeps `service-assistant` in `llm-proxy` mode and points `LLM_BASE_URL` at the Ollama runtime's OpenAI-compatible `/v1` endpoint.
 
-Start the development environment with local faster-whisper, local Piper, and a local Qwen LLM through Ollama:
+Start the development environment with faster-whisper, Piper, and a Qwen LLM through Ollama:
 
 ```bash
-nx run i12e-orchestrator:up-dev-all-local-voice
+nx run i12e-orchestrator:up-dev-assistant
 ```
 
-This target is kept as an explicit alias for the default local stack. It keeps the `voice-local-llm` wrapper in front of Ollama for the full local STT / TTS / LLM stack. It reuses `VOICE_LLM_MODEL` from `i12e/orchestrator/.env.dev`, with `VOICE_LOCAL_LLM_MODEL` available as an override for the wrapper.
-The tracked `i12e/orchestrator/.env.dev` now also biases this path toward quality over speed with a larger local STT model, less aggressive extra STT VAD, and slightly less choppy local TTS streaming.
-The main compose file is GPU-backed by default for local voice services: `service-voice-local-stt`, `service-voice-local-tts`, and `service-voice-local-llm-runtime` request `gpus: all`. Local STT defaults to CUDA/FP16, local TTS defaults to CUDA, and the stack requires a Docker host with working GPU container support.
+This target is kept as an explicit alias for the default stack. It keeps the `llm-service` wrapper in front of Ollama for the full STT / TTS / LLM stack and reuses `LLM_MODEL` from `i12e/orchestrator/.env.dev`.
+The tracked `i12e/orchestrator/.env.dev` biases this path toward quality over speed with a larger STT model, less aggressive extra STT VAD, and slightly less choppy TTS streaming.
+The main compose file is GPU-backed by default for assistant support services: `service-stt`, `service-tts`, and `service-llm-runtime` request `gpus: all`. STT defaults to CUDA/FP16, TTS defaults to CUDA, and the stack requires a Docker host with working GPU container support.
 
-Run a full local voice smoke test, including stack startup, STT, LLM, and TTS:
+Run a full voice smoke test, including stack startup, STT, LLM, and TTS:
 
 ```bash
-nx run i12e-orchestrator:smoke-dev-all-local-voice
+nx run i12e-orchestrator:smoke-dev-voice
 ```
 
 Override `SMOKE_VOICE_TEXT` and `SMOKE_VOICE_LANGUAGE` when you want to exercise a different sample input.
@@ -230,7 +232,7 @@ To start the production environment use:
 nx run i12e-orchestrator:up-prod
 ```
 
-The production target also starts the local voice and local LLM services by default, using the prod port mappings from `i12e/orchestrator/.env.prod`.
+The production target starts the same service classes by default, using the prod port mappings from `i12e/orchestrator/.env.prod`.
 
 The migration step runs as a one-off `postgres-migrate` container and is removed after completion.
 

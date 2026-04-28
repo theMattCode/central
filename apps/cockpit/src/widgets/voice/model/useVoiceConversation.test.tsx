@@ -4,11 +4,11 @@ import { act, cleanup, renderHook, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { getLogger } from '@/widgets/voice/log.ts';
 import { encodeFloat32ToWavBase64 } from './audio.ts';
-import { streamVoiceTurn } from './runVoiceTurn.ts';
+import { streamAssistantTurn } from './runAssistantTurn.ts';
 import { useVoiceConversation } from './useVoiceConversation.ts';
 
-vi.mock('@/widgets/voice/model/runVoiceTurn.ts', () => ({
-  streamVoiceTurn: vi.fn(),
+vi.mock('@/widgets/voice/model/runAssistantTurn.ts', () => ({
+  streamAssistantTurn: vi.fn(),
 }));
 
 vi.mock('@/widgets/voice/log.ts', () => ({
@@ -64,7 +64,7 @@ class FakeAudioElement {
 }
 
 describe('useVoiceConversation', () => {
-  const streamVoiceTurnMock = vi.mocked(streamVoiceTurn);
+  const streamAssistantTurnMock = vi.mocked(streamAssistantTurn);
   const loggerErrorMock = vi.mocked(getLogger().error);
   const originalCreateObjectURL = globalThis.URL.createObjectURL;
   const originalRevokeObjectURL = globalThis.URL.revokeObjectURL;
@@ -89,7 +89,7 @@ describe('useVoiceConversation', () => {
 
     vi.stubGlobal('Audio', FakeAudioElement as unknown as typeof Audio);
 
-    streamVoiceTurnMock.mockImplementation(async (options) => {
+    streamAssistantTurnMock.mockImplementation(async (options) => {
       const audioBase64 = encodeFloat32ToWavBase64(new Float32Array([0.1, -0.1]));
       const audioChunk = {
         audioBase64,

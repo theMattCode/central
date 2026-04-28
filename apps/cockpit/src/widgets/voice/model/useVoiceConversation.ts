@@ -9,8 +9,8 @@ import {
   type AudioDiagnostics,
 } from './audio.ts';
 import { getByteTimeDomainSignalLevel } from './audioLevel.ts';
-import type { VoiceConversationStatus, VoiceTurnAudioChunk, VoiceTurnInput } from './model.ts';
-import { streamVoiceTurn } from './runVoiceTurn.ts';
+import type { VoiceConversationStatus, AssistantTurnAudioChunk, AssistantTurnInput } from './model.ts';
+import { streamAssistantTurn } from './runAssistantTurn.ts';
 
 type UseVoiceConversationOptions = {
   language?: string;
@@ -39,7 +39,7 @@ function toErrorMessage(error: unknown): string {
     return error.message;
   }
 
-  return 'Unexpected voice request error.';
+  return 'Unexpected assistant request error.';
 }
 
 function toMediaErrorCodeName(code: number | null | undefined): string {
@@ -337,14 +337,14 @@ export function useVoiceConversation(options: UseVoiceConversationOptions = {}):
 
       const shouldIgnoreEvent = () => abortController.signal.aborted || abortControllerRef.current !== abortController;
 
-      const queueAudioChunk = (chunk: VoiceTurnAudioChunk) => {
+      const queueAudioChunk = (chunk: AssistantTurnAudioChunk) => {
         if (shouldIgnoreEvent()) {
           return;
         }
 
         const responseAudioBytes = base64ToBytes(chunk.audioBase64);
         const audioDiagnostics = describeAudioBytes(responseAudioBytes, chunk.audioMimeType);
-        getLogger().info('voice-turn-audio-chunk-received', {
+        getLogger().info('assistant-turn-audio-chunk-received', {
           chunkIndex: chunk.chunkIndex,
           chunkTextLength: chunk.text.length,
           ...audioDiagnostics,
@@ -360,14 +360,14 @@ export function useVoiceConversation(options: UseVoiceConversationOptions = {}):
         playNextChunk();
       };
 
-      const payload: VoiceTurnInput = {
+      const payload: AssistantTurnInput = {
         audioBase64: encodeFloat32ToWavBase64(audio),
         audioMimeType: WAV_AUDIO_MIME_TYPE,
         language: options.language ?? 'de',
         voiceInstruction: options.voiceInstruction,
       };
 
-      getLogger().info('voice-turn-request-started', {
+      getLogger().info('assistant-turn-request-started', {
         encodedAudioLength: payload.audioBase64.length,
         language: payload.language,
         sampleCount: audio.length,
@@ -375,7 +375,7 @@ export function useVoiceConversation(options: UseVoiceConversationOptions = {}):
       });
 
       try {
-        const result = await streamVoiceTurn({
+        const result = await streamAssistantTurn({
           data: payload,
           onAudioChunk: async (chunk) => queueAudioChunk(chunk),
           onResponseDelta: async (delta) => {
@@ -391,7 +391,7 @@ export function useVoiceConversation(options: UseVoiceConversationOptions = {}):
             }
 
             setTranscript(value);
-            getLogger().info('voice-turn-transcript-received', {
+            getLogger().info('assistant-turn-transcript-received', {
               transcriptLength: value.length,
             });
           },
@@ -406,7 +406,7 @@ export function useVoiceConversation(options: UseVoiceConversationOptions = {}):
         setTranscript(result.transcript);
         setResponseText(result.responseText);
 
-        getLogger().info('voice-turn-stream-completed', {
+        getLogger().info('assistant-turn-stream-completed', {
           audioChunkCount: result.audioChunks.length,
           responseLength: result.responseText.length,
           transcriptLength: result.transcript.length,
@@ -419,12 +419,12 @@ export function useVoiceConversation(options: UseVoiceConversationOptions = {}):
         }
       } catch (error) {
         if (abortController.signal.aborted) {
-          getLogger().info('voice-turn-request-aborted');
+          getLogger().info('assistant-turn-request-aborted');
           setStatus('idle');
           return;
         }
 
-        getLogger().error('voice-turn-failed', undefined, error);
+        getLogger().error('assistant-turn-failed', undefined, error);
         setStatus('error');
         setErrorMessage(toErrorMessage(error));
       }

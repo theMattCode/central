@@ -1,0 +1,43 @@
+{
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "name": "tts-service",
+  "projectType": "application",
+  "root": "services/tts",
+  "sourceRoot": "services/tts/src",
+  "targets": {
+    "lint": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "services/tts",
+        "command": "python3 -m py_compile src/service.py tests/test_service.py"
+      }
+    },
+    "test": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "services/tts",
+        "command": "python3 -m unittest discover -s tests -p 'test_*.py'"
+      }
+    },
+    "typecheck": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "services/tts",
+        "command": "python3 -m py_compile src/service.py tests/test_service.py"
+      }
+    },
+    "build": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "docker build --file services/tts/Dockerfile --tag central/services/tts:latest ."
+      }
+    },
+    "container-run": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "docker run --rm -i --name central-tts -p 5040:8082 central/services/tts:latest"
+      }
+    }
+  },
+  "tags": ["scope:platform", "type:service"]
+}

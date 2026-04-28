@@ -1,28 +1,28 @@
-export interface VoiceTurnInput {
+export interface AssistantTurnInput {
   audioBase64: string;
   audioMimeType: string;
   language?: string;
   voiceInstruction?: string;
 }
 
-export interface VoiceTurnResult {
+export interface AssistantTurnResult {
   transcript: string;
   responseText: string;
   audioBase64: string;
   audioMimeType: string;
 }
 
-export interface VoiceTurnAudioChunk {
+export interface AssistantTurnAudioChunk {
   chunkIndex: number;
   text: string;
   audioBase64: string;
   audioMimeType: string;
 }
 
-export interface VoiceTurnStreamResult {
+export interface AssistantTurnStreamResult {
   transcript: string;
   responseText: string;
-  audioChunks: VoiceTurnAudioChunk[];
+  audioChunks: AssistantTurnAudioChunk[];
 }
 
 export type VoiceConversationStatus = 'idle' | 'processing' | 'playing' | 'error';

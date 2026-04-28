@@ -5,7 +5,7 @@
 The repository is organized as a multi-project Nx workspace:
 
 - `apps/*`: user-facing applications (currently `apps/cockpit`)
-- `services/*`: backend runtime services (`services/weather`, `services/voice`)
+- `services/*`: backend runtime services (`services/weather`, `services/assistant`)
 - `i12e/*`: infrastructure and orchestration projects (`postgres`, `orchestrator`)
 - `libs/*`: shared reusable libraries (currently `ts-log` for cross-cutting TypeScript logging)
 - `docs/*`: cross-cutting repository documentation
@@ -17,12 +17,12 @@ The repository is organized as a multi-project Nx workspace:
 - TanStack Start + React frontend.
 - Fetches data on the cockpit server via TanStack Start loaders/server functions, then sends the result to the browser.
 - Cockpit reaches weather-service over HTTP (`/api/v1/weather/current` and `/api/v1/weather/forecast`).
-- Cockpit reaches voice-service over HTTP (`POST /api/v1/voice/turn` and `POST /api/v1/voice/turn/stream`).
+- Cockpit reaches assistant-service over HTTP (`POST /api/v1/assistant/turn` and `POST /api/v1/assistant/turn/stream`).
 - Configuration:
   - Runtime weather service base URL is configured via `WEATHER_SERVICE_BASE_URL` with `VITE_WEATHER_API_BASE_URL` as a browser/build-time fallback.
-  - Runtime voice service base URL is configured via `VOICE_SERVICE_BASE_URL` with `VITE_VOICE_API_BASE_URL` as a browser/build-time fallback.
+  - Runtime assistant service base URL is configured via `ASSISTANT_SERVICE_BASE_URL` with `VITE_ASSISTANT_API_BASE_URL` as a browser/build-time fallback.
 - If neither weather variable is set, cockpit defaults to `http://localhost:3010` for local orchestrator-driven development.
-- If neither voice variable is set, cockpit defaults to `http://localhost:3020` for local orchestrator-driven development.
+- If neither assistant variable is set, cockpit defaults to `http://localhost:3020` for local orchestrator-driven development.
 
 ### Weather Service (`services/weather`)
 
@@ -34,11 +34,11 @@ The repository is organized as a multi-project Nx workspace:
   - `config`/`context`/`main`: configuration and process wiring.
 - Runs in `http`, `mcp`, or `both` runtime modes.
 
-### Voice Service (`services/voice`)
+### Assistant Service (`services/assistant`)
 
-- Rust + Axum service that owns the voice turn orchestration boundary.
+- Rust + Axum service that owns the assistant turn orchestration boundary.
 - Layered modules:
-  - `domain`: voice-turn ports and orchestration.
+  - `domain`: assistant-turn ports and orchestration.
   - `infrastructure`: mock adapters plus HTTP upstream adapters for STT, LLM, and TTS.
   - `http`: REST transport.
   - `config`/`context`/`main`: configuration and process wiring.
@@ -47,7 +47,7 @@ The repository is organized as a multi-project Nx workspace:
   - `llm-proxy` mode to call an external LLM while keeping mock STT / TTS boundaries.
   - `openai` mode to use OpenAI-native STT / LLM / TTS endpoints.
   - `proxy` mode to call external STT / LLM / TTS runtimes.
-- The orchestrated dev and prod stacks use `proxy` mode by default, backed by the local faster-whisper STT service, local Piper TTS service, and local Ollama-based LLM wrapper.
+- The orchestrated dev and prod stacks use `proxy` mode by default, backed by faster-whisper STT, Piper TTS, and an Ollama-based LLM wrapper.
 
 ### Persistence (`i12e/postgres`)
 
@@ -57,7 +57,7 @@ The repository is organized as a multi-project Nx workspace:
 ### Orchestration (`i12e/orchestrator`)
 
 - Docker Compose project used to start the full local stack.
-- Separate environment files define dev and prod default port mappings and local voice / LLM model settings.
+- Separate environment files define dev and prod default port mappings and assistant model settings.
 
 ## Data Flow
 
@@ -73,8 +73,8 @@ The repository is organized as a multi-project Nx workspace:
 ### Voice
 
 1. Browser VAD cuts a speech segment locally.
-2. Browser posts the segment directly to voice-service's streaming endpoint.
-3. Voice-service performs `STT -> streamed LLM -> chunked TTS`.
+2. Browser posts the segment directly to assistant-service's streaming endpoint.
+3. Assistant-service performs `STT -> streamed LLM -> chunked TTS`.
 4. Browser plays synthesized chunks as they arrive.
 5. Cockpit still exposes a non-streaming server function path for fallback flows.
 

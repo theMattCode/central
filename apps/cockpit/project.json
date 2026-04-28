@@ -37,13 +37,13 @@
     "container-build": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "docker build --build-arg WEATHER_SERVICE_BASE_URL=${WEATHER_SERVICE_BASE_URL:-http://host.docker.internal:5010} --build-arg VOICE_SERVICE_BASE_URL=${VOICE_SERVICE_BASE_URL:-http://host.docker.internal:5020} --build-arg VITE_WEATHER_API_BASE_URL=${VITE_WEATHER_API_BASE_URL:-http://localhost:5010} --build-arg VITE_VOICE_API_BASE_URL=${VITE_VOICE_API_BASE_URL:-http://localhost:5020} --file apps/cockpit/Dockerfile --tag central/apps/cockpit:latest ."
+        "command": "docker build --build-arg WEATHER_SERVICE_BASE_URL=${WEATHER_SERVICE_BASE_URL:-http://host.docker.internal:5010} --build-arg ASSISTANT_SERVICE_BASE_URL=${ASSISTANT_SERVICE_BASE_URL:-http://host.docker.internal:5020} --build-arg VITE_WEATHER_API_BASE_URL=${VITE_WEATHER_API_BASE_URL:-http://localhost:5010} --build-arg VITE_ASSISTANT_API_BASE_URL=${VITE_ASSISTANT_API_BASE_URL:-http://localhost:5020} --file apps/cockpit/Dockerfile --tag central/apps/cockpit:latest ."
       }
     },
     "container-run": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "docker run --rm --name central-cockpit --add-host=host.docker.internal:host-gateway -e WEATHER_SERVICE_BASE_URL=${WEATHER_SERVICE_BASE_URL:-http://host.docker.internal:5010} -e VOICE_SERVICE_BASE_URL=${VOICE_SERVICE_BASE_URL:-http://host.docker.internal:5020} -p 5000:3000 central/apps/cockpit:latest"
+        "command": "docker run --rm --name central-cockpit --add-host=host.docker.internal:host-gateway -e WEATHER_SERVICE_BASE_URL=${WEATHER_SERVICE_BASE_URL:-http://host.docker.internal:5010} -e ASSISTANT_SERVICE_BASE_URL=${ASSISTANT_SERVICE_BASE_URL:-http://host.docker.internal:5020} -p 5000:3000 central/apps/cockpit:latest"
       }
     },
     "test": {

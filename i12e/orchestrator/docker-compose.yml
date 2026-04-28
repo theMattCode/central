@@ -58,31 +58,31 @@ services:
       retries: 5
       start_period: 10s
 
-  service-voice:
+  service-assistant:
     build:
       context: ../..
-      dockerfile: services/voice/Dockerfile
-    image: central/services/voice:latest
+      dockerfile: services/assistant/Dockerfile
+    image: central/services/assistant:latest
     environment:
-      VOICE_PORT: '8080'
-      VOICE_REQUEST_TIMEOUT_SECONDS: ${VOICE_REQUEST_TIMEOUT_SECONDS:-30}
-      VOICE_TTS_STREAM_SOFT_LIMIT_CHARS: ${VOICE_TTS_STREAM_SOFT_LIMIT_CHARS:-220}
-      VOICE_CORS_ALLOW_ORIGIN: ${VOICE_CORS_ALLOW_ORIGIN:-*}
-      VOICE_BACKEND_MODE: ${VOICE_BACKEND_MODE:-proxy}
-      VOICE_DEFAULT_LANGUAGE: ${VOICE_DEFAULT_LANGUAGE:-de}
-      VOICE_DEFAULT_VOICE_INSTRUCTION: ${VOICE_DEFAULT_VOICE_INSTRUCTION:-}
-      VOICE_ASSISTANT_NAME: ${VOICE_ASSISTANT_NAME:-}
-      VOICE_LLM_SYSTEM_PROMPT: ${VOICE_LLM_SYSTEM_PROMPT:-}
-      VOICE_STT_URL: ${VOICE_STT_URL:-http://service-voice-local-stt:8081/transcribe}
-      VOICE_STT_MODEL: ${VOICE_STT_MODEL:-}
-      VOICE_TTS_URL: ${VOICE_TTS_URL:-http://service-voice-local-tts:8082/synthesize}
-      VOICE_TTS_MODEL: ${VOICE_TTS_MODEL:-}
-      VOICE_TTS_VOICE: ${VOICE_TTS_VOICE:-}
-      VOICE_LLM_BASE_URL: ${VOICE_LLM_BASE_URL:-http://service-voice-local-llm:8083}
-      VOICE_LLM_API_KEY: ${VOICE_LLM_API_KEY:-}
-      VOICE_LLM_MODEL: ${VOICE_LLM_MODEL:-${VOICE_LOCAL_LLM_MODEL:-qwen2.5:3b}}
+      ASSISTANT_PORT: '8080'
+      ASSISTANT_REQUEST_TIMEOUT_SECONDS: ${ASSISTANT_REQUEST_TIMEOUT_SECONDS:-30}
+      TTS_STREAM_SOFT_LIMIT_CHARS: ${TTS_STREAM_SOFT_LIMIT_CHARS:-220}
+      ASSISTANT_CORS_ALLOW_ORIGIN: ${ASSISTANT_CORS_ALLOW_ORIGIN:-*}
+      ASSISTANT_BACKEND_MODE: ${ASSISTANT_BACKEND_MODE:-proxy}
+      ASSISTANT_DEFAULT_LANGUAGE: ${ASSISTANT_DEFAULT_LANGUAGE:-de}
+      ASSISTANT_DEFAULT_VOICE_INSTRUCTION: ${ASSISTANT_DEFAULT_VOICE_INSTRUCTION:-}
+      ASSISTANT_NAME: ${ASSISTANT_NAME:-}
+      LLM_SYSTEM_PROMPT: ${LLM_SYSTEM_PROMPT:-}
+      STT_URL: ${STT_URL:-http://service-stt:8081/transcribe}
+      STT_MODEL: ${STT_MODEL:-}
+      TTS_URL: ${TTS_URL:-http://service-tts:8082/synthesize}
+      TTS_MODEL: ${TTS_MODEL:-}
+      TTS_VOICE: ${TTS_VOICE:-}
+      LLM_BASE_URL: ${LLM_BASE_URL:-http://service-llm:8083}
+      LLM_API_KEY: ${LLM_API_KEY:-}
+      LLM_MODEL: ${LLM_MODEL:-qwen2.5:3b}
     ports:
-      - '${VOICE_PORT:-3020}:8080'
+      - '${ASSISTANT_PORT:-3020}:8080'
     healthcheck:
       test: ['CMD', 'wget', '-qO', '-', 'http://127.0.0.1:8080/healthz']
       interval: 10s
@@ -90,26 +90,26 @@ services:
       retries: 5
       start_period: 10s
 
-  service-voice-local-stt:
+  service-stt:
     build:
       context: ../..
-      dockerfile: services/voice-local-stt/Dockerfile
+      dockerfile: services/stt/Dockerfile
       args:
-        VOICE_LOCAL_STT_ENABLE_GPU: 'true'
-    image: central/services/voice-local-stt:latest
+        STT_ENABLE_GPU: 'true'
+    image: central/services/stt:latest
     environment:
-      VOICE_LOCAL_STT_PORT: '8081'
-      VOICE_LOCAL_STT_MODEL: ${VOICE_LOCAL_STT_MODEL:-small}
-      VOICE_LOCAL_STT_DEVICE: ${VOICE_LOCAL_STT_DEVICE:-cuda}
-      VOICE_LOCAL_STT_COMPUTE_TYPE: ${VOICE_LOCAL_STT_COMPUTE_TYPE:-float16}
-      VOICE_LOCAL_STT_BEAM_SIZE: ${VOICE_LOCAL_STT_BEAM_SIZE:-5}
-      VOICE_LOCAL_STT_VAD_FILTER: ${VOICE_LOCAL_STT_VAD_FILTER:-true}
-      HF_HOME: ${VOICE_LOCAL_STT_CACHE_DIR:-/models}
+      STT_PORT: '8081'
+      STT_MODEL: ${STT_MODEL:-small}
+      STT_DEVICE: ${STT_DEVICE:-cuda}
+      STT_COMPUTE_TYPE: ${STT_COMPUTE_TYPE:-float16}
+      STT_BEAM_SIZE: ${STT_BEAM_SIZE:-5}
+      STT_VAD_FILTER: ${STT_VAD_FILTER:-true}
+      HF_HOME: ${STT_CACHE_DIR:-/models}
     gpus: all
     ports:
-      - '${VOICE_LOCAL_STT_PORT:-3030}:8081'
+      - '${STT_PORT:-3030}:8081'
     volumes:
-      - central_voice_local_stt_models:${VOICE_LOCAL_STT_CACHE_DIR:-/models}
+      - central_stt_models:${STT_CACHE_DIR:-/models}
     healthcheck:
       test:
         ['CMD', 'python', '-c', 'import urllib.request; urllib.request.urlopen("http://127.0.0.1:8081/healthz").read()']
@@ -118,29 +118,29 @@ services:
       retries: 5
       start_period: 20s
 
-  service-voice-local-tts:
+  service-tts:
     build:
       context: ../..
-      dockerfile: services/voice-local-tts/Dockerfile
+      dockerfile: services/tts/Dockerfile
       args:
-        VOICE_LOCAL_TTS_ENABLE_GPU: 'true'
-    image: central/services/voice-local-tts:latest
+        TTS_ENABLE_GPU: 'true'
+    image: central/services/tts:latest
     environment:
-      VOICE_LOCAL_TTS_PORT: '8082'
-      VOICE_LOCAL_TTS_EXECUTABLE: ${VOICE_LOCAL_TTS_EXECUTABLE:-piper}
-      VOICE_LOCAL_TTS_MODEL: ${VOICE_LOCAL_TTS_MODEL:-de_DE-thorsten-medium}
-      VOICE_LOCAL_TTS_SPEAKER: ${VOICE_LOCAL_TTS_SPEAKER:-}
-      VOICE_LOCAL_TTS_DATA_DIR: ${VOICE_LOCAL_TTS_DATA_DIR:-/models}
-      VOICE_LOCAL_TTS_DOWNLOAD_DIR: ${VOICE_LOCAL_TTS_DOWNLOAD_DIR:-/models}
-      VOICE_LOCAL_TTS_SENTENCE_SILENCE: ${VOICE_LOCAL_TTS_SENTENCE_SILENCE:-0}
-      VOICE_LOCAL_TTS_USE_CUDA: ${VOICE_LOCAL_TTS_USE_CUDA:-true}
-      VOICE_LOCAL_TTS_VOLUME: ${VOICE_LOCAL_TTS_VOLUME:-1}
-      VOICE_LOCAL_TTS_NORMALIZE_AUDIO: ${VOICE_LOCAL_TTS_NORMALIZE_AUDIO:-true}
+      TTS_PORT: '8082'
+      TTS_EXECUTABLE: ${TTS_EXECUTABLE:-piper}
+      TTS_MODEL: ${TTS_MODEL:-de_DE-thorsten-medium}
+      TTS_SPEAKER: ${TTS_SPEAKER:-}
+      TTS_DATA_DIR: ${TTS_DATA_DIR:-/models}
+      TTS_DOWNLOAD_DIR: ${TTS_DOWNLOAD_DIR:-/models}
+      TTS_SENTENCE_SILENCE: ${TTS_SENTENCE_SILENCE:-0}
+      TTS_USE_CUDA: ${TTS_USE_CUDA:-true}
+      TTS_VOLUME: ${TTS_VOLUME:-1}
+      TTS_NORMALIZE_AUDIO: ${TTS_NORMALIZE_AUDIO:-true}
     gpus: all
     ports:
-      - '${VOICE_LOCAL_TTS_PORT:-3040}:8082'
+      - '${TTS_PORT:-3040}:8082'
     volumes:
-      - central_voice_local_tts_models:/models
+      - central_tts_models:/models
     healthcheck:
       test:
         ['CMD', 'python', '-c', 'import urllib.request; urllib.request.urlopen("http://127.0.0.1:8082/healthz").read()']
@@ -149,16 +149,16 @@ services:
       retries: 5
       start_period: 20s
 
-  service-voice-local-llm-runtime:
-    image: ${VOICE_LOCAL_LLM_RUNTIME_IMAGE:-ollama/ollama:latest}
+  service-llm-runtime:
+    image: ${LLM_RUNTIME_IMAGE:-ollama/ollama:latest}
     command: ['serve']
     environment:
-      OLLAMA_KEEP_ALIVE: ${VOICE_LOCAL_LLM_KEEP_ALIVE:-5m}
+      OLLAMA_KEEP_ALIVE: ${LLM_KEEP_ALIVE:-5m}
     gpus: all
     ports:
-      - '${VOICE_LOCAL_LLM_RUNTIME_PORT:-3051}:11434'
+      - '${LLM_RUNTIME_PORT:-3051}:11434'
     volumes:
-      - central_voice_local_llm_models:/root/.ollama
+      - central_llm_models:/root/.ollama
     healthcheck:
       test: ['CMD', 'ollama', 'list']
       interval: 10s
@@ -166,32 +166,32 @@ services:
       retries: 10
       start_period: 20s
 
-  service-voice-local-llm-pull:
-    image: ${VOICE_LOCAL_LLM_RUNTIME_IMAGE:-ollama/ollama:latest}
+  service-llm-pull:
+    image: ${LLM_RUNTIME_IMAGE:-ollama/ollama:latest}
     depends_on:
-      service-voice-local-llm-runtime:
+      service-llm-runtime:
         condition: service_healthy
     environment:
-      OLLAMA_HOST: http://service-voice-local-llm-runtime:11434
-      VOICE_LOCAL_LLM_MODEL: ${VOICE_LOCAL_LLM_MODEL:-${VOICE_LLM_MODEL:-qwen2.5:3b}}
-    command: ['pull', '${VOICE_LOCAL_LLM_MODEL:-${VOICE_LLM_MODEL:-qwen2.5:3b}}']
+      OLLAMA_HOST: http://service-llm-runtime:11434
+      LLM_MODEL: ${LLM_MODEL:-qwen2.5:3b}
+    command: ['pull', '${LLM_MODEL:-qwen2.5:3b}']
     restart: 'no'
 
-  service-voice-local-llm:
+  service-llm:
     build:
       context: ../..
-      dockerfile: services/voice-local-llm/Dockerfile
-    image: central/services/voice-local-llm:latest
+      dockerfile: services/llm/Dockerfile
+    image: central/services/llm:latest
     depends_on:
-      service-voice-local-llm-runtime:
+      service-llm-runtime:
         condition: service_healthy
     environment:
-      VOICE_LOCAL_LLM_PORT: '8083'
-      VOICE_LOCAL_LLM_OLLAMA_URL: http://service-voice-local-llm-runtime:11434
-      VOICE_LOCAL_LLM_REQUEST_TIMEOUT_SECONDS: ${VOICE_LOCAL_LLM_REQUEST_TIMEOUT_SECONDS:-120}
-      VOICE_LOCAL_LLM_DEFAULT_MODEL: ${VOICE_LOCAL_LLM_MODEL:-${VOICE_LLM_MODEL:-qwen2.5:3b}}
+      LLM_PORT: '8083'
+      LLM_OLLAMA_URL: http://service-llm-runtime:11434
+      LLM_REQUEST_TIMEOUT_SECONDS: ${LLM_REQUEST_TIMEOUT_SECONDS:-120}
+      LLM_DEFAULT_MODEL: ${LLM_MODEL:-qwen2.5:3b}
     ports:
-      - '${VOICE_LOCAL_LLM_PORT:-3050}:8083'
+      - '${LLM_PORT:-3050}:8083'
     healthcheck:
       test:
         ['CMD', 'python', '-c', 'import urllib.request; urllib.request.urlopen("http://127.0.0.1:8083/healthz").read()']
@@ -206,27 +206,27 @@ services:
       dockerfile: apps/cockpit/Dockerfile
       args:
         WEATHER_SERVICE_BASE_URL: ${WEATHER_SERVICE_BASE_URL:-http://service-weather:8080}
-        VOICE_SERVICE_BASE_URL: ${VOICE_SERVICE_BASE_URL:-http://service-voice:8080}
+        ASSISTANT_SERVICE_BASE_URL: ${ASSISTANT_SERVICE_BASE_URL:-http://service-assistant:8080}
         VITE_WEATHER_API_BASE_URL: ${VITE_WEATHER_API_BASE_URL:-http://localhost:${WEATHER_PORT:-3010}}
-        VITE_VOICE_API_BASE_URL: ${VITE_VOICE_API_BASE_URL:-http://localhost:${VOICE_PORT:-3020}}
+        VITE_ASSISTANT_API_BASE_URL: ${VITE_ASSISTANT_API_BASE_URL:-http://localhost:${ASSISTANT_PORT:-3020}}
     image: central/apps/cockpit:latest
     depends_on:
       i12e-postgres:
         condition: service_healthy
       service-weather:
         condition: service_healthy
-      service-voice:
+      service-assistant:
         condition: service_healthy
     environment:
       DATABASE_URL: postgres://central:central@postgres:5432/central
       NODE_ENV: ${COCKPIT_NODE_ENV:-production}
       WEATHER_SERVICE_BASE_URL: ${WEATHER_SERVICE_BASE_URL:-http://service-weather:8080}
-      VOICE_SERVICE_BASE_URL: ${VOICE_SERVICE_BASE_URL:-http://service-voice:8080}
+      ASSISTANT_SERVICE_BASE_URL: ${ASSISTANT_SERVICE_BASE_URL:-http://service-assistant:8080}
     ports:
       - '${COCKPIT_PORT:-3000}:3000'
 
 volumes:
   central_i12e-postgres_data:
-  central_voice_local_stt_models:
-  central_voice_local_tts_models:
-  central_voice_local_llm_models:
+  central_stt_models:
+  central_tts_models:
+  central_llm_models:
