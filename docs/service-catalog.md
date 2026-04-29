@@ -11,7 +11,7 @@ Source of truth: `i12e/orchestrator/docker-compose.yml`.
 | `i12e-postgres-migrate` | One-off migration runner                           | None (no exposed port) |
 | `service-weather`       | Weather backend HTTP API                           | `8080/tcp`             |
 | `service-stt`           | Faster-whisper STT adapter                         | `8081/tcp`             |
-| `service-tts`           | Piper TTS adapter                                  | `8082/tcp`             |
+| `service-tts`           | Qwen3-TTS voice-clone adapter                      | `8082/tcp`             |
 | `service-llm-runtime`   | Ollama runtime                                     | `11434/tcp`            |
 | `service-llm-pull`      | One-off Ollama model puller                        | None (no exposed port) |
 | `service-llm`           | OpenAI-compatible LLM adapter                      | `8083/tcp`             |

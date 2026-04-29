@@ -122,20 +122,18 @@ services:
     build:
       context: ../..
       dockerfile: services/tts/Dockerfile
-      args:
-        TTS_ENABLE_GPU: 'true'
     image: central/services/tts:latest
     environment:
       TTS_PORT: '8082'
-      TTS_EXECUTABLE: ${TTS_EXECUTABLE:-piper}
-      TTS_MODEL: ${TTS_MODEL:-de_DE-thorsten-medium}
-      TTS_SPEAKER: ${TTS_SPEAKER:-}
-      TTS_DATA_DIR: ${TTS_DATA_DIR:-/models}
-      TTS_DOWNLOAD_DIR: ${TTS_DOWNLOAD_DIR:-/models}
-      TTS_SENTENCE_SILENCE: ${TTS_SENTENCE_SILENCE:-0}
-      TTS_USE_CUDA: ${TTS_USE_CUDA:-true}
-      TTS_VOLUME: ${TTS_VOLUME:-1}
-      TTS_NORMALIZE_AUDIO: ${TTS_NORMALIZE_AUDIO:-true}
+      TTS_MODEL: ${TTS_MODEL:-Qwen/Qwen3-TTS-12Hz-1.7B-Base}
+      TTS_REFERENCE_AUDIO: ${TTS_REFERENCE_AUDIO:-/app/res/morgan-freeman.mp3}
+      TTS_REFERENCE_TEXT_FILE: ${TTS_REFERENCE_TEXT_FILE:-/app/res/morgan-freeman.txt}
+      TTS_REFERENCE_TEXT: ${TTS_REFERENCE_TEXT:-}
+      TTS_X_VECTOR_ONLY_MODE: ${TTS_X_VECTOR_ONLY_MODE:-false}
+      TTS_DEVICE_MAP: ${TTS_DEVICE_MAP:-cuda:0}
+      TTS_DTYPE: ${TTS_DTYPE:-bfloat16}
+      TTS_ATTENTION_IMPLEMENTATION: ${TTS_ATTENTION_IMPLEMENTATION:-flash_attention_2}
+      HF_HOME: ${TTS_CACHE_DIR:-/models/huggingface}
     gpus: all
     ports:
       - '${TTS_PORT:-3040}:8082'
@@ -145,9 +143,9 @@ services:
       test:
         ['CMD', 'python', '-c', 'import urllib.request; urllib.request.urlopen("http://127.0.0.1:8082/healthz").read()']
       interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 20s
+      timeout: 10s
+      retries: 12
+      start_period: 15m
 
   service-llm-runtime:
     image: ${LLM_RUNTIME_IMAGE:-ollama/ollama:latest}

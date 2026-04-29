@@ -24,7 +24,7 @@ This is the default development path. It brings up:
 - Migration runner (`i12e-postgres-migrate`) as a one-off container (`--rm`)
 - Weather backend (`service-weather` service)
 - Faster-whisper STT (`service-stt` service)
-- Piper TTS (`service-tts` service)
+- Qwen3-TTS voice cloning (`service-tts` service)
 - Ollama runtime (`service-llm-runtime` service)
 - LLM wrapper (`service-llm` service)
 - Assistant backend (`service-assistant` service)
@@ -43,7 +43,7 @@ This target starts the same assistant stack as `up-dev`. It keeps `service-assis
 - `http://service-tts:8082/synthesize`
 - `http://service-llm:8083/chat/completions`
 
-The STT and TTS services use the standard GPU-backed compose configuration. The STT image is built with CUDA runtime dependencies, defaults to `STT_DEVICE=cuda` and `STT_COMPUTE_TYPE=float16`, and both services request `gpus: all`.
+The STT and TTS services use the standard GPU-backed compose configuration. The STT image is built with CUDA runtime dependencies, defaults to `STT_DEVICE=cuda` and `STT_COMPUTE_TYPE=float16`, and both services request `gpus: all`. The TTS service builds one reusable Qwen voice-clone prompt from the bundled `res/morgan-freeman.mp3` sample during startup and loads Qwen with FlashAttention 2 by default. The TTS image installs a prebuilt FlashAttention wheel matched to its pinned Torch/CUDA/Python stack instead of compiling FlashAttention during the Docker build.
 
 ## Start dev with mock STT/TTS and direct Ollama
 
@@ -57,7 +57,7 @@ This keeps `service-assistant` in `llm-proxy` mode and points it at:
 
 This is the thinnest LLM integration path in the repo because `service-assistant` talks to Ollama directly and keeps STT/TTS mocked. The Ollama runtime uses the standard GPU-backed compose configuration and requests `gpus: all`.
 
-## Start dev with GPU-backed faster-whisper, Piper, and Qwen via Ollama
+## Start dev with GPU-backed faster-whisper, Qwen3-TTS, and Qwen via Ollama
 
 ```bash
 pnpm nx run i12e-orchestrator:up-dev-assistant
@@ -98,7 +98,7 @@ This brings up the same service classes as `up-dev`, using the prod ports and mo
 - Migration runner (`i12e-postgres-migrate`) as a one-off container (`--rm`)
 - Weather backend (`service-weather` service)
 - Faster-whisper STT (`service-stt` service)
-- Piper TTS (`service-tts` service)
+- Qwen3-TTS voice cloning (`service-tts` service)
 - Ollama runtime (`service-llm-runtime` service)
 - LLM wrapper (`service-llm` service)
 - Assistant backend (`service-assistant` service)

@@ -1,12 +1,10 @@
 import base64
+import importlib.util
 import io
 import json
 import logging
 import os
-import subprocess
-import sys
 import threading
-import wave
 from dataclasses import dataclass
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -15,29 +13,82 @@ from typing import Any
 
 LOGGER = logging.getLogger("tts_service")
 JSON_CONTENT_TYPE = "application/json; charset=utf-8"
-VOICE_DOWNLOAD_LOCK = threading.Lock()
-READY_VOICES: set[str] = set()
-VOICE_LOAD_LOCK = threading.Lock()
-LOADED_VOICES: dict[tuple[str, bool], "PiperRuntime"] = {}
+SERVICE_ROOT = Path(__file__).resolve().parents[1]
+DEFAULT_REFERENCE_AUDIO = "res/morgan-freeman.mp3"
+DEFAULT_REFERENCE_TEXT_FILE = "res/morgan-freeman.txt"
+DEFAULT_REFERENCE_TEXT = (
+    SERVICE_ROOT / DEFAULT_REFERENCE_TEXT_FILE
+).read_text(encoding="utf-8").strip()
+
+SUPPORTED_QWEN_LANGUAGES = {
+    "Auto",
+    "Chinese",
+    "English",
+    "Japanese",
+    "Korean",
+    "German",
+    "French",
+    "Russian",
+    "Portuguese",
+    "Spanish",
+    "Italian",
+}
+
+QWEN_LANGUAGE_ALIASES = {
+    "auto": "Auto",
+    "zh": "Chinese",
+    "zh-cn": "Chinese",
+    "cn": "Chinese",
+    "chinese": "Chinese",
+    "en": "English",
+    "en-us": "English",
+    "en-gb": "English",
+    "english": "English",
+    "ja": "Japanese",
+    "jp": "Japanese",
+    "japanese": "Japanese",
+    "ko": "Korean",
+    "kr": "Korean",
+    "korean": "Korean",
+    "de": "German",
+    "de-de": "German",
+    "german": "German",
+    "deutsch": "German",
+    "fr": "French",
+    "fr-fr": "French",
+    "french": "French",
+    "ru": "Russian",
+    "ru-ru": "Russian",
+    "russian": "Russian",
+    "pt": "Portuguese",
+    "pt-br": "Portuguese",
+    "pt-pt": "Portuguese",
+    "portuguese": "Portuguese",
+    "es": "Spanish",
+    "es-es": "Spanish",
+    "spanish": "Spanish",
+    "it": "Italian",
+    "it-it": "Italian",
+    "italian": "Italian",
+}
 
 
 @dataclass(frozen=True)
 class Config:
     port: int
-    executable: str
     model: str
-    speaker: str | None
-    data_dir: str | None
-    download_dir: str | None
-    sentence_silence: float
-    use_cuda: bool
-    volume: float
-    normalize_audio: bool
+    reference_audio: str
+    reference_text: str | None
+    x_vector_only_mode: bool
+    device_map: str
+    dtype: str
+    attn_implementation: str | None
 
 
 @dataclass
-class PiperRuntime:
-    voice: Any
+class QwenRuntime:
+    model: Any
+    voice_clone_prompt: Any
     synthesize_lock: threading.Lock
 
 
@@ -55,26 +106,56 @@ def parse_bool_env(name: str, default: bool) -> bool:
     return value in {"1", "true", "yes", "on"}
 
 
-def parse_float_env(name: str, default: float) -> float:
+def optional_env(name: str, default: str | None = None) -> str | None:
     value = os.getenv(name, "").strip()
-    if not value:
-        return default
-    return float(value)
+    if value:
+        return value
+    return default
+
+
+def resolve_resource_path(path: str) -> Path:
+    candidate = Path(path)
+    if candidate.is_absolute() or candidate.exists():
+        return candidate
+    return SERVICE_ROOT / candidate
+
+
+def read_reference_text_file(path: str) -> str:
+    return resolve_resource_path(path).read_text(encoding="utf-8").strip()
 
 
 def load_config() -> Config:
+    reference_audio = (
+        optional_env("TTS_REFERENCE_AUDIO", DEFAULT_REFERENCE_AUDIO)
+        or DEFAULT_REFERENCE_AUDIO
+    )
+    reference_text_file = optional_env(
+        "TTS_REFERENCE_TEXT_FILE",
+        DEFAULT_REFERENCE_TEXT_FILE,
+    )
+    reference_text_default = (
+        read_reference_text_file(reference_text_file)
+        if Path(reference_audio).name == Path(DEFAULT_REFERENCE_AUDIO).name
+        and reference_text_file is not None
+        else None
+    )
+    reference_text = optional_env("TTS_REFERENCE_TEXT", reference_text_default)
     return Config(
         port=parse_int_env("TTS_PORT", 8082),
-        executable=os.getenv("TTS_EXECUTABLE", "piper").strip() or "piper",
-        model=os.getenv("TTS_MODEL", "de_DE-thorsten-medium").strip()
-        or "de_DE-thorsten-medium",
-        speaker=os.getenv("TTS_SPEAKER", "").strip() or None,
-        data_dir=os.getenv("TTS_DATA_DIR", "").strip() or None,
-        download_dir=os.getenv("TTS_DOWNLOAD_DIR", "").strip() or None,
-        sentence_silence=parse_float_env("TTS_SENTENCE_SILENCE", 0.0),
-        use_cuda=parse_bool_env("TTS_USE_CUDA", False),
-        volume=parse_float_env("TTS_VOLUME", 1.0),
-        normalize_audio=parse_bool_env("TTS_NORMALIZE_AUDIO", True),
+        model=optional_env("TTS_MODEL", "Qwen/Qwen3-TTS-12Hz-1.7B-Base")
+        or "Qwen/Qwen3-TTS-12Hz-1.7B-Base",
+        reference_audio=reference_audio,
+        reference_text=reference_text,
+        x_vector_only_mode=parse_bool_env(
+            "TTS_X_VECTOR_ONLY_MODE",
+            reference_text is None,
+        ),
+        device_map=optional_env("TTS_DEVICE_MAP", "cuda:0") or "cuda:0",
+        dtype=optional_env("TTS_DTYPE", "bfloat16") or "bfloat16",
+        attn_implementation=optional_env(
+            "TTS_ATTENTION_IMPLEMENTATION",
+            "flash_attention_2",
+        ),
     )
 
 
@@ -103,179 +184,182 @@ def parse_synthesis_request(body: bytes) -> tuple[str, str, str]:
     return text.strip(), language, voice_instruction
 
 
-def is_local_model_reference(model: str) -> bool:
-    return model.endswith(".onnx") or "/" in model or "\\" in model
+def normalize_qwen_language(language: str) -> str:
+    normalized = language.strip()
+    key = normalized.casefold().replace("_", "-")
+    if key in QWEN_LANGUAGE_ALIASES:
+        return QWEN_LANGUAGE_ALIASES[key]
+
+    for supported_language in SUPPORTED_QWEN_LANGUAGES:
+        if key == supported_language.casefold():
+            return supported_language
+
+    return normalized
 
 
-def resolve_download_dir(config: Config) -> Path:
-    download_dir = config.download_dir or config.data_dir or "."
-    return Path(download_dir)
-
-
-def resolve_model_path(config: Config) -> Path:
-    if is_local_model_reference(config.model):
-        return Path(config.model)
-
-    return resolve_download_dir(config) / f"{config.model}.onnx"
-
-
-def build_piper_download_command(config: Config) -> list[str]:
-    download_dir = resolve_download_dir(config)
-
-    return [
-        sys.executable,
-        "-m",
-        "piper.download_voices",
-        "--download-dir",
-        str(download_dir),
-        config.model,
-    ]
-
-
-def ensure_piper_voice_available(config: Config) -> None:
-    if is_local_model_reference(config.model):
-        return
-
-    with VOICE_DOWNLOAD_LOCK:
-        if config.model in READY_VOICES:
-            return
-
-        if config.data_dir is not None:
-            Path(config.data_dir).mkdir(parents=True, exist_ok=True)
-        if config.download_dir is not None:
-            Path(config.download_dir).mkdir(parents=True, exist_ok=True)
-
-        command = build_piper_download_command(config)
-        completed = subprocess.run(
-            command,
-            text=True,
-            capture_output=True,
-            check=False,
-        )
-        if completed.returncode != 0:
-            stderr = completed.stderr.strip() or completed.stdout.strip()
-            raise RuntimeError(f"Piper voice download failed with exit code {completed.returncode}: {stderr}")
-
-        READY_VOICES.add(config.model)
-
-
-def parse_speaker_id(speaker: str | None) -> int | None:
-    if speaker is None:
+def resolve_torch_dtype(dtype: str) -> Any | None:
+    normalized = dtype.strip().casefold()
+    if normalized in {"", "auto", "default", "none"}:
         return None
 
-    return int(speaker)
+    import torch
+
+    aliases = {
+        "bf16": torch.bfloat16,
+        "bfloat16": torch.bfloat16,
+        "fp16": torch.float16,
+        "float16": torch.float16,
+        "half": torch.float16,
+        "fp32": torch.float32,
+        "float32": torch.float32,
+    }
+    if normalized in aliases:
+        return aliases[normalized]
+
+    try:
+        return getattr(torch, normalized)
+    except AttributeError as error:
+        raise ValueError(f"Unsupported TTS_DTYPE value: {dtype}") from error
 
 
-def build_silence_bytes(
-    sample_rate: int,
-    sample_width: int,
-    sample_channels: int,
-    sentence_silence: float,
-) -> bytes:
-    if sentence_silence <= 0:
-        return b""
-
-    frame_count = max(0, round(sample_rate * sentence_silence))
-    return b"\x00" * frame_count * sample_width * sample_channels
+def is_flash_attention_available() -> bool:
+    try:
+        return importlib.util.find_spec("flash_attn") is not None
+    except (ImportError, ValueError):
+        return False
 
 
-def _load_piper_voice(config: Config, model_path: Path) -> Any:
-    from piper import PiperVoice
+def resolve_attn_implementation(attn_implementation: str | None) -> str | None:
+    if not attn_implementation:
+        return None
+
+    resolved = attn_implementation.strip()
+    if resolved.casefold() in {"", "auto", "default", "none"}:
+        return None
+
+    if resolved.casefold() != "flash_attention_2":
+        return resolved
+
+    if is_flash_attention_available():
+        return resolved
+
+    raise RuntimeError(
+        "TTS_ATTENTION_IMPLEMENTATION=flash_attention_2 was requested, but "
+        "flash_attn is not installed. The TTS image must include a FlashAttention "
+        "2 wheel that matches the installed Python, PyTorch, and CUDA versions."
+    )
+
+
+def build_qwen_model_kwargs(config: Config) -> dict[str, Any]:
+    kwargs: dict[str, Any] = {"device_map": config.device_map}
+    dtype = resolve_torch_dtype(config.dtype)
+    if dtype is not None:
+        kwargs["dtype"] = dtype
+    attn_implementation = resolve_attn_implementation(config.attn_implementation)
+    if attn_implementation is not None:
+        kwargs["attn_implementation"] = attn_implementation
+    return kwargs
+
+
+def _load_qwen_model(config: Config) -> Any:
+    from qwen_tts import Qwen3TTSModel
+
+    model_kwargs = build_qwen_model_kwargs(config)
+    LOGGER.info(
+        "Loading Qwen3-TTS model=%s device_map=%s dtype=%s attention=%s",
+        config.model,
+        config.device_map,
+        config.dtype,
+        model_kwargs.get("attn_implementation", "default"),
+    )
+    return Qwen3TTSModel.from_pretrained(
+        config.model,
+        **model_kwargs,
+    )
+
+
+def create_qwen_runtime(config: Config) -> QwenRuntime:
+    reference_audio_path = Path(config.reference_audio)
+    if not reference_audio_path.is_file():
+        raise FileNotFoundError(
+            f"TTS reference audio not found: {reference_audio_path}"
+        )
+    if not config.reference_text and not config.x_vector_only_mode:
+        raise ValueError(
+            "TTS_REFERENCE_TEXT is required when TTS_X_VECTOR_ONLY_MODE is false."
+        )
+
+    model = _load_qwen_model(config)
+
+    prompt_kwargs: dict[str, Any] = {
+        "ref_audio": str(reference_audio_path),
+        "x_vector_only_mode": config.x_vector_only_mode,
+    }
+    if config.reference_text and not config.x_vector_only_mode:
+        prompt_kwargs["ref_text"] = config.reference_text
 
     LOGGER.info(
-        "Loading Piper voice model_path=%s use_cuda=%s",
-        model_path,
-        config.use_cuda,
+        "Creating reusable Qwen voice clone prompt from reference_audio=%s "
+        "x_vector_only_mode=%s reference_text_configured=%s",
+        reference_audio_path,
+        config.x_vector_only_mode,
+        config.reference_text is not None,
     )
-    return PiperVoice.load(
-        model_path,
-        use_cuda=config.use_cuda,
-        download_dir=resolve_download_dir(config),
-    )
+    voice_clone_prompt = model.create_voice_clone_prompt(**prompt_kwargs)
 
-
-def get_piper_runtime(config: Config) -> PiperRuntime:
-    ensure_piper_voice_available(config)
-    model_path = resolve_model_path(config).resolve()
-    cache_key = (str(model_path), config.use_cuda)
-
-    with VOICE_LOAD_LOCK:
-        runtime = LOADED_VOICES.get(cache_key)
-        if runtime is None:
-            runtime = PiperRuntime(
-                voice=_load_piper_voice(config, model_path),
-                synthesize_lock=threading.Lock(),
-            )
-            LOADED_VOICES[cache_key] = runtime
-
-    return runtime
-
-
-def build_synthesis_config(config: Config) -> Any:
-    from piper.config import SynthesisConfig
-
-    return SynthesisConfig(
-        speaker_id=parse_speaker_id(config.speaker),
-        normalize_audio=config.normalize_audio,
-        volume=config.volume,
+    return QwenRuntime(
+        model=model,
+        voice_clone_prompt=voice_clone_prompt,
+        synthesize_lock=threading.Lock(),
     )
 
 
-def write_piper_wav(
-    voice: Any,
+def audio_array_for_soundfile(audio: Any) -> Any:
+    if hasattr(audio, "detach"):
+        return audio.detach().cpu().numpy()
+    if hasattr(audio, "cpu") and hasattr(audio.cpu(), "numpy"):
+        return audio.cpu().numpy()
+    return audio
+
+
+def encode_wav(audio: Any, sample_rate: int) -> bytes:
+    import soundfile as sf
+
+    wav_bytes = io.BytesIO()
+    sf.write(
+        wav_bytes,
+        audio_array_for_soundfile(audio),
+        sample_rate,
+        format="WAV",
+    )
+    return wav_bytes.getvalue()
+
+
+def synthesize_with_qwen(
+    runtime: QwenRuntime,
     text: str,
-    syn_config: Any,
-    wav_file: wave.Wave_write,
-    sentence_silence: float,
-) -> None:
-    first_chunk = True
-    previous_chunk = None
-
-    for audio_chunk in voice.synthesize(text, syn_config=syn_config):
-        if first_chunk:
-            wav_file.setframerate(audio_chunk.sample_rate)
-            wav_file.setsampwidth(audio_chunk.sample_width)
-            wav_file.setnchannels(audio_chunk.sample_channels)
-            first_chunk = False
-
-        if previous_chunk is not None and sentence_silence > 0:
-            wav_file.writeframes(
-                build_silence_bytes(
-                    previous_chunk.sample_rate,
-                    previous_chunk.sample_width,
-                    previous_chunk.sample_channels,
-                    sentence_silence,
-                )
-            )
-
-        wav_file.writeframes(audio_chunk.audio_int16_bytes)
-        previous_chunk = audio_chunk
-
-    if first_chunk:
-        wav_file.setframerate(voice.config.sample_rate)
-        wav_file.setsampwidth(2)
-        wav_file.setnchannels(1)
-
-
-def synthesize_with_piper(config: Config, text: str, voice_instruction: str) -> bytes:
+    language: str,
+    voice_instruction: str,
+) -> bytes:
     if voice_instruction:
-        LOGGER.info("Ignoring Piper voiceInstruction hint: %s", voice_instruction)
+        LOGGER.info(
+            "Ignoring voiceInstruction for Qwen voice clone request: %s",
+            voice_instruction,
+        )
 
-    runtime = get_piper_runtime(config)
-    syn_config = build_synthesis_config(config)
+    qwen_language = normalize_qwen_language(language)
 
     with runtime.synthesize_lock:
-        wav_bytes = io.BytesIO()
-        with wave.open(wav_bytes, "wb") as wav_file:
-            write_piper_wav(
-                runtime.voice,
-                text,
-                syn_config,
-                wav_file,
-                config.sentence_silence,
-            )
+        wavs, sample_rate = runtime.model.generate_voice_clone(
+            text=text,
+            language=qwen_language,
+            voice_clone_prompt=runtime.voice_clone_prompt,
+        )
 
-        return wav_bytes.getvalue()
+    if not wavs:
+        raise RuntimeError("Qwen3-TTS returned no audio.")
+
+    return encode_wav(wavs[0], sample_rate)
 
 
 def json_bytes(payload: dict) -> bytes:
@@ -288,6 +372,7 @@ def should_log_request(method: str, path: str) -> bool:
 
 class Handler(BaseHTTPRequestHandler):
     config: Config
+    runtime: QwenRuntime
 
     def log_message(self, format: str, *args) -> None:
         if not should_log_request(getattr(self, "command", ""), self.path):
@@ -304,11 +389,12 @@ class Handler(BaseHTTPRequestHandler):
             {
                 "status": "ok",
                 "model": self.config.model,
-                "speaker": self.config.speaker,
-                "sentenceSilence": self.config.sentence_silence,
-                "useCuda": self.config.use_cuda,
-                "volume": self.config.volume,
-                "normalizeAudio": self.config.normalize_audio,
+                "referenceAudio": self.config.reference_audio,
+                "referenceTextConfigured": self.config.reference_text is not None,
+                "xVectorOnlyMode": self.config.x_vector_only_mode,
+                "deviceMap": self.config.device_map,
+                "dtype": self.config.dtype,
+                "attentionImplementation": self.config.attn_implementation,
             },
         )
 
@@ -320,8 +406,13 @@ class Handler(BaseHTTPRequestHandler):
         try:
             content_length = int(self.headers.get("Content-Length", "0"))
             body = self.rfile.read(content_length)
-            text, _language, voice_instruction = parse_synthesis_request(body)
-            audio_bytes = synthesize_with_piper(self.config, text, voice_instruction)
+            text, language, voice_instruction = parse_synthesis_request(body)
+            audio_bytes = synthesize_with_qwen(
+                self.runtime,
+                text,
+                language,
+                voice_instruction,
+            )
         except ValueError as error:
             self._send_json(HTTPStatus.BAD_REQUEST, {"error": {"message": str(error)}})
             return
@@ -354,13 +445,14 @@ def run() -> None:
     )
     config = load_config()
     Handler.config = config
+    Handler.runtime = create_qwen_runtime(config)
 
     server = ThreadingHTTPServer(("0.0.0.0", config.port), Handler)
     LOGGER.info(
-        "Starting TTS service on port=%s model=%s executable=%s",
+        "Starting Qwen3-TTS service on port=%s model=%s reference_audio=%s",
         config.port,
         config.model,
-        config.executable,
+        config.reference_audio,
     )
     server.serve_forever()
 

@@ -47,7 +47,7 @@ The repository is organized as a multi-project Nx workspace:
   - `llm-proxy` mode to call an external LLM while keeping mock STT / TTS boundaries.
   - `openai` mode to use OpenAI-native STT / LLM / TTS endpoints.
   - `proxy` mode to call external STT / LLM / TTS runtimes.
-- The orchestrated dev and prod stacks use `proxy` mode by default, backed by faster-whisper STT, Piper TTS, and an Ollama-based LLM wrapper.
+- The orchestrated dev and prod stacks use `proxy` mode by default, backed by faster-whisper STT, Qwen3-TTS voice cloning, and an Ollama-based LLM wrapper.
 
 ### Persistence (`i12e/postgres`)
 

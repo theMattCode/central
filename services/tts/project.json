@@ -9,7 +9,7 @@
       "executor": "nx:run-commands",
       "options": {
         "cwd": "services/tts",
-        "command": "python3 -m py_compile src/service.py tests/test_service.py"
+        "command": "python3 -m py_compile src/service.py tests/test_service.py tests/manual_synthesize.py"
       }
     },
     "test": {
@@ -23,7 +23,7 @@
       "executor": "nx:run-commands",
       "options": {
         "cwd": "services/tts",
-        "command": "python3 -m py_compile src/service.py tests/test_service.py"
+        "command": "python3 -m py_compile src/service.py tests/test_service.py tests/manual_synthesize.py"
       }
     },
     "build": {
@@ -35,7 +35,7 @@
     "container-run": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "docker run --rm -i --name central-tts -p 5040:8082 central/services/tts:latest"
+        "command": "docker run --rm -i --gpus all --name central-tts -p 5040:8082 -e TTS_DEVICE_MAP=cuda:0 -e TTS_DTYPE=bfloat16 -e TTS_ATTENTION_IMPLEMENTATION=flash_attention_2 -v central_tts_models:/models central/services/tts:latest"
       }
     }
   },

@@ -1,8 +1,8 @@
-import io
 import pathlib
 import sys
+import tempfile
+import threading
 import unittest
-import wave
 from unittest import mock
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1] / "src"))
@@ -10,22 +10,35 @@ sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1] / "src"))
 import service
 from service import (
     Config,
-    build_piper_download_command,
-    build_silence_bytes,
-    get_piper_runtime,
-    is_local_model_reference,
+    DEFAULT_REFERENCE_AUDIO,
+    DEFAULT_REFERENCE_TEXT,
+    QwenRuntime,
+    build_qwen_model_kwargs,
+    create_qwen_runtime,
+    load_config,
+    normalize_qwen_language,
     parse_synthesis_request,
-    resolve_model_path,
     should_log_request,
-    write_piper_wav,
+    synthesize_with_qwen,
 )
 
 
-class ParseSynthesisRequestTest(unittest.TestCase):
-    def setUp(self) -> None:
-        service.LOADED_VOICES.clear()
-        service.READY_VOICES.clear()
+def test_config(**overrides):
+    values = {
+        "port": 8082,
+        "model": "Qwen/Qwen3-TTS-12Hz-1.7B-Base",
+        "reference_audio": DEFAULT_REFERENCE_AUDIO,
+        "reference_text": DEFAULT_REFERENCE_TEXT,
+        "x_vector_only_mode": False,
+        "device_map": "cuda:0",
+        "dtype": "bfloat16",
+        "attn_implementation": "flash_attention_2",
+    }
+    values.update(overrides)
+    return Config(**values)
 
+
+class ParseSynthesisRequestTest(unittest.TestCase):
     def test_parses_valid_request(self) -> None:
         text, language, voice_instruction = parse_synthesis_request(
             b'{"text":"Hallo Welt","language":"de","voiceInstruction":"Warm"}'
@@ -39,120 +52,190 @@ class ParseSynthesisRequestTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "text must be a non-empty string"):
             parse_synthesis_request(b'{"text":"","language":"de","voiceInstruction":""}')
 
-    def test_builds_piper_download_command(self) -> None:
-        config = Config(
-            port=8082,
-            executable="piper",
-            model="de_DE-thorsten-medium",
-            speaker=None,
-            data_dir="/models",
-            download_dir="/downloads",
-            sentence_silence=0.0,
-            use_cuda=False,
-            volume=1.0,
-            normalize_audio=True,
-        )
+    def test_load_config_defaults_to_morgan_clone_sample(self) -> None:
+        with mock.patch.dict("os.environ", {}, clear=True):
+            config = load_config()
 
-        command = build_piper_download_command(config)
+        self.assertEqual(config.model, "Qwen/Qwen3-TTS-12Hz-1.7B-Base")
+        self.assertEqual(config.reference_audio, DEFAULT_REFERENCE_AUDIO)
+        self.assertEqual(config.reference_text, DEFAULT_REFERENCE_TEXT)
+        self.assertFalse(config.x_vector_only_mode)
+        self.assertEqual(config.device_map, "cuda:0")
+        self.assertEqual(config.attn_implementation, "flash_attention_2")
+
+    def test_load_config_disables_x_vector_only_when_reference_text_exists(self) -> None:
+        with mock.patch.dict("os.environ", {"TTS_REFERENCE_TEXT": "Reference words."}, clear=True):
+            config = load_config()
+
+        self.assertEqual(config.reference_text, "Reference words.")
+        self.assertFalse(config.x_vector_only_mode)
+
+    def test_load_config_reads_reference_text_file(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            reference_text_file = pathlib.Path(temp_dir) / "reference.txt"
+            reference_text_file.write_text("Reference words from file.\n", encoding="utf-8")
+
+            with mock.patch.dict(
+                "os.environ",
+                {"TTS_REFERENCE_TEXT_FILE": str(reference_text_file)},
+                clear=True,
+            ):
+                config = load_config()
+
+        self.assertEqual(config.reference_text, "Reference words from file.")
+        self.assertFalse(config.x_vector_only_mode)
+
+    def test_normalizes_assistant_language_code_for_qwen(self) -> None:
+        self.assertEqual(normalize_qwen_language("de"), "German")
+        self.assertEqual(normalize_qwen_language("en-US"), "English")
+        self.assertEqual(normalize_qwen_language("Italian"), "Italian")
+
+    def test_requires_flash_attention_when_configured(self) -> None:
+        config = test_config(dtype="default", attn_implementation="flash_attention_2")
+
+        with mock.patch.object(
+            service,
+            "is_flash_attention_available",
+            return_value=False,
+        ):
+            with self.assertRaisesRegex(RuntimeError, "flash_attn is not installed"):
+                build_qwen_model_kwargs(config)
+
+    def test_uses_flash_attention_when_flash_attn_is_available(self) -> None:
+        config = test_config(dtype="default", attn_implementation="flash_attention_2")
+
+        with mock.patch.object(
+            service,
+            "is_flash_attention_available",
+            return_value=True,
+        ):
+            kwargs = build_qwen_model_kwargs(config)
 
         self.assertEqual(
-            command,
-            [
-                sys.executable,
-                "-m",
-                "piper.download_voices",
-                "--download-dir",
-                "/downloads",
-                "de_DE-thorsten-medium",
-            ],
+            kwargs,
+            {
+                "device_map": "cuda:0",
+                "attn_implementation": "flash_attention_2",
+            },
         )
 
-    def test_resolves_downloaded_model_path(self) -> None:
-        config = Config(
-            port=8082,
-            executable="piper",
-            model="de_DE-thorsten-medium",
-            speaker=None,
-            data_dir="/models",
-            download_dir="/downloads",
-            sentence_silence=0.0,
-            use_cuda=False,
-            volume=1.0,
-            normalize_audio=True,
-        )
+    def test_uses_non_flash_attention_implementation(self) -> None:
+        config = test_config(dtype="default", attn_implementation="sdpa")
+
+        kwargs = build_qwen_model_kwargs(config)
 
         self.assertEqual(
-            resolve_model_path(config),
-            pathlib.Path("/downloads/de_DE-thorsten-medium.onnx"),
+            kwargs,
+            {
+                "device_map": "cuda:0",
+                "attn_implementation": "sdpa",
+            },
         )
-
-    def test_detects_local_model_reference(self) -> None:
-        self.assertTrue(is_local_model_reference("/models/de_DE-thorsten-medium.onnx"))
-        self.assertFalse(is_local_model_reference("de_DE-thorsten-medium"))
-
-    def test_builds_silence_bytes(self) -> None:
-        self.assertEqual(build_silence_bytes(4, 2, 1, 0.5), b"\x00\x00\x00\x00")
 
     def test_suppresses_healthcheck_request_logging(self) -> None:
         self.assertFalse(should_log_request("GET", "/healthz"))
         self.assertTrue(should_log_request("POST", "/synthesize"))
 
-    def test_reuses_cached_piper_voice(self) -> None:
-        config = Config(
-            port=8082,
-            executable="piper",
-            model="de_DE-thorsten-medium",
-            speaker=None,
-            data_dir="/models",
-            download_dir="/downloads",
-            sentence_silence=0.0,
-            use_cuda=True,
-            volume=1.0,
-            normalize_audio=True,
+    def test_creates_voice_clone_prompt_once_at_startup(self) -> None:
+        class FakeModel:
+            def __init__(self) -> None:
+                self.prompt_kwargs = None
+
+            def create_voice_clone_prompt(self, **kwargs):
+                self.prompt_kwargs = kwargs
+                return {"prompt": "cached"}
+
+        fake_model = FakeModel()
+        with tempfile.TemporaryDirectory() as temp_dir:
+            reference_audio = pathlib.Path(temp_dir) / "morgan-freeman.mp3"
+            reference_audio.write_bytes(b"mp3")
+            config = test_config(reference_audio=str(reference_audio))
+
+            with mock.patch.object(service, "_load_qwen_model", return_value=fake_model):
+                runtime = create_qwen_runtime(config)
+
+        self.assertIs(runtime.model, fake_model)
+        self.assertEqual(runtime.voice_clone_prompt, {"prompt": "cached"})
+        self.assertEqual(
+            fake_model.prompt_kwargs,
+            {
+                "ref_audio": str(reference_audio),
+                "x_vector_only_mode": False,
+                "ref_text": DEFAULT_REFERENCE_TEXT,
+            },
         )
-        fake_voice = object()
+
+    def test_x_vector_only_prompt_omits_reference_text(self) -> None:
+        class FakeModel:
+            def __init__(self) -> None:
+                self.prompt_kwargs = None
+
+            def create_voice_clone_prompt(self, **kwargs):
+                self.prompt_kwargs = kwargs
+                return {"prompt": "cached"}
+
+        fake_model = FakeModel()
+        with tempfile.TemporaryDirectory() as temp_dir:
+            reference_audio = pathlib.Path(temp_dir) / "morgan-freeman.mp3"
+            reference_audio.write_bytes(b"mp3")
+            config = test_config(
+                reference_audio=str(reference_audio),
+                x_vector_only_mode=True,
+            )
+
+            with mock.patch.object(service, "_load_qwen_model", return_value=fake_model):
+                create_qwen_runtime(config)
+
+        self.assertEqual(
+            fake_model.prompt_kwargs,
+            {
+                "ref_audio": str(reference_audio),
+                "x_vector_only_mode": True,
+            },
+        )
+
+    def test_requires_reference_text_when_x_vector_only_mode_is_disabled(self) -> None:
+        config = test_config(
+            reference_audio=DEFAULT_REFERENCE_AUDIO,
+            reference_text=None,
+            x_vector_only_mode=False,
+        )
 
         with (
-            mock.patch.object(service, "ensure_piper_voice_available") as ensure_voice,
-            mock.patch.object(service, "_load_piper_voice", return_value=fake_voice) as load_voice,
-            mock.patch.object(pathlib.Path, "resolve", lambda self: self),
+            mock.patch.object(pathlib.Path, "is_file", return_value=True),
+            self.assertRaisesRegex(ValueError, "TTS_REFERENCE_TEXT is required"),
         ):
-            runtime_one = get_piper_runtime(config)
-            runtime_two = get_piper_runtime(config)
+            create_qwen_runtime(config)
 
-        self.assertIs(runtime_one, runtime_two)
-        self.assertIs(runtime_one.voice, fake_voice)
-        self.assertEqual(ensure_voice.call_count, 2)
-        load_voice.assert_called_once_with(
-            config,
-            pathlib.Path("/downloads/de_DE-thorsten-medium.onnx"),
+    def test_synthesizes_with_reusable_voice_clone_prompt(self) -> None:
+        class FakeModel:
+            def __init__(self) -> None:
+                self.generate_kwargs = None
+
+            def generate_voice_clone(self, **kwargs):
+                self.generate_kwargs = kwargs
+                return [object()], 24_000
+
+        fake_model = FakeModel()
+        runtime = QwenRuntime(
+            model=fake_model,
+            voice_clone_prompt={"prompt": "cached"},
+            synthesize_lock=threading.Lock(),
         )
 
-    def test_writes_sentence_silence_between_audio_chunks(self) -> None:
-        class FakeChunk:
-            def __init__(self, audio_int16_bytes: bytes) -> None:
-                self.sample_rate = 4
-                self.sample_width = 2
-                self.sample_channels = 1
-                self.audio_int16_bytes = audio_int16_bytes
+        with mock.patch.object(service, "encode_wav", return_value=b"wav") as encode_wav:
+            audio = synthesize_with_qwen(runtime, "Hallo Welt", "de", "Warm")
 
-        class FakeVoice:
-            class config:
-                sample_rate = 4
-
-            def synthesize(self, text: str, syn_config: object = None):  # noqa: ANN001
-                del text, syn_config
-                yield FakeChunk(b"\x01\x00\x02\x00")
-                yield FakeChunk(b"\x03\x00")
-
-        wav_bytes = io.BytesIO()
-        with wave.open(wav_bytes, "wb") as wav_file:
-            write_piper_wav(FakeVoice(), "Hallo. Welt.", object(), wav_file, 0.5)
-
-        with wave.open(io.BytesIO(wav_bytes.getvalue()), "rb") as wav_file:
-            self.assertEqual(wav_file.getframerate(), 4)
-            self.assertEqual(wav_file.getnchannels(), 1)
-            self.assertEqual(wav_file.readframes(5), b"\x01\x00\x02\x00\x00\x00\x00\x00\x03\x00")
+        self.assertEqual(audio, b"wav")
+        self.assertEqual(
+            fake_model.generate_kwargs,
+            {
+                "text": "Hallo Welt",
+                "language": "German",
+                "voice_clone_prompt": {"prompt": "cached"},
+            },
+        )
+        encode_wav.assert_called_once_with(mock.ANY, 24_000)
 
 
 if __name__ == "__main__":

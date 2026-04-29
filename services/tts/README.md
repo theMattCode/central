@@ -2,8 +2,10 @@
 
 Text-to-speech HTTP adapter for `service-assistant`.
 
-It exposes the JSON contract expected by `services/assistant` in `ASSISTANT_BACKEND_MODE=proxy` and uses `Piper` under the hood.
-The adapter loads and reuses a `PiperVoice` in-process after the first request instead of launching a fresh `piper` subprocess for every synthesis call.
+It exposes the JSON contract expected by `services/assistant` in `ASSISTANT_BACKEND_MODE=proxy` and uses Qwen3-TTS voice cloning under the hood.
+The adapter loads the Qwen model and creates one reusable voice-clone prompt from `res/morgan-freeman.mp3` during service startup, then reuses that prompt for every synthesis request.
+
+The Qwen walkthrough hosts the voice-clone instructions on the CustomVoice model card, but cloning from a reference audio clip uses the Base model. This service therefore defaults to `Qwen/Qwen3-TTS-12Hz-1.7B-Base`.
 
 ## Endpoint
 
@@ -35,24 +37,24 @@ Response body:
 ## Configuration
 
 - `TTS_PORT` (default: `8082`)
-- `TTS_EXECUTABLE` (default: `piper`, retained for backward compatibility and no longer used on the hot path)
-- `TTS_MODEL` (default: `de_DE-thorsten-medium`)
-- `TTS_SPEAKER` (optional)
-- `TTS_DATA_DIR` (optional)
-- `TTS_DOWNLOAD_DIR` (optional)
-- `TTS_SENTENCE_SILENCE` (default: `0`)
-- `TTS_USE_CUDA` (default: `false`)
-- `TTS_VOLUME` (default: `1`)
-- `TTS_NORMALIZE_AUDIO` (default: `true`)
+- `TTS_MODEL` (default: `Qwen/Qwen3-TTS-12Hz-1.7B-Base`)
+- `TTS_REFERENCE_AUDIO` (default: `res/morgan-freeman.mp3`)
+- `TTS_REFERENCE_TEXT_FILE` (default: `res/morgan-freeman.txt` for the bundled Morgan sample)
+- `TTS_REFERENCE_TEXT` (optional; overrides `TTS_REFERENCE_TEXT_FILE` when set)
+- `TTS_X_VECTOR_ONLY_MODE` (default: `false` for the bundled Morgan sample)
+- `TTS_DEVICE_MAP` (default: `cuda:0`)
+- `TTS_DTYPE` (default: `bfloat16`)
+- `TTS_ATTENTION_IMPLEMENTATION` (default: `flash_attention_2`)
+- `HF_HOME` (compose sets this under `/models/huggingface`)
 
-`TTS_MODEL` can be a Piper short model name or a local `.onnx` model path.
-When a short model name is used, the service downloads the voice on the first synthesis request into
-`TTS_DOWNLOAD_DIR` (or `TTS_DATA_DIR` when no download directory is set), so the first request may take longer.
-After that first request, the loaded Piper model stays resident in the service process and is reused for later requests.
-If quality matters more than cold-start time, prefer a `high` Piper voice when one is available for the language.
-In the orchestrator compose stack, this service is built with GPU runtime dependencies, requests `gpus: all`, and defaults to `TTS_USE_CUDA=true`.
+Qwen's best clone quality uses both reference audio and an accurate transcript from `TTS_REFERENCE_TEXT` or `TTS_REFERENCE_TEXT_FILE`.
+The service defaults to the bundled transcript in `res/morgan-freeman.txt`, so the orchestrator uses the full voice-clone prompt by default. Set `TTS_X_VECTOR_ONLY_MODE=true` when using a custom sample without a transcript.
 
-`voiceInstruction` is passed through the JSON boundary, but Piper does not follow free-form style instructions the way the OpenAI TTS path does. For local quality tuning, prefer choosing a better voice model and adjusting `TTS_SENTENCE_SILENCE`, `TTS_VOLUME`, and the streamed chunk size in `service-assistant`.
+The Docker image installs PyTorch and Torchaudio for CUDA 12.8, then installs the matching prebuilt FlashAttention 2 wheel for Python 3.12 / Torch 2.8 / Linux x86_64. The image does not compile `flash-attn` from source during normal builds. When `TTS_ATTENTION_IMPLEMENTATION=flash_attention_2`, startup fails if the `flash_attn` package is unavailable so the service does not silently run without the required attention backend.
+
+`voiceInstruction` is kept in the HTTP contract, but the Qwen Base voice-clone path does not provide the free-form style control exposed by Qwen CustomVoice or OpenAI TTS. The service logs and ignores it while preserving the cloned Morgan voice across requests.
+
+In the orchestrator compose stack and standalone `tts-service:container-run` target, this service requests `gpus: all`, loads Qwen onto `cuda:0`, uses the bundled `res/morgan-freeman.mp3` sample, and caches downloaded Hugging Face model files in the `central_tts_models` Docker volume.
 
 ## Nx targets
 

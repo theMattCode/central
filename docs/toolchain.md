@@ -151,7 +151,7 @@ Build the faster-whisper STT container image:
 nx run stt-service:build
 ```
 
-Build the Piper TTS container image:
+Build the Qwen3-TTS container image:
 
 ```bash
 nx run tts-service:build
@@ -190,7 +190,7 @@ Start the complete development environment with all required services:
 nx run i12e-orchestrator:up-dev
 ```
 
-This is the default development path. It starts PostgreSQL, weather, cockpit, faster-whisper STT, Piper TTS, the Ollama runtime, the LLM wrapper, and `service-assistant`.
+This is the default development path. It starts PostgreSQL, weather, cockpit, faster-whisper STT, Qwen3-TTS, the Ollama runtime, the LLM wrapper, and `service-assistant`.
 
 The orchestrator `up-*` targets share startup sequencing through `i12e/orchestrator/scripts/up_stack.sh`.
 
@@ -208,7 +208,7 @@ nx run i12e-orchestrator:up-dev-llm-proxy-ollama
 
 This keeps `service-assistant` in `llm-proxy` mode and points `LLM_BASE_URL` at the Ollama runtime's OpenAI-compatible `/v1` endpoint.
 
-Start the development environment with faster-whisper, Piper, and a Qwen LLM through Ollama:
+Start the development environment with faster-whisper, Qwen3-TTS, and a Qwen LLM through Ollama:
 
 ```bash
 nx run i12e-orchestrator:up-dev-assistant
@@ -216,7 +216,7 @@ nx run i12e-orchestrator:up-dev-assistant
 
 This target is kept as an explicit alias for the default stack. It keeps the `llm-service` wrapper in front of Ollama for the full STT / TTS / LLM stack and reuses `LLM_MODEL` from `i12e/orchestrator/.env.dev`.
 The tracked `i12e/orchestrator/.env.dev` biases this path toward quality over speed with a larger STT model, less aggressive extra STT VAD, and slightly less choppy TTS streaming.
-The main compose file is GPU-backed by default for assistant support services: `service-stt`, `service-tts`, and `service-llm-runtime` request `gpus: all`. STT defaults to CUDA/FP16, TTS defaults to CUDA, and the stack requires a Docker host with working GPU container support.
+The main compose file is GPU-backed by default for assistant support services: `service-stt`, `service-tts`, and `service-llm-runtime` request `gpus: all`. STT defaults to CUDA/FP16, TTS defaults to CUDA with FlashAttention 2 installed from a prebuilt wheel, and the stack requires a Docker host with working GPU container support.
 
 Run a full voice smoke test, including stack startup, STT, LLM, and TTS:
 
