@@ -5,7 +5,7 @@
 The repository is organized as a multi-project Nx workspace:
 
 - `apps/*`: user-facing applications (currently `apps/cockpit`)
-- `services/*`: backend runtime services (`services/weather`, `services/assistant`)
+- `services/*`: backend runtime services (`services/backend`, `services/assistant`)
 - `i12e/*`: infrastructure and orchestration projects (`postgres`, `orchestrator`)
 - `libs/*`: shared reusable libraries (currently `ts-log` for cross-cutting TypeScript logging)
 - `docs/*`: cross-cutting repository documentation
@@ -16,23 +16,23 @@ The repository is organized as a multi-project Nx workspace:
 
 - TanStack Start + React frontend.
 - Fetches data on the cockpit server via TanStack Start loaders/server functions, then sends the result to the browser.
-- Cockpit reaches weather-service over HTTP (`/api/v1/weather/current` and `/api/v1/weather/forecast`).
+- Cockpit reaches the backend service over HTTP for weather (`/api/v1/weather/current` and `/api/v1/weather/forecast`).
 - Cockpit reaches assistant-service over HTTP (`POST /api/v1/assistant/turn` and `POST /api/v1/assistant/turn/stream`).
 - Configuration:
-  - Runtime weather service base URL is configured via `WEATHER_SERVICE_BASE_URL` with `VITE_WEATHER_API_BASE_URL` as a browser/build-time fallback.
+  - Runtime backend base URL is configured via `BACKEND_BASE_URL` with `VITE_BACKEND_API_BASE_URL` as a browser/build-time fallback.
   - Runtime assistant service base URL is configured via `ASSISTANT_SERVICE_BASE_URL` with `VITE_ASSISTANT_API_BASE_URL` as a browser/build-time fallback.
-- If neither weather variable is set, cockpit defaults to `http://localhost:3010` for local orchestrator-driven development.
+- If neither backend variable is set, cockpit defaults to `http://localhost:3010` for local orchestrator-driven development.
 - If neither assistant variable is set, cockpit defaults to `http://localhost:3020` for local orchestrator-driven development.
 
-### Weather Service (`services/weather`)
+### Backend Service (`services/backend`)
 
-- Rust + Axum service with layered modules:
-  - `domain`: contracts, models, and use cases.
-  - `infrastructure`: Open-Meteo adapter and PostgreSQL persistence adapter.
-  - `http`: REST + SSE transport.
-  - `mcp`: MCP stdio transport.
-  - `config`/`context`/`main`: configuration and process wiring.
-- Runs in `http`, `mcp`, or `both` runtime modes.
+- Rust + Axum service that exposes one integrated HTTP API.
+- Shared process concerns live at the service root:
+  - `config`: runtime configuration.
+  - `http`: health endpoint, routing, CORS, and request tracing.
+  - `context`/`main`: dependency wiring and process bootstrap.
+- Domain-specific code lives under `src/domains/*`.
+- Weather is currently implemented as `src/domains/weather`, with its own domain model, use case, Open-Meteo adapter, PostgreSQL persistence adapter, and HTTP route module.
 
 ### Assistant Service (`services/assistant`)
 
@@ -64,11 +64,11 @@ The repository is organized as a multi-project Nx workspace:
 ### Weather
 
 1. Browser requests cockpit.
-2. Cockpit server requests the weather service.
-3. The weather service checks the PostgreSQL cache first.
-4. If the cache is stale or missing, weather-service fetches fresh data from Open-Meteo.
+2. Cockpit server requests the backend weather API.
+3. The backend weather domain checks the PostgreSQL cache first.
+4. If the cache is stale or missing, the backend fetches fresh data from Open-Meteo.
 5. Fresh responses are returned immediately; persistence writes happen asynchronously.
-6. Cockpit serializes widget data to the client and can refresh through server functions without exposing weather-service to the browser.
+6. Cockpit serializes widget data to the client and can refresh through server functions without exposing backend directly to the browser.
 
 ### Voice
 

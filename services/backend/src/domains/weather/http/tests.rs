@@ -10,9 +10,9 @@ use chrono::{DateTime, Utc};
 use reqwest::StatusCode;
 
 use crate::{
-    config::{Config, RuntimeMode},
+    config::Config,
     context::Context,
-    domain::{
+    domains::weather::domain::{
         contracts::{WeatherDataFetcher, WeatherDataStore},
         model::{
             CurrentWeatherPayload, HourlyWeatherPayload, WeatherForecastMetaPayload,
@@ -173,7 +173,7 @@ fn test_forecast(hourly: Vec<HourlyWeatherPayload>) -> WeatherForecastResponse {
 }
 
 async fn spawn_http_server(context: Context) -> String {
-    let app = super::build_router(context);
+    let app = crate::http::build_router(context);
     let listener = tokio::net::TcpListener::bind("127.0.0.1:0")
         .await
         .expect("bind test listener");
@@ -188,7 +188,6 @@ async fn spawn_http_server(context: Context) -> String {
 
 fn test_config() -> Arc<Config> {
     Arc::new(Config {
-        runtime_mode: RuntimeMode::Http,
         port: 0,
         refresh_interval: Duration::from_secs(900),
         open_meteo_base_url: "http://example.test".to_string(),
@@ -327,7 +326,10 @@ async fn forecast_weather_returns_hourly_forecast_and_persists() {
     assert_eq!(response.status(), StatusCode::OK);
     let payload: serde_json::Value = response.json().await.expect("json payload");
     tokio::time::sleep(Duration::from_millis(20)).await;
-    assert_eq!(payload["hourly"].as_array().map(|value| value.len()), Some(2));
+    assert_eq!(
+        payload["hourly"].as_array().map(|value| value.len()),
+        Some(2)
+    );
     assert_eq!(payload["hourly"][0]["weatherCode"], 2);
     assert_eq!(payload["hourly"][1]["weatherCode"], 61);
     assert_eq!(snapshot_calls.load(Ordering::SeqCst), 0);

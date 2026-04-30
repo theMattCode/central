@@ -1,7 +1,9 @@
 use async_trait::async_trait;
 
 use crate::{
-    domain::model::{WeatherForecastResponse, WeatherLocationQuery, WeatherSnapshotResponse},
+    domains::weather::domain::model::{
+        WeatherForecastResponse, WeatherLocationQuery, WeatherSnapshotResponse,
+    },
     error::ApiError,
 };
 
@@ -54,5 +56,5 @@ pub trait WeatherDataStore: Send + Sync {
         location: &WeatherLocationQuery,
         start_inclusive: chrono::DateTime<chrono::Utc>,
         end_inclusive: chrono::DateTime<chrono::Utc>,
-    ) -> Result<Vec<crate::domain::model::HourlyWeatherPayload>, ApiError>;
+    ) -> Result<Vec<crate::domains::weather::domain::model::HourlyWeatherPayload>, ApiError>;
 }

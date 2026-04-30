@@ -22,7 +22,7 @@ This is the default development path. It brings up:
 - Cockpit app (`app-cockpit` service)
 - PostgreSQL (`i12e-postgres` service)
 - Migration runner (`i12e-postgres-migrate`) as a one-off container (`--rm`)
-- Weather backend (`service-weather` service)
+- Backend (`service-backend` service, currently serving the weather domain)
 - Faster-whisper STT (`service-stt` service)
 - Qwen3-TTS voice cloning (`service-tts` service)
 - Ollama runtime (`service-llm-runtime` service)
@@ -96,7 +96,7 @@ This brings up the same service classes as `up-dev`, using the prod ports and mo
 - Cockpit app (`app-cockpit` service)
 - PostgreSQL (`i12e-postgres` service)
 - Migration runner (`i12e-postgres-migrate`) as a one-off container (`--rm`)
-- Weather backend (`service-weather` service)
+- Backend (`service-backend` service, currently serving the weather domain)
 - Faster-whisper STT (`service-stt` service)
 - Qwen3-TTS voice cloning (`service-tts` service)
 - Ollama runtime (`service-llm-runtime` service)
@@ -108,7 +108,7 @@ Environment defaults are stored in:
 - `i12e/orchestrator/.env.dev`
 - `i12e/orchestrator/.env.prod`
 
-When cockpit runs inside the compose network, its server-side runtime must reach weather-service through `http://service-weather:8080` and assistant-service through `http://service-assistant:8080`.
+When cockpit runs inside the compose network, its server-side runtime must reach backend through `http://service-backend:8080` and assistant-service through `http://service-assistant:8080`.
 
 Cockpit's browser bundle is separate: in Compose it should use the published host ports (`http://localhost:3010` and `http://localhost:3020` in dev by default) for any direct browser fetches.
 

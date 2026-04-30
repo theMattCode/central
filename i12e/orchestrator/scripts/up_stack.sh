@@ -8,8 +8,8 @@ usage() {
 Usage: sh i12e/orchestrator/scripts/up_stack.sh <dev|prod> [full|llm-proxy-ollama]
 
 Stacks:
-  full              Start weather, cockpit, service-assistant, STT, TTS, and LLM services.
-  llm-proxy-ollama  Start weather, cockpit, service-assistant, and direct Ollama LLM proxy mode.
+  full              Start backend, cockpit, service-assistant, STT, TTS, and LLM services.
+  llm-proxy-ollama  Start backend, cockpit, service-assistant, and direct Ollama LLM proxy mode.
 USAGE
 }
 
@@ -60,7 +60,7 @@ start_ollama_and_pull_model() {
 
 start_full_stack() {
   compose up --detach --build \
-    service-weather \
+    service-backend \
     service-stt \
     service-tts \
     service-llm-runtime \
@@ -73,7 +73,7 @@ start_llm_proxy_ollama_stack() {
   ASSISTANT_BACKEND_MODE=llm-proxy \
     LLM_BASE_URL=http://service-llm-runtime:11434/v1 \
     docker compose --env-file "$env_file" --file "$COMPOSE_FILE" up --detach --build \
-    service-weather \
+    service-backend \
     service-llm-runtime \
     service-assistant \
     app-cockpit

@@ -35,22 +35,23 @@ services:
     command: ['apply-migrations.sh']
     restart: 'no'
 
-  service-weather:
+  service-backend:
     build:
       context: ../..
-      dockerfile: services/weather/Dockerfile
-    image: central/services/weather:latest
+      dockerfile: services/backend/Dockerfile
+    image: central/services/backend:latest
     depends_on:
       i12e-postgres:
         condition: service_healthy
     environment:
-      WEATHER_PORT: '8080'
+      BACKEND_PORT: '8080'
+      BACKEND_DATABASE_URL: ${BACKEND_DATABASE_URL:-postgres://central:central@i12e-postgres:5432/central}
+      BACKEND_CORS_ALLOW_ORIGIN: ${BACKEND_CORS_ALLOW_ORIGIN:-*}
       WEATHER_REFRESH_INTERVAL_SECONDS: ${WEATHER_REFRESH_INTERVAL_SECONDS:-900}
       WEATHER_REQUEST_TIMEOUT_SECONDS: ${WEATHER_REQUEST_TIMEOUT_SECONDS:-10}
-      WEATHER_DATABASE_URL: ${WEATHER_DATABASE_URL:-postgres://central:central@i12e-postgres:5432/central}
-      WEATHER_CORS_ALLOW_ORIGIN: ${WEATHER_CORS_ALLOW_ORIGIN:-*}
+      WEATHER_OPEN_METEO_BASE_URL: ${WEATHER_OPEN_METEO_BASE_URL:-https://api.open-meteo.com}
     ports:
-      - '${WEATHER_PORT:-3010}:8080'
+      - '${BACKEND_PORT:-3010}:8080'
     healthcheck:
       test: ['CMD', 'wget', '-qO', '-', 'http://127.0.0.1:8080/healthz']
       interval: 10s
@@ -203,22 +204,21 @@ services:
       context: ../..
       dockerfile: apps/cockpit/Dockerfile
       args:
-        WEATHER_SERVICE_BASE_URL: ${WEATHER_SERVICE_BASE_URL:-http://service-weather:8080}
+        BACKEND_BASE_URL: ${BACKEND_BASE_URL:-http://service-backend:8080}
         ASSISTANT_SERVICE_BASE_URL: ${ASSISTANT_SERVICE_BASE_URL:-http://service-assistant:8080}
-        VITE_WEATHER_API_BASE_URL: ${VITE_WEATHER_API_BASE_URL:-http://localhost:${WEATHER_PORT:-3010}}
+        VITE_BACKEND_API_BASE_URL: ${VITE_BACKEND_API_BASE_URL:-http://localhost:${BACKEND_PORT:-3010}}
         VITE_ASSISTANT_API_BASE_URL: ${VITE_ASSISTANT_API_BASE_URL:-http://localhost:${ASSISTANT_PORT:-3020}}
     image: central/apps/cockpit:latest
     depends_on:
       i12e-postgres:
         condition: service_healthy
-      service-weather:
+      service-backend:
         condition: service_healthy
       service-assistant:
         condition: service_healthy
     environment:
-      DATABASE_URL: postgres://central:central@postgres:5432/central
       NODE_ENV: ${COCKPIT_NODE_ENV:-production}
-      WEATHER_SERVICE_BASE_URL: ${WEATHER_SERVICE_BASE_URL:-http://service-weather:8080}
+      BACKEND_BASE_URL: ${BACKEND_BASE_URL:-http://service-backend:8080}
       ASSISTANT_SERVICE_BASE_URL: ${ASSISTANT_SERVICE_BASE_URL:-http://service-assistant:8080}
     ports:
       - '${COCKPIT_PORT:-3000}:3000'

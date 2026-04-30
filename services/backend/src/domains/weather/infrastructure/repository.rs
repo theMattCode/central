@@ -1,15 +1,16 @@
 use std::{sync::Arc, time::Duration};
 
 use chrono::{DateTime, Timelike, Utc};
-use tokio_postgres::{Client, NoTls, config::Host};
+use tokio_postgres::{config::Host, Client, NoTls};
 use tracing::{error, info, warn};
 
 use crate::{
-    domain::{
+    domains::weather::domain::{
         contracts::WeatherDataStore,
         model::{
             HourlyWeatherPayload, WeatherForecastMetaPayload, WeatherForecastResponse,
-            WeatherLocationPayload, WeatherLocationQuery, WeatherMetaPayload, WeatherSnapshotResponse,
+            WeatherLocationPayload, WeatherLocationQuery, WeatherMetaPayload,
+            WeatherSnapshotResponse,
         },
     },
     error::ApiError,

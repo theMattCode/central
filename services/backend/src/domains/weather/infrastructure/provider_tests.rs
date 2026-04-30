@@ -3,7 +3,8 @@ use std::time::Duration;
 use axum::{http::StatusCode, routing::get, Router};
 
 use crate::{
-    domain::model::WeatherLocationQuery, error::ApiError, infrastructure::provider::OpenMeteoClient,
+    domains::weather::domain::model::WeatherLocationQuery,
+    domains::weather::infrastructure::provider::OpenMeteoClient, error::ApiError,
 };
 
 async fn spawn_test_server(status: StatusCode, body: &'static str) -> String {
@@ -162,7 +163,10 @@ async fn fetch_hourly_forecast_maps_iso_time_response() {
 
     assert_eq!(forecast.hourly.len(), 2);
     assert_eq!(forecast.hourly[0].weather_code, 3);
-    assert_eq!(forecast.hourly[0].forecast_at.to_rfc3339(), "2026-03-09T09:00:00+00:00");
+    assert_eq!(
+        forecast.hourly[0].forecast_at.to_rfc3339(),
+        "2026-03-09T09:00:00+00:00"
+    );
 }
 
 #[tokio::test]

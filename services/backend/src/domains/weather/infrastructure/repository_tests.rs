@@ -2,7 +2,7 @@ use chrono::{DateTime, Duration as ChronoDuration, Timelike, Utc};
 use serde_json::Value;
 
 use super::WeatherSnapshotRepository;
-use crate::domain::model::{
+use crate::domains::weather::domain::model::{
     CurrentWeatherPayload, HourlyWeatherPayload, WeatherForecastMetaPayload,
     WeatherForecastResponse, WeatherLocationPayload, WeatherMetaPayload, WeatherSnapshotResponse,
 };
@@ -286,7 +286,7 @@ async fn upsert_hourly_forecast_keeps_past_rows_and_overwrites_future_rows() {
 
     let loaded = repository
         .load_hourly_forecast_range(
-            &crate::domain::model::WeatherLocationQuery {
+            &crate::domains::weather::domain::model::WeatherLocationQuery {
                 latitude: 48.4057,
                 longitude: 9.0542,
                 timezone: "UTC".to_string(),

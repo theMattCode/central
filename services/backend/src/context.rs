@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use crate::{config::Config, domain::service::WeatherSnapshotService};
+use crate::{config::Config, domains::weather::domain::service::WeatherSnapshotService};
 
 #[derive(Clone)]
 pub struct Context {

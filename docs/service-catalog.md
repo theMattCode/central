@@ -9,7 +9,7 @@ Source of truth: `i12e/orchestrator/docker-compose.yml`.
 | `app-cockpit`           | Cockpit web application                            | `3000/tcp`             |
 | `i12e-postgres`         | PostgreSQL database                                | `5432/tcp`             |
 | `i12e-postgres-migrate` | One-off migration runner                           | None (no exposed port) |
-| `service-weather`       | Weather backend HTTP API                           | `8080/tcp`             |
+| `service-backend`       | Integrated backend HTTP API                        | `8080/tcp`             |
 | `service-stt`           | Faster-whisper STT adapter                         | `8081/tcp`             |
 | `service-tts`           | Qwen3-TTS voice-clone adapter                      | `8082/tcp`             |
 | `service-llm-runtime`   | Ollama runtime                                     | `11434/tcp`            |
@@ -29,7 +29,7 @@ Defaults come from:
 | `app-cockpit`           | `${COCKPIT_PORT}:3000`      | `3000 -> 3000`                            | `4000 -> 3000`                   |
 | `i12e-postgres`         | `${POSTGRES_PORT}:5432`     | `3001 -> 5432`                            | `4001 -> 5432`                   |
 | `i12e-postgres-migrate` | None                        | None                                      | None                             |
-| `service-weather`       | `${WEATHER_PORT}:8080`      | `3010 -> 8080`                            | `4010 -> 8080`                   |
+| `service-backend`       | `${BACKEND_PORT}:8080`      | `3010 -> 8080`                            | `4010 -> 8080`                   |
 | `service-stt`           | `${STT_PORT}:8081`          | `3030 -> 8081`                            | `4030 -> 8081`                   |
 | `service-tts`           | `${TTS_PORT}:8082`          | `3040 -> 8082`                            | `4040 -> 8082`                   |
 | `service-llm-runtime`   | `${LLM_RUNTIME_PORT}:11434` | `3051 -> 11434`                           | `4051 -> 11434`                  |
@@ -42,9 +42,9 @@ Defaults come from:
 | ----------------------------- | ------------------------------------ | ------------------------------------ |
 | `COCKPIT_NODE_ENV`            | `development`                        | `production`                         |
 | `COMPOSE_PROJECT_NAME`        | `central-i12e-dev`                   | `central-i12e-prod`                  |
-| `WEATHER_SERVICE_BASE_URL`    | `http://service-weather:8080`        | `http://service-weather:8080`        |
+| `BACKEND_BASE_URL`            | `http://service-backend:8080`        | `http://service-backend:8080`        |
 | `ASSISTANT_SERVICE_BASE_URL`  | `http://service-assistant:8080`      | `http://service-assistant:8080`      |
-| `VITE_WEATHER_API_BASE_URL`   | `http://localhost:3010`              | `http://localhost:4010`              |
+| `VITE_BACKEND_API_BASE_URL`   | `http://localhost:3010`              | `http://localhost:4010`              |
 | `VITE_ASSISTANT_API_BASE_URL` | `http://localhost:3020`              | `http://localhost:4020`              |
 | `ASSISTANT_BACKEND_MODE`      | `proxy`                              | `proxy`                              |
 | `STT_URL`                     | `http://service-stt:8081/transcribe` | `http://service-stt:8081/transcribe` |
@@ -58,7 +58,7 @@ Defaults come from:
 | --------------------- | ---------------------------------- |
 | `app-cockpit`         | `http://app-cockpit:3000`          |
 | `i12e-postgres`       | `i12e-postgres:5432`               |
-| `service-weather`     | `http://service-weather:8080`      |
+| `service-backend`     | `http://service-backend:8080`      |
 | `service-stt`         | `http://service-stt:8081`          |
 | `service-tts`         | `http://service-tts:8082`          |
 | `service-llm-runtime` | `http://service-llm-runtime:11434` |
@@ -72,7 +72,7 @@ Defaults come from:
 | `cockpit`           | Vite dev server (`pnpm nx run cockpit:start`)                            | `5000`       |
 | `cockpit`           | Container run (`pnpm nx run cockpit:container-run`)                      | `5000`       |
 | `postgres`          | Standalone container run (`pnpm nx run i12e-postgres:run`)               | `5001`       |
-| `weather`           | Standalone container run (`pnpm nx run weather-service:container-run`)   | `5010`       |
+| `backend`           | Standalone container run (`pnpm nx run backend:container-run`)           | `5010`       |
 | `stt-service`       | Standalone container run (`pnpm nx run stt-service:container-run`)       | `5030`       |
 | `tts-service`       | Standalone container run (`pnpm nx run tts-service:container-run`)       | `5040`       |
 | `llm-service`       | Standalone container run (`pnpm nx run llm-service:container-run`)       | `5050`       |

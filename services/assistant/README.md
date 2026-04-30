@@ -13,12 +13,12 @@ The intended request path is:
 
 - Browser clients never call model-serving infrastructure directly.
 - Cockpit stays responsible for app/session/auth boundaries.
-- Model-serving details stay behind a Rust/Axum service, matching the existing `services/weather` pattern.
+- Model-serving details stay behind a Rust/Axum service, separate from the integrated `services/backend` API.
 - The standalone service can still run in `mock` mode for quick wiring tests, while the orchestrated stack defaults to STT, TTS, and LLM services.
 
 ## Architecture
 
-The service is intentionally smaller than `service-weather`:
+The service intentionally keeps a narrow assistant-turn boundary:
 
 - `src/http/*`: HTTP transport layer.
 - `src/domain/*`: turn models, ports, and `AssistantTurnService`.

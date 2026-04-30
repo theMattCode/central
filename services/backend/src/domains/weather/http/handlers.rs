@@ -13,17 +13,12 @@ use tracing::{info, warn};
 
 use crate::{
     context::Context,
-    domain::model::{
-        WeatherForecastQueryInput, WeatherForecastResponse, WeatherQueryInput, WeatherSnapshotResponse,
+    domains::weather::domain::model::{
+        WeatherForecastQueryInput, WeatherForecastResponse, WeatherQueryInput,
+        WeatherSnapshotResponse,
     },
     error::ApiError,
 };
-
-#[derive(Serialize)]
-#[serde(rename_all = "camelCase")]
-pub(super) struct HealthResponse {
-    status: &'static str,
-}
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -39,10 +34,6 @@ struct StreamErrorEnvelope {
     error: StreamErrorPayload,
 }
 
-pub(super) async fn healthz() -> Json<HealthResponse> {
-    Json(HealthResponse { status: "ok" })
-}
-
 pub(super) async fn current_weather(
     State(context): State<Context>,
     Query(query): Query<WeatherQueryInput>,
@@ -55,7 +46,11 @@ pub(super) async fn current_weather(
         "Received manual weather refresh request"
     );
 
-    let snapshot = match context.weather_service.get_current_snapshot(&location).await {
+    let snapshot = match context
+        .weather_service
+        .get_current_snapshot(&location)
+        .await
+    {
         Ok(snapshot) => snapshot,
         Err(error) => {
             warn!(

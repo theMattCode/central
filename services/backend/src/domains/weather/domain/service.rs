@@ -4,7 +4,7 @@ use chrono::{DateTime, Duration as ChronoDuration, Timelike, Utc};
 use tracing::{info, warn};
 
 use crate::{
-    domain::{
+    domains::weather::domain::{
         contracts::{WeatherDataFetcher, WeatherDataStore},
         model::{WeatherForecastResponse, WeatherLocationQuery, WeatherSnapshotResponse},
     },
@@ -21,10 +21,7 @@ pub struct WeatherSnapshotService {
 }
 
 impl WeatherSnapshotService {
-    pub fn new(
-        fetcher: Arc<dyn WeatherDataFetcher>,
-        store: Arc<dyn WeatherDataStore>,
-    ) -> Self {
+    pub fn new(fetcher: Arc<dyn WeatherDataFetcher>, store: Arc<dyn WeatherDataStore>) -> Self {
         Self {
             fetcher,
             store,

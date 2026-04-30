@@ -107,23 +107,23 @@ The standalone cockpit dev server (`pnpm nx run cockpit:start`) runs on `5000`.
 
 The cockpit container run target publishes `5000:3000`.
 
-### Weather service container
+### Backend service container
 
-Build the weather service container image:
-
-```bash
-nx run weather-service:container-build
-```
-
-Run the weather service container image:
+Build the backend service container image:
 
 ```bash
-nx run weather-service:container-run
+nx run backend:container-build
 ```
 
-The weather container run target publishes `5010:8080`.
+Run the backend service container image:
 
-Weather update polling defaults to 15 minutes (`WEATHER_REFRESH_INTERVAL_SECONDS=900`), and successful updates are persisted to PostgreSQL via `WEATHER_DATABASE_URL`.
+```bash
+nx run backend:container-run
+```
+
+The backend container run target publishes `5010:8080`.
+
+Weather update polling defaults to 15 minutes (`WEATHER_REFRESH_INTERVAL_SECONDS=900`), and successful updates are persisted to PostgreSQL via `BACKEND_DATABASE_URL`.
 
 ### Assistant service container
 
@@ -190,7 +190,7 @@ Start the complete development environment with all required services:
 nx run i12e-orchestrator:up-dev
 ```
 
-This is the default development path. It starts PostgreSQL, weather, cockpit, faster-whisper STT, Qwen3-TTS, the Ollama runtime, the LLM wrapper, and `service-assistant`.
+This is the default development path. It starts PostgreSQL, backend, cockpit, faster-whisper STT, Qwen3-TTS, the Ollama runtime, the LLM wrapper, and `service-assistant`.
 
 The orchestrator `up-*` targets share startup sequencing through `i12e/orchestrator/scripts/up_stack.sh`.
 
