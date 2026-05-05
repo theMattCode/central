@@ -14,7 +14,7 @@
     "test": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "apps/cockpit/node_modules/.bin/vitest run libs/ts-log/src/index.test.ts"
+        "command": "pnpm --dir libs/ts-log exec vitest run src/logger/ConsoleLogger.test.ts"
       }
     },
     "typecheck": {
@@ -27,7 +27,7 @@
       "executor": "nx:run-commands",
       "outputs": ["{workspaceRoot}/dist/libs/ts-log"],
       "options": {
-        "command": "pnpm exec tsc -p libs/ts-log/tsconfig.lib.json"
+        "command": "pnpm exec tsc -p libs/ts-log/tsconfig.build.json"
       }
     }
   },

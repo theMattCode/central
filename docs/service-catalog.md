@@ -22,7 +22,9 @@ Source of truth: `i12e/orchestrator/docker-compose.yml`.
 Defaults come from:
 
 - `i12e/orchestrator/.env.dev`
-- `i12e/orchestrator/.env.prod`
+- `i12e/orchestrator/.env.prod.example`
+
+Runtime production values come from ignored `i12e/orchestrator/.env.prod`.
 
 | Service                 | Compose mapping             | Dev / staging default (host -> container) | Prod default (host -> container) |
 | ----------------------- | --------------------------- | ----------------------------------------- | -------------------------------- |

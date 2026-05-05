@@ -7,17 +7,19 @@ import type { WeatherData, WeatherLocation } from '@/widgets/weather/model/model
 import { fetchWeatherData } from '@/widgets/weather/model/fetchWeatherData.ts';
 import { useWeatherSnapshot } from '@/widgets/weather/model/useWeatherSnapshot.ts';
 
+const loggerMock = vi.hoisted(() => ({
+  debug: vi.fn(),
+  info: vi.fn(),
+  warn: vi.fn(),
+  error: vi.fn(),
+}));
+
 vi.mock('@/widgets/weather/model/fetchWeatherData.ts', () => ({
   fetchWeatherData: vi.fn(),
 }));
 
 vi.mock('@/widgets/weather/log.ts', () => ({
-  getLogger: () => ({
-    debug: vi.fn(),
-    info: vi.fn(),
-    warn: vi.fn(),
-    error: vi.fn(),
-  }),
+  getLogger: () => loggerMock,
 }));
 
 const WEATHER_REFRESH_INTERVAL_MS = 15 * 60 * 1000;

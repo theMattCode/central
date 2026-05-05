@@ -3,6 +3,14 @@
   "version": "0.0.0",
   "license": "MIT",
   "scripts": {
+    "dev": "pnpm nx run i12e-orchestrator:dev",
+    "dev:down": "pnpm nx run i12e-orchestrator:down-dev",
+    "prod": "pnpm nx run i12e-orchestrator:up-prod",
+    "prod:down": "pnpm nx run i12e-orchestrator:down-prod",
+    "logs:dev": "pnpm nx run i12e-orchestrator:logs-dev",
+    "logs:prod": "pnpm nx run i12e-orchestrator:logs-prod",
+    "ps:dev": "pnpm nx run i12e-orchestrator:ps-dev",
+    "ps:prod": "pnpm nx run i12e-orchestrator:ps-prod",
     "postinstall": "pnpm --dir apps/cockpit run sync:voice-vad-assets"
   },
   "private": true,

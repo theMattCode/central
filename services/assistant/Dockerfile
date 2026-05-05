@@ -1,6 +1,17 @@
-FROM rust:1.89-alpine AS builder
-WORKDIR /workspace/services/assistant
+FROM rust:1.89-alpine AS base
 RUN apk add --no-cache build-base musl-dev
+WORKDIR /workspace/services/assistant
+
+FROM base AS dev
+RUN cargo install cargo-watch --locked
+COPY services/assistant/Cargo.toml ./Cargo.toml
+COPY services/assistant/src ./src
+ENV ASSISTANT_PORT=8080
+ENV ASSISTANT_BACKEND_MODE=mock
+EXPOSE 8080
+CMD ["cargo", "watch", "--why", "--watch", "Cargo.toml", "--watch", "src", "-x", "run"]
+
+FROM base AS builder
 COPY services/assistant/Cargo.toml ./Cargo.toml
 COPY services/assistant/src ./src
 RUN cargo build --release

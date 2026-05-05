@@ -1,8 +1,16 @@
-FROM rust:1.89-alpine AS builder
-
+FROM rust:1.89-alpine AS base
+RUN apk add --no-cache build-base musl-dev
 WORKDIR /workspace/services/backend
 
-RUN apk add --no-cache build-base musl-dev
+FROM base AS dev
+RUN cargo install cargo-watch --locked
+COPY services/backend/Cargo.toml ./Cargo.toml
+COPY services/backend/src ./src
+ENV BACKEND_PORT=8080
+EXPOSE 8080
+CMD ["cargo", "watch", "--why", "--watch", "Cargo.toml", "--watch", "src", "-x", "run"]
+
+FROM base AS builder
 
 COPY services/backend/Cargo.toml ./Cargo.toml
 COPY services/backend/src ./src

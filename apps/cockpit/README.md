@@ -45,11 +45,11 @@ pnpm nx run cockpit:build
 The weather widget module owns its loading contract:
 
 - The route loader calls weather-module helpers for the initial widget data on the cockpit server.
-- Widget refreshes continue through a TanStack Start server function, so browsers never call weather-service directly.
-- Cockpit reads weather-service via `GET /api/v1/weather/current?lat=<latitude>&lon=<longitude>&timezone=<tz>`.
-- Configure the weather-service base URL on the cockpit server with `WEATHER_SERVICE_BASE_URL` (runtime) or `VITE_WEATHER_API_BASE_URL` (build-time fallback).
+- Widget refreshes continue through a TanStack Start server function, so browsers never call backend directly.
+- Cockpit reads the backend weather API via `GET /api/v1/weather/current?lat=<latitude>&lon=<longitude>&timezone=<tz>`.
+- Configure the backend base URL on the cockpit server with `BACKEND_BASE_URL` (runtime) or `VITE_BACKEND_API_BASE_URL` (build-time fallback).
 
-If neither is set, cockpit uses `http://localhost:3010` as the local orchestrator default. Other runtimes should set `WEATHER_SERVICE_BASE_URL` explicitly instead of relying on endpoint probing.
+If neither is set, cockpit uses `http://localhost:3010` as the local orchestrator default. Other runtimes should set `BACKEND_BASE_URL` explicitly instead of relying on endpoint probing.
 
 Weather widget diagnostics are written by cockpit as structured `@central/ts-log` records with scope `cockpit.weather.*`, including invalid location payloads, outbound request attempts, and upstream request failures.
 

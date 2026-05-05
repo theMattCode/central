@@ -8,31 +8,43 @@
     "lint": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "sh -n i12e/orchestrator/scripts/up_stack.sh && docker compose --env-file i12e/orchestrator/.env.dev --file i12e/orchestrator/docker-compose.yml config --quiet"
+        "command": "sh -n i12e/orchestrator/scripts/up_stack.sh && docker compose --env-file i12e/orchestrator/.env.dev --file i12e/orchestrator/docker-compose.yml --file i12e/orchestrator/docker-compose.dev.yml config --quiet"
       }
     },
     "test": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "docker compose --env-file i12e/orchestrator/.env.prod --file i12e/orchestrator/docker-compose.yml config --quiet"
+        "command": "docker compose --env-file i12e/orchestrator/.env.prod.example --file i12e/orchestrator/docker-compose.yml config --quiet"
       }
     },
     "build": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "docker compose --env-file i12e/orchestrator/.env.dev --file i12e/orchestrator/docker-compose.yml config --quiet"
+        "command": "docker compose --env-file i12e/orchestrator/.env.dev --file i12e/orchestrator/docker-compose.yml --file i12e/orchestrator/docker-compose.dev.yml config --quiet"
       }
     },
     "typecheck": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "sh -n i12e/orchestrator/scripts/up_stack.sh && docker compose --env-file i12e/orchestrator/.env.prod --file i12e/orchestrator/docker-compose.yml config --quiet"
+        "command": "sh -n i12e/orchestrator/scripts/up_stack.sh && docker compose --env-file i12e/orchestrator/.env.prod.example --file i12e/orchestrator/docker-compose.yml config --quiet"
       }
     },
     "up-dev": {
       "executor": "nx:run-commands",
       "options": {
         "command": "sh i12e/orchestrator/scripts/up_stack.sh dev full"
+      }
+    },
+    "dev": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "sh i12e/orchestrator/scripts/up_stack.sh dev hot"
+      }
+    },
+    "up-dev-hot": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "sh i12e/orchestrator/scripts/up_stack.sh dev hot"
       }
     },
     "up-dev-llm-proxy-ollama": {
@@ -56,7 +68,7 @@
     "down-dev": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "docker compose --env-file i12e/orchestrator/.env.dev --file i12e/orchestrator/docker-compose.yml down --remove-orphans"
+        "command": "docker compose --env-file i12e/orchestrator/.env.dev --file i12e/orchestrator/docker-compose.yml --file i12e/orchestrator/docker-compose.dev.yml down --remove-orphans"
       }
     },
     "down-prod": {
@@ -80,7 +92,7 @@
     "logs-dev": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "docker compose --env-file i12e/orchestrator/.env.dev --file i12e/orchestrator/docker-compose.yml logs --follow --tail=100"
+        "command": "docker compose --env-file i12e/orchestrator/.env.dev --file i12e/orchestrator/docker-compose.yml --file i12e/orchestrator/docker-compose.dev.yml logs --follow --tail=100"
       }
     },
     "logs-prod": {
@@ -92,7 +104,7 @@
     "ps-dev": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "docker compose --env-file i12e/orchestrator/.env.dev --file i12e/orchestrator/docker-compose.yml ps"
+        "command": "docker compose --env-file i12e/orchestrator/.env.dev --file i12e/orchestrator/docker-compose.yml --file i12e/orchestrator/docker-compose.dev.yml ps"
       }
     },
     "ps-prod": {

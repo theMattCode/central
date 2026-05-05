@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { createLogger } from './index';
+import { ConsoleLogger } from '#/logger/ConsoleLogger';
 
 function stripAnsi(value: string): string {
   return value.replace(/\u001B\[[0-9;]*m/g, '');
@@ -14,10 +14,10 @@ function createWriter() {
   };
 }
 
-describe('createLogger', () => {
+describe('Console Logger', () => {
   it('writes structured records with merged context', () => {
     const writer = createWriter();
-    const logger = createLogger({
+    const logger = new ConsoleLogger({
       scope: 'weather-widget',
       context: {
         app: 'cockpit',
@@ -30,13 +30,13 @@ describe('createLogger', () => {
     });
 
     expect(stripAnsi(writer.info.mock.calls[0][0])).toContain(
-      'INFO  weather-widget request-weather-data {"app":"cockpit","url":"http://localhost:3010/api/v1/weather/current"}',
+      'INFO  | weather-widget | request-weather-data\n    context: {"app":"cockpit","url":"http://localhost:3010/api/v1/weather/current"}',
     );
   });
 
   it('creates child loggers with inherited context', () => {
     const writer = createWriter();
-    const logger = createLogger({
+    const logger = new ConsoleLogger({
       scope: 'weather-widget',
       context: {
         app: 'cockpit',
@@ -51,21 +51,21 @@ describe('createLogger', () => {
     });
 
     expect(stripAnsi(writer.warn.mock.calls[0][0])).toContain(
-      'WARN  weather-widget refresh-delayed {"app":"cockpit","widget":"weather","retryInMs":15000}',
+      'WARN  | weather-widget | refresh-delayed\n    context: {"app":"cockpit","widget":"weather","retryInMs":15000}',
     );
   });
 
   it('serializes errors into the log record', () => {
     const writer = createWriter();
-    const logger = createLogger({
-      scope: 'weather-widget',
+    const logger = new ConsoleLogger({
+      scope: 'TestLogger',
       writer,
     });
 
-    logger.error('weather-service-request-failed', { baseUrl: 'http://localhost:3010' }, new Error('fetch failed'));
+    logger.error('backend-request-failed', { baseUrl: 'http://localhost:3010' }, new Error('fetch failed'));
 
     expect(stripAnsi(writer.error.mock.calls[0][0])).toContain(
-      'ERROR weather-widget weather-service-request-failed {"baseUrl":"http://localhost:3010"} {"error":{"name":"Error","message":"fetch failed"}}',
+      'ERROR | TestLogger | backend-request-failed\n    context: {"baseUrl":"http://localhost:3010"}\n    error: {"error":{"name":"Error","message":"fetch failed"}}',
     );
   });
 });

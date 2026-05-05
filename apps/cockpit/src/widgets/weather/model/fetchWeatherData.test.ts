@@ -2,13 +2,15 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { getLogger } from '@/widgets/weather/log.ts';
 import { validateWeatherLocation } from '@/widgets/weather/model/fetchWeatherData.ts';
 
+const loggerMock = vi.hoisted(() => ({
+  debug: vi.fn(),
+  info: vi.fn(),
+  warn: vi.fn(),
+  error: vi.fn(),
+}));
+
 vi.mock('@/widgets/weather/log.ts', () => ({
-  getLogger: () => ({
-    debug: vi.fn(),
-    info: vi.fn(),
-    warn: vi.fn(),
-    error: vi.fn(),
-  }),
+  getLogger: () => loggerMock,
 }));
 
 describe('validateWeatherLocation', () => {

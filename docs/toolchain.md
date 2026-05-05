@@ -184,37 +184,58 @@ The standalone LLM wrapper publishes `5050:8083`.
 
 ### Orchestrator project
 
-Start the complete development environment with all required services:
+Start the complete hot-reload development environment:
+
+```bash
+pnpm dev
+```
+
+This delegates to `nx run i12e-orchestrator:dev` / `up-dev-hot`. It starts PostgreSQL, runs migrations, starts Ollama and pulls the configured model, then starts the service stack with the dev compose overlay:
+
+- `app-cockpit` runs the Vite dev server for browser HMR.
+- `service-backend` and `service-assistant` run through `cargo watch`.
+- `service-stt`, `service-tts`, and `service-llm` use Docker Compose watch with restart-on-change.
+
+Stop the dev stack with:
+
+```bash
+pnpm dev:down
+```
+
+Create the ignored production env file once:
+
+```bash
+cp i12e/orchestrator/.env.prod.example i12e/orchestrator/.env.prod
+```
+
+Set real production values in `i12e/orchestrator/.env.prod`, especially DB password and CORS origins.
+
+Start the production environment:
+
+```bash
+pnpm prod
+```
+
+Stop it with:
+
+```bash
+pnpm prod:down
+```
+
+The orchestrator `up-*` targets share startup sequencing through `i12e/orchestrator/scripts/up_stack.sh`.
+Startup waits for PostgreSQL and Ollama health before running migrations or pulling the configured model.
+Long-running services use `SERVICE_RESTART_POLICY`; dev defaults to `no`, prod example defaults to `unless-stopped`.
+
+Advanced targets:
 
 ```bash
 nx run i12e-orchestrator:up-dev
-```
-
-This is the default development path. It starts PostgreSQL, backend, cockpit, faster-whisper STT, Qwen3-TTS, the Ollama runtime, the LLM wrapper, and `service-assistant`.
-
-The orchestrator `up-*` targets share startup sequencing through `i12e/orchestrator/scripts/up_stack.sh`.
-
-The explicit voice target remains available and starts the same assistant stack:
-
-```bash
-nx run i12e-orchestrator:up-dev-voice
-```
-
-Start the development environment with mock STT / TTS and direct Ollama chat completions:
-
-```bash
 nx run i12e-orchestrator:up-dev-llm-proxy-ollama
 ```
 
-This keeps `service-assistant` in `llm-proxy` mode and points `LLM_BASE_URL` at the Ollama runtime's OpenAI-compatible `/v1` endpoint.
+`up-dev` starts release-style dev containers without watchers.
+`up-dev-llm-proxy-ollama` keeps `service-assistant` in `llm-proxy` mode and points `LLM_BASE_URL` at the Ollama runtime's OpenAI-compatible `/v1` endpoint.
 
-Start the development environment with faster-whisper, Qwen3-TTS, and a Qwen LLM through Ollama:
-
-```bash
-nx run i12e-orchestrator:up-dev-assistant
-```
-
-This target is kept as an explicit alias for the default stack. It keeps the `llm-service` wrapper in front of Ollama for the full STT / TTS / LLM stack and reuses `LLM_MODEL` from `i12e/orchestrator/.env.dev`.
 The tracked `i12e/orchestrator/.env.dev` biases this path toward quality over speed with a larger STT model, less aggressive extra STT VAD, and slightly less choppy TTS streaming.
 The main compose file is GPU-backed by default for assistant support services: `service-stt`, `service-tts`, and `service-llm-runtime` request `gpus: all`. STT defaults to CUDA/FP16, TTS defaults to CUDA with FlashAttention 2 installed from a prebuilt wheel, and the stack requires a Docker host with working GPU container support.
 
@@ -226,13 +247,7 @@ nx run i12e-orchestrator:smoke-dev-voice
 
 Override `SMOKE_VOICE_TEXT` and `SMOKE_VOICE_LANGUAGE` when you want to exercise a different sample input.
 
-To start the production environment use:
-
-```bash
-nx run i12e-orchestrator:up-prod
-```
-
-The production target starts the same service classes by default, using the prod port mappings from `i12e/orchestrator/.env.prod`.
+The production target starts the same service classes by default, using port mappings from ignored `i12e/orchestrator/.env.prod`.
 
 The migration step runs as a one-off `postgres-migrate` container and is removed after completion.
 
@@ -241,8 +256,8 @@ For a complete list of orchestrated services and their port mappings, see [Servi
 Stop all orchestrated services:
 
 ```bash
-nx run i12e-orchestrator:down-dev
-nx run i12e-orchestrator:down-prod
+pnpm dev:down
+pnpm prod:down
 ```
 
 Re-run migrations (requires PostgreSQL to already be running):

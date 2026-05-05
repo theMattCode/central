@@ -38,6 +38,7 @@ yarn-error.log
 testem.log
 /typings
 .env
+i12e/orchestrator/.env.prod
 .codex
 __pycache__
 

@@ -7,9 +7,10 @@ services:
       dockerfile: Dockerfile
     image: central/i12e/postgres:16.4
     environment:
-      POSTGRES_USER: central
-      POSTGRES_PASSWORD: central
-      POSTGRES_DB: central
+      POSTGRES_USER: ${POSTGRES_USER:-central}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in the orchestrator environment file.}
+      POSTGRES_DB: ${POSTGRES_DB:-central}
+    restart: ${SERVICE_RESTART_POLICY:-unless-stopped}
     ports:
       - '${POSTGRES_PORT:-3001}:5432'
     volumes:
@@ -29,9 +30,9 @@ services:
     environment:
       PGHOST: i12e-postgres
       PGPORT: '5432'
-      PGDATABASE: central
-      PGUSER: central
-      PGPASSWORD: central
+      PGDATABASE: ${POSTGRES_DB:-central}
+      PGUSER: ${POSTGRES_USER:-central}
+      PGPASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in the orchestrator environment file.}
     command: ['apply-migrations.sh']
     restart: 'no'
 
@@ -50,6 +51,7 @@ services:
       WEATHER_REFRESH_INTERVAL_SECONDS: ${WEATHER_REFRESH_INTERVAL_SECONDS:-900}
       WEATHER_REQUEST_TIMEOUT_SECONDS: ${WEATHER_REQUEST_TIMEOUT_SECONDS:-10}
       WEATHER_OPEN_METEO_BASE_URL: ${WEATHER_OPEN_METEO_BASE_URL:-https://api.open-meteo.com}
+    restart: ${SERVICE_RESTART_POLICY:-unless-stopped}
     ports:
       - '${BACKEND_PORT:-3010}:8080'
     healthcheck:
@@ -82,6 +84,7 @@ services:
       LLM_BASE_URL: ${LLM_BASE_URL:-http://service-llm:8083}
       LLM_API_KEY: ${LLM_API_KEY:-}
       LLM_MODEL: ${LLM_MODEL:-qwen2.5:3b}
+    restart: ${SERVICE_RESTART_POLICY:-unless-stopped}
     ports:
       - '${ASSISTANT_PORT:-3020}:8080'
     healthcheck:
@@ -106,6 +109,7 @@ services:
       STT_BEAM_SIZE: ${STT_BEAM_SIZE:-5}
       STT_VAD_FILTER: ${STT_VAD_FILTER:-true}
       HF_HOME: ${STT_CACHE_DIR:-/models}
+    restart: ${SERVICE_RESTART_POLICY:-unless-stopped}
     gpus: all
     ports:
       - '${STT_PORT:-3030}:8081'
@@ -135,6 +139,7 @@ services:
       TTS_DTYPE: ${TTS_DTYPE:-bfloat16}
       TTS_ATTENTION_IMPLEMENTATION: ${TTS_ATTENTION_IMPLEMENTATION:-flash_attention_2}
       HF_HOME: ${TTS_CACHE_DIR:-/models/huggingface}
+    restart: ${SERVICE_RESTART_POLICY:-unless-stopped}
     gpus: all
     ports:
       - '${TTS_PORT:-3040}:8082'
@@ -153,6 +158,7 @@ services:
     command: ['serve']
     environment:
       OLLAMA_KEEP_ALIVE: ${LLM_KEEP_ALIVE:-5m}
+    restart: ${SERVICE_RESTART_POLICY:-unless-stopped}
     gpus: all
     ports:
       - '${LLM_RUNTIME_PORT:-3051}:11434'
@@ -189,6 +195,7 @@ services:
       LLM_OLLAMA_URL: http://service-llm-runtime:11434
       LLM_REQUEST_TIMEOUT_SECONDS: ${LLM_REQUEST_TIMEOUT_SECONDS:-120}
       LLM_DEFAULT_MODEL: ${LLM_MODEL:-qwen2.5:3b}
+    restart: ${SERVICE_RESTART_POLICY:-unless-stopped}
     ports:
       - '${LLM_PORT:-3050}:8083'
     healthcheck:
@@ -220,6 +227,7 @@ services:
       NODE_ENV: ${COCKPIT_NODE_ENV:-production}
       BACKEND_BASE_URL: ${BACKEND_BASE_URL:-http://service-backend:8080}
       ASSISTANT_SERVICE_BASE_URL: ${ASSISTANT_SERVICE_BASE_URL:-http://service-assistant:8080}
+    restart: ${SERVICE_RESTART_POLICY:-unless-stopped}
     ports:
       - '${COCKPIT_PORT:-3000}:3000'
 

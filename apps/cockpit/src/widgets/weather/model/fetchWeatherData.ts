@@ -1,7 +1,7 @@
 import { createServerFn } from '@tanstack/react-start';
 import { getLogger } from '@/widgets/weather/log.ts';
 import type { WeatherData, WeatherLocation } from './model.ts';
-import { resolveWeatherServiceBaseUrl } from './weatherServiceBaseUrl.ts';
+import { resolveBackendBaseUrl } from './backendBaseUrl.ts';
 
 type WeatherServiceSnapshot = {
   location: {
@@ -52,7 +52,7 @@ async function toErrorMessage(response: Response): Promise<string> {
     // ignore JSON parse errors and return generic fallback below
   }
 
-  return `Weather service request failed with status ${response.status}.`;
+  return `Backend weather request failed with status ${response.status}.`;
 }
 
 function toWeatherData(location: WeatherLocation, snapshot: WeatherServiceSnapshot): WeatherData {
@@ -107,7 +107,7 @@ export function validateWeatherLocation(input: unknown): WeatherLocation {
 }
 
 async function requestWeatherData(location: WeatherLocation): Promise<WeatherData> {
-  const baseUrl = resolveWeatherServiceBaseUrl();
+  const baseUrl = resolveBackendBaseUrl();
   const url = createWeatherServiceUrl(baseUrl, 'api/v1/weather/current', location);
 
   let response: Response;

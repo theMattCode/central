@@ -1,8 +1,13 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "rootDir": ".",
-    "lib": ["es2022", "dom"]
+    "rootDir": "src",
+    "outDir": "../../dist/libs/ts-log",
+    "tsBuildInfoFile": "../../dist/libs/ts-log/tsconfig.tsbuildinfo",
+    "lib": ["es2022", "dom"],
+    "paths": {
+      "#/*": ["./src/*.ts"]
+    }
   },
-  "include": ["src/index.ts"]
+  "include": ["src"]
 }

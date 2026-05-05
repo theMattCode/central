@@ -1,0 +1,120 @@
+services:
+  service-backend:
+    build:
+      target: dev
+    command: ['cargo', 'watch', '--why', '--watch', 'Cargo.toml', '--watch', 'src', '-x', 'run']
+    healthcheck:
+      start_period: 2m
+      retries: 30
+    volumes:
+      - central_backend_cargo_registry:/usr/local/cargo/registry
+      - central_backend_cargo_git:/usr/local/cargo/git
+      - central_backend_target:/workspace/services/backend/target
+    develop:
+      watch:
+        - action: sync
+          path: ../../services/backend/src
+          target: /workspace/services/backend/src
+        - action: sync
+          path: ../../services/backend/Cargo.toml
+          target: /workspace/services/backend/Cargo.toml
+        - action: rebuild
+          path: ../../services/backend/Dockerfile
+
+  service-assistant:
+    build:
+      target: dev
+    command: ['cargo', 'watch', '--why', '--watch', 'Cargo.toml', '--watch', 'src', '-x', 'run']
+    healthcheck:
+      start_period: 2m
+      retries: 30
+    volumes:
+      - central_assistant_cargo_registry:/usr/local/cargo/registry
+      - central_assistant_cargo_git:/usr/local/cargo/git
+      - central_assistant_target:/workspace/services/assistant/target
+    develop:
+      watch:
+        - action: sync
+          path: ../../services/assistant/src
+          target: /workspace/services/assistant/src
+        - action: sync
+          path: ../../services/assistant/Cargo.toml
+          target: /workspace/services/assistant/Cargo.toml
+        - action: rebuild
+          path: ../../services/assistant/Dockerfile
+
+  service-stt:
+    develop:
+      watch:
+        - action: sync+restart
+          path: ../../services/stt/src
+          target: /app/src
+        - action: rebuild
+          path: ../../services/stt/requirements.txt
+        - action: rebuild
+          path: ../../services/stt/Dockerfile
+
+  service-tts:
+    develop:
+      watch:
+        - action: sync+restart
+          path: ../../services/tts/src
+          target: /app/src
+        - action: sync+restart
+          path: ../../services/tts/res
+          target: /app/res
+        - action: rebuild
+          path: ../../services/tts/requirements.txt
+        - action: rebuild
+          path: ../../services/tts/Dockerfile
+
+  service-llm:
+    develop:
+      watch:
+        - action: sync+restart
+          path: ../../services/llm/src
+          target: /app/src
+        - action: rebuild
+          path: ../../services/llm/requirements.txt
+        - action: rebuild
+          path: ../../services/llm/Dockerfile
+
+  app-cockpit:
+    build:
+      target: dev
+    command: ['pnpm', 'exec', 'vite', 'dev', '--host', '0.0.0.0', '--port', '3000', '--strictPort']
+    environment:
+      NODE_ENV: development
+      BACKEND_BASE_URL: ${BACKEND_BASE_URL:-http://service-backend:8080}
+      ASSISTANT_SERVICE_BASE_URL: ${ASSISTANT_SERVICE_BASE_URL:-http://service-assistant:8080}
+      VITE_BACKEND_API_BASE_URL: ${VITE_BACKEND_API_BASE_URL:-http://localhost:${BACKEND_PORT:-3010}}
+      VITE_ASSISTANT_API_BASE_URL: ${VITE_ASSISTANT_API_BASE_URL:-http://localhost:${ASSISTANT_PORT:-3020}}
+    develop:
+      watch:
+        - action: sync
+          path: ../../apps/cockpit
+          target: /workspace/apps/cockpit
+          ignore:
+            - node_modules/
+            - dist/
+        - action: sync
+          path: ../../libs/ts-log/src
+          target: /workspace/libs/ts-log/src
+        - action: rebuild
+          path: ../../apps/cockpit/package.json
+        - action: rebuild
+          path: ../../libs/ts-log/package.json
+        - action: rebuild
+          path: ../../package.json
+        - action: rebuild
+          path: ../../pnpm-lock.yaml
+        - action: rebuild
+          path: ../../apps/cockpit/Dockerfile
+
+volumes:
+  central_backend_cargo_registry:
+  central_backend_cargo_git:
+  central_backend_target:
+  central_assistant_cargo_registry:
+  central_assistant_cargo_git:
+  central_assistant_target:
