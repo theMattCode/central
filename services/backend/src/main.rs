@@ -8,9 +8,12 @@ use std::{net::SocketAddr, sync::Arc};
 
 use config::Config;
 use context::Context;
-use domains::weather::{
-    domain::service::WeatherSnapshotService,
-    infrastructure::{provider::OpenMeteoClient, repository::WeatherSnapshotRepository},
+use domains::{
+    finance::{domain::service::FinanceService, infrastructure::repository::FinanceRepository},
+    weather::{
+        domain::service::WeatherSnapshotService,
+        infrastructure::{provider::OpenMeteoClient, repository::WeatherSnapshotRepository},
+    },
 };
 use tracing::{error, info};
 
@@ -33,6 +36,14 @@ async fn main() {
         "Loaded backend configuration"
     );
 
+    let finance_service = match build_finance_service(&config).await {
+        Ok(service) => service,
+        Err(error) => {
+            error!("{error}");
+            std::process::exit(1);
+        }
+    };
+
     let weather_service = match build_weather_service(&config).await {
         Ok(service) => service,
         Err(error) => {
@@ -41,10 +52,18 @@ async fn main() {
         }
     };
 
-    if let Err(error) = run_http_server(config, weather_service).await {
+    if let Err(error) = run_http_server(config, finance_service, weather_service).await {
         error!("{error}");
         std::process::exit(1);
     }
+}
+
+async fn build_finance_service(config: &Config) -> Result<FinanceService, String> {
+    let finance_repository = FinanceRepository::connect(&config.database_url)
+        .await
+        .map_err(|error| error.to_string())?;
+
+    Ok(FinanceService::new(Arc::new(finance_repository)))
 }
 
 async fn build_weather_service(config: &Config) -> Result<WeatherSnapshotService, String> {
@@ -64,10 +83,12 @@ async fn build_weather_service(config: &Config) -> Result<WeatherSnapshotService
 
 async fn run_http_server(
     config: Arc<Config>,
+    finance_service: FinanceService,
     weather_service: WeatherSnapshotService,
 ) -> Result<(), String> {
     let context = Context {
         config: Arc::clone(&config),
+        finance_service,
         weather_service,
     };
     let app = http::build_router(context);

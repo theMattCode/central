@@ -1,4 +1,4 @@
-FROM postgres:16.4-alpine
+FROM postgres:18.3-alpine
 
 LABEL org.opencontainers.image.title='central-i12e-postgres'
 LABEL org.opencontainers.image.description='Persistence layer image for Central'

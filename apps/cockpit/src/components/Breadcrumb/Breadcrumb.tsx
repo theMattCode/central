@@ -3,6 +3,7 @@ import { Fragment } from 'react';
 
 const BREADCRUMB_BY_PATH: Record<string, readonly string[]> = {
   '/': ['Home', 'Dashboard'],
+  '/finance/cash': ['Home', 'Finance', 'Cash'],
   '/jarvis': ['Home', 'Jarvis'],
 };
 

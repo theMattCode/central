@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as JarvisRouteImport } from './routes/jarvis'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as FinanceCashRouteImport } from './routes/finance/cash'
 
 const JarvisRoute = JarvisRouteImport.update({
   id: '/jarvis',
@@ -22,31 +23,40 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const FinanceCashRoute = FinanceCashRouteImport.update({
+  id: '/finance/cash',
+  path: '/finance/cash',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/jarvis': typeof JarvisRoute
+  '/finance/cash': typeof FinanceCashRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/jarvis': typeof JarvisRoute
+  '/finance/cash': typeof FinanceCashRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/jarvis': typeof JarvisRoute
+  '/finance/cash': typeof FinanceCashRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/jarvis'
+  fullPaths: '/' | '/jarvis' | '/finance/cash'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/jarvis'
-  id: '__root__' | '/' | '/jarvis'
+  to: '/' | '/jarvis' | '/finance/cash'
+  id: '__root__' | '/' | '/jarvis' | '/finance/cash'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   JarvisRoute: typeof JarvisRoute
+  FinanceCashRoute: typeof FinanceCashRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -65,12 +75,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/finance/cash': {
+      id: '/finance/cash'
+      path: '/finance/cash'
+      fullPath: '/finance/cash'
+      preLoaderRoute: typeof FinanceCashRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   JarvisRoute: JarvisRoute,
+  FinanceCashRoute: FinanceCashRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

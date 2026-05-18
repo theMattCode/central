@@ -5,7 +5,7 @@ services:
     build:
       context: ../postgres
       dockerfile: Dockerfile
-    image: central/i12e/postgres:16.4
+    image: central/i12e/postgres:18.3
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-central}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in the orchestrator environment file.}
@@ -23,7 +23,7 @@ services:
       start_period: 30s
 
   i12e-postgres-migrate:
-    image: central/i12e/postgres:16.4
+    image: central/i12e/postgres:18.3
     depends_on:
       i12e-postgres:
         condition: service_healthy

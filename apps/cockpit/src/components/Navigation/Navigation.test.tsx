@@ -43,7 +43,7 @@ describe('Navigation', () => {
     expect(screen.queryByLabelText('Close mobile navigation')).toBeNull();
   });
 
-  it('renders the Jarvis link directly after Overview', () => {
+  it('renders primary route links', () => {
     render(<Navigation />);
 
     const linkLabels = screen.getAllByRole('link').map((link) => ({
@@ -54,6 +54,7 @@ describe('Navigation', () => {
     expect(linkLabels).toEqual([
       { href: '/', label: 'Overview' },
       { href: '/jarvis', label: 'Jarvis' },
+      { href: '/finance/cash', label: 'Income & Expense' },
     ]);
   });
 });

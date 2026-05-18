@@ -5,6 +5,7 @@ TanStack Start frontend application for the Central dashboard.
 Current primary routes:
 
 - `/` for the overview dashboard
+- `/finance/cash` for income and expense management
 - `/jarvis` for the dedicated Jarvis workspace
 
 ## Jarvis Route
@@ -52,6 +53,14 @@ The weather widget module owns its loading contract:
 If neither is set, cockpit uses `http://localhost:3010` as the local orchestrator default. Other runtimes should set `BACKEND_BASE_URL` explicitly instead of relying on endpoint probing.
 
 Weather widget diagnostics are written by cockpit as structured `@central/ts-log` records with scope `cockpit.weather.*`, including invalid location payloads, outbound request attempts, and upstream request failures.
+
+## Finance Cash Page
+
+The `/finance/cash` route manages manual income and expense transactions:
+
+- Cockpit calls backend finance APIs through TanStack Start server functions.
+- The page supports month filtering, create/edit/delete, category reuse from the loaded month, and monthly income/expense/net summary.
+- Amounts are entered and displayed as decimal strings while backend persistence uses integer minor units.
 
 ## Voice Widget
 

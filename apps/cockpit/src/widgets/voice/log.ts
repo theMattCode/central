@@ -1,9 +1,8 @@
 import { createIsomorphicFn } from '@tanstack/react-start';
+import { ConsoleLogger } from '@central/ts-log/src/logger/ConsoleLogger.ts';
 
-import { createLogger } from '@central/ts-log/src/logger/ConsoleLogger.ts';
-
-const CLIENT_LOGGER = createLogger({ scope: 'cockpit.voice.client' });
-const SERVER_LOGGER = createLogger({ scope: 'cockpit.voice.server' });
+const CLIENT_LOGGER = new ConsoleLogger({ scope: 'cockpit.voice.client' });
+const SERVER_LOGGER = new ConsoleLogger({ scope: 'cockpit.voice.server' });
 
 export const getLogger = createIsomorphicFn()
   .server(() => SERVER_LOGGER)

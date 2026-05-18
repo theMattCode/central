@@ -32,7 +32,8 @@ The repository is organized as a multi-project Nx workspace:
   - `http`: health endpoint, routing, CORS, and request tracing.
   - `context`/`main`: dependency wiring and process bootstrap.
 - Domain-specific code lives under `src/domains/*`.
-- Weather is currently implemented as `src/domains/weather`, with its own domain model, use case, Open-Meteo adapter, PostgreSQL persistence adapter, and HTTP route module.
+- Finance is implemented as `src/domains/finance`, with its cash transaction domain model, use case, PostgreSQL persistence adapter, and HTTP route module.
+- Weather is implemented as `src/domains/weather`, with its own domain model, use case, Open-Meteo adapter, PostgreSQL persistence adapter, and HTTP route module.
 
 ### Assistant Service (`services/assistant`)
 
@@ -69,6 +70,13 @@ The repository is organized as a multi-project Nx workspace:
 4. If the cache is stale or missing, the backend fetches fresh data from Open-Meteo.
 5. Fresh responses are returned immediately; persistence writes happen asynchronously.
 6. Cockpit serializes widget data to the client and can refresh through server functions without exposing backend directly to the browser.
+
+### Finance Cash
+
+1. Browser opens `/finance/cash`.
+2. Cockpit server functions call backend finance APIs.
+3. Backend persists manual income and expense transactions in PostgreSQL.
+4. Monthly summaries are computed from transactions filtered by transaction date.
 
 ### Voice
 
