@@ -10,12 +10,18 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as JarvisRouteImport } from './routes/jarvis'
+import { Route as ComponentsRouteImport } from './routes/components'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as FinanceCashRouteImport } from './routes/finance/cash'
 
 const JarvisRoute = JarvisRouteImport.update({
   id: '/jarvis',
   path: '/jarvis',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ComponentsRoute = ComponentsRouteImport.update({
+  id: '/components',
+  path: '/components',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -31,30 +37,34 @@ const FinanceCashRoute = FinanceCashRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/components': typeof ComponentsRoute
   '/jarvis': typeof JarvisRoute
   '/finance/cash': typeof FinanceCashRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/components': typeof ComponentsRoute
   '/jarvis': typeof JarvisRoute
   '/finance/cash': typeof FinanceCashRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/components': typeof ComponentsRoute
   '/jarvis': typeof JarvisRoute
   '/finance/cash': typeof FinanceCashRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/jarvis' | '/finance/cash'
+  fullPaths: '/' | '/components' | '/jarvis' | '/finance/cash'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/jarvis' | '/finance/cash'
-  id: '__root__' | '/' | '/jarvis' | '/finance/cash'
+  to: '/' | '/components' | '/jarvis' | '/finance/cash'
+  id: '__root__' | '/' | '/components' | '/jarvis' | '/finance/cash'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  ComponentsRoute: typeof ComponentsRoute
   JarvisRoute: typeof JarvisRoute
   FinanceCashRoute: typeof FinanceCashRoute
 }
@@ -66,6 +76,13 @@ declare module '@tanstack/react-router' {
       path: '/jarvis'
       fullPath: '/jarvis'
       preLoaderRoute: typeof JarvisRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/components': {
+      id: '/components'
+      path: '/components'
+      fullPath: '/components'
+      preLoaderRoute: typeof ComponentsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -87,6 +104,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  ComponentsRoute: ComponentsRoute,
   JarvisRoute: JarvisRoute,
   FinanceCashRoute: FinanceCashRoute,
 }

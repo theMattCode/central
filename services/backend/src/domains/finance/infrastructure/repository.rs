@@ -30,14 +30,14 @@ SELECT
   currency_code,
   created_at,
   updated_at
-FROM finance.transactions
+FROM service_finance.transactions
 WHERE transaction_date >= $1
   AND transaction_date < $2
 ORDER BY transaction_date DESC, created_at DESC, id DESC
 "#;
 
 const INSERT_TRANSACTION_SQL: &str = r#"
-INSERT INTO finance.transactions (
+INSERT INTO service_finance.transactions (
   direction,
   transaction_date,
   description,
@@ -60,7 +60,7 @@ RETURNING
 "#;
 
 const UPDATE_TRANSACTION_SQL: &str = r#"
-UPDATE finance.transactions
+UPDATE service_finance.transactions
 SET
   direction = $2,
   transaction_date = $3,
@@ -84,7 +84,7 @@ RETURNING
 "#;
 
 const DELETE_TRANSACTION_SQL: &str = r#"
-DELETE FROM finance.transactions
+DELETE FROM service_finance.transactions
 WHERE id = $1::uuid
 "#;
 

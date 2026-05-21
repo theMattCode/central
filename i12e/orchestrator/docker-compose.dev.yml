@@ -21,63 +21,63 @@ services:
         - action: rebuild
           path: ../../services/backend/Dockerfile
 
-  service-assistant:
-    build:
-      target: dev
-    command: ['cargo', 'watch', '--why', '--watch', 'Cargo.toml', '--watch', 'src', '-x', 'run']
-    healthcheck:
-      start_period: 2m
-      retries: 30
-    volumes:
-      - central_assistant_cargo_registry:/usr/local/cargo/registry
-      - central_assistant_cargo_git:/usr/local/cargo/git
-      - central_assistant_target:/workspace/services/assistant/target
-    develop:
-      watch:
-        - action: sync
-          path: ../../services/assistant/src
-          target: /workspace/services/assistant/src
-        - action: sync
-          path: ../../services/assistant/Cargo.toml
-          target: /workspace/services/assistant/Cargo.toml
-        - action: rebuild
-          path: ../../services/assistant/Dockerfile
-
-  service-stt:
-    develop:
-      watch:
-        - action: sync+restart
-          path: ../../services/stt/src
-          target: /app/src
-        - action: rebuild
-          path: ../../services/stt/requirements.txt
-        - action: rebuild
-          path: ../../services/stt/Dockerfile
-
-  service-tts:
-    develop:
-      watch:
-        - action: sync+restart
-          path: ../../services/tts/src
-          target: /app/src
-        - action: sync+restart
-          path: ../../services/tts/res
-          target: /app/res
-        - action: rebuild
-          path: ../../services/tts/requirements.txt
-        - action: rebuild
-          path: ../../services/tts/Dockerfile
-
-  service-llm:
-    develop:
-      watch:
-        - action: sync+restart
-          path: ../../services/llm/src
-          target: /app/src
-        - action: rebuild
-          path: ../../services/llm/requirements.txt
-        - action: rebuild
-          path: ../../services/llm/Dockerfile
+#   service-assistant:
+#     build:
+#       target: dev
+#     command: ['cargo', 'watch', '--why', '--watch', 'Cargo.toml', '--watch', 'src', '-x', 'run']
+#     healthcheck:
+#       start_period: 2m
+#       retries: 30
+#     volumes:
+#       - central_assistant_cargo_registry:/usr/local/cargo/registry
+#       - central_assistant_cargo_git:/usr/local/cargo/git
+#       - central_assistant_target:/workspace/services/assistant/target
+#     develop:
+#       watch:
+#         - action: sync
+#           path: ../../services/assistant/src
+#           target: /workspace/services/assistant/src
+#         - action: sync
+#           path: ../../services/assistant/Cargo.toml
+#           target: /workspace/services/assistant/Cargo.toml
+#         - action: rebuild
+#           path: ../../services/assistant/Dockerfile
+#
+#   service-stt:
+#     develop:
+#       watch:
+#         - action: sync+restart
+#           path: ../../services/stt/src
+#           target: /app/src
+#         - action: rebuild
+#           path: ../../services/stt/requirements.txt
+#         - action: rebuild
+#           path: ../../services/stt/Dockerfile
+#
+#   service-tts:
+#     develop:
+#       watch:
+#         - action: sync+restart
+#           path: ../../services/tts/src
+#           target: /app/src
+#         - action: sync+restart
+#           path: ../../services/tts/res
+#           target: /app/res
+#         - action: rebuild
+#           path: ../../services/tts/requirements.txt
+#         - action: rebuild
+#           path: ../../services/tts/Dockerfile
+#
+#   service-llm:
+#     develop:
+#       watch:
+#         - action: sync+restart
+#           path: ../../services/llm/src
+#           target: /app/src
+#         - action: rebuild
+#           path: ../../services/llm/requirements.txt
+#         - action: rebuild
+#           path: ../../services/llm/Dockerfile
 
   app-cockpit:
     build:

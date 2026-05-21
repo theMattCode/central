@@ -7,7 +7,7 @@ tmp
 out-tsc
 .output
 apps/cockpit/public/vendor
-apps/cockpit/src/widgets/voice/generated
+apps/cockpit/src/components/organisms/voice/generated
 
 # dependencies
 node_modules

@@ -1,11 +1,11 @@
 import type { PropsWithChildren } from 'react';
 import { createRootRoute, HeadContent, Scripts } from '@tanstack/react-router';
-import { PageLayout } from '@/components/Layout/PageLayout.tsx';
-import { Devtools } from '@/components/Devtools/Devtools.tsx';
-import { Section } from '@/components/Section/Section.tsx';
+import { PageLayout } from '@/components/templates/layout/PageLayout.tsx';
+import { Devtools } from '@/components/atoms/Devtools/Devtools.tsx';
+import { Section } from '@/components/atoms/Section/Section.tsx';
 import appCss from '../styles.css?url';
-import { ContentLayout } from '@/components/Layout/ContentLayout.tsx';
-import { Navigation } from '@/components/Navigation/Navigation.tsx';
+import { ContentLayout } from '@/components/templates/layout/ContentLayout.tsx';
+import { Navigation } from '@/components/templates/layout/Navigation/Navigation.tsx';
 
 export const Route = createRootRoute({
   head: () => ({

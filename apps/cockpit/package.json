@@ -6,7 +6,7 @@
     "#/*": "./src/*"
   },
   "scripts": {
-    "sync:voice-vad-assets": "node ./scripts/sync-voice-vad-assets.mjs",
+    "sync:voice-vad-assets": "node scripts/sync-vad-assets.mjs",
     "prebuild": "pnpm run sync:voice-vad-assets",
     "build": "vite build",
     "prestart:dev": "pnpm run sync:voice-vad-assets",
