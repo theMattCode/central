@@ -1,11 +1,9 @@
-import { defineConfig } from 'vite'
-import { devtools } from '@tanstack/devtools-vite'
-import tsconfigPaths from 'vite-tsconfig-paths'
-
-import { tanstackStart } from '@tanstack/react-start/plugin/vite'
-
-import viteReact from '@vitejs/plugin-react'
-import tailwindcss from '@tailwindcss/vite'
+import { defineConfig } from 'vite';
+import { devtools } from '@tanstack/devtools-vite';
+import tsconfigPaths from 'vite-tsconfig-paths';
+import { tanstackStart } from '@tanstack/react-start/plugin/vite';
+import viteReact from '@vitejs/plugin-react';
+import tailwindcss from '@tailwindcss/vite';
 
 const config = defineConfig(({ mode }) => ({
   plugins: [
@@ -15,6 +13,15 @@ const config = defineConfig(({ mode }) => ({
     ...(mode === 'test' ? [] : [tanstackStart()]),
     viteReact(),
   ],
-}))
+  test: {
+    setupFiles: ['./src/setupTests.ts'],
+  },
+  server: {
+    allowedHosts: ['localhost', '117.0.0.1', 'archy.smelt-toad.ts.net'],
+    hmr: {
+      clientPort: 3000,
+    },
+  },
+}));
 
-export default config
+export default config;

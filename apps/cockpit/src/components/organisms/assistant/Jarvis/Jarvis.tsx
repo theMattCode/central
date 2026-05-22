@@ -188,23 +188,6 @@ export function Jarvis() {
 
   const shouldListen = isEnabled && conversation.status !== 'processing' && conversation.status !== 'playing';
 
-  useEffect(() => {
-    if (!isEnabled) {
-      setMicrophoneState(INITIAL_MICROPHONE_STATE);
-      return;
-    }
-
-    if (!shouldListen) {
-      setMicrophoneState((currentValue) => ({
-        ...currentValue,
-        isListening: false,
-        isLoading: false,
-        micLevel: 0,
-        userSpeaking: false,
-      }));
-    }
-  }, [isEnabled, shouldListen]);
-
   const systemState = useMemo(
     () =>
       resolveJarvisSystemState({

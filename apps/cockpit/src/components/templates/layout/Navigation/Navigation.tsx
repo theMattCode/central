@@ -109,8 +109,8 @@ function DrawerContent({ onNavigate }: { onNavigate?: () => void }) {
           <NavigationItem Icon={MailIcon}>E-Mail</NavigationItem>
         </NavigationGroup>
         <NavigationGroup title="Finance">
-          <NavigationItem Icon={IncomeAndExpenseIcon} href="/finance/cash" onClick={onNavigate}>
-            Income & Expense
+          <NavigationItem Icon={IncomeAndExpenseIcon} href="/finance/transactions" onClick={onNavigate}>
+            Transactions
           </NavigationItem>
           <NavigationItem Icon={InvestIcon}>Invest</NavigationItem>
         </NavigationGroup>

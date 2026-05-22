@@ -154,7 +154,7 @@ async function requestDeleteCashTransaction(input: DeleteTransactionInput): Prom
   }
 }
 
-export const fetchCashTransactions = createServerFn({ method: 'GET' })
+export const fetchFinanceTransactions = createServerFn({ method: 'GET' })
   .inputValidator(validateMonthInput)
   .handler(async ({ data }) => requestCashTransactions(data.month));
 
