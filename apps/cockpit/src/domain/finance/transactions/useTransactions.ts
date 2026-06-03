@@ -42,7 +42,7 @@ interface TransactionsData {
   categories: string[];
 }
 
-interface TransactionsModel {
+interface Transactions {
   data: TransactionsData | null;
   error: Error | null;
   loading: boolean;
@@ -51,9 +51,9 @@ interface TransactionsModel {
 
 type TransactionsProps = { from: string; to: string };
 
-export function useTransactions({ from, to }: TransactionsProps): TransactionsModel {
+export function useTransactions({ from, to }: TransactionsProps): Transactions {
   const [reloadVersion, setReloadVersion] = useState(0);
-  const [model, setModel] = useState<TransactionsModel>({
+  const [transactions, setTransactions] = useState<Transactions>({
     data: null,
     error: null,
     loading: true,
@@ -65,9 +65,9 @@ export function useTransactions({ from, to }: TransactionsProps): TransactionsMo
 
     const loadTransactions = async () => {
       try {
-        setModel((prev) => ({ ...prev, loading: true }));
+        setTransactions((prev) => ({ ...prev, loading: true }));
         const data = await fetchTransactions({ data: { from, to }, signal: abortController.signal });
-        setModel((prev) => ({
+        setTransactions((prev) => ({
           ...prev,
           loading: false,
           data: {
@@ -80,7 +80,7 @@ export function useTransactions({ from, to }: TransactionsProps): TransactionsMo
         if (abortController.signal.aborted) {
           return;
         }
-        setModel((prev) => ({ ...prev, error: { source: error, message: toErrorMessage(error) } }));
+        setTransactions((prev) => ({ ...prev, error: { source: error, message: toErrorMessage(error) } }));
       }
     };
 
@@ -89,8 +89,8 @@ export function useTransactions({ from, to }: TransactionsProps): TransactionsMo
     return () => abortController.abort();
   }, [from, to, reloadVersion]);
 
-  console.log('transactions', model);
-  return model;
+  console.log('transactions', transactions);
+  return transactions;
 }
 
 function extractCategories(transactions: Transaction[]) {
