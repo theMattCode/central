@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { Button } from '@/components/atoms/Button/Button.tsx';
-import { ButtonGroup } from '@/components/atoms/ButtonGroup/ButtonGroup.tsx';
+import { Button } from '@/components/Button/Button.tsx';
+import { ButtonGroup } from '@/components/ButtonGroup/ButtonGroup.tsx';
 import { LuAlarmClockPlus, LuPencil } from 'react-icons/lu';
 
 export const Route = createFileRoute('/components')({
