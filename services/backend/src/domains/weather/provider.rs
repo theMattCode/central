@@ -6,16 +6,12 @@ use reqwest::Client;
 use serde::Deserialize;
 use tracing::{info, warn};
 
-use crate::{
-    domains::weather::domain::{
-        contracts::WeatherDataFetcher,
-        model::{
-            CurrentWeatherPayload, HourlyWeatherPayload, WeatherForecastMetaPayload,
-            WeatherForecastResponse, WeatherLocationPayload, WeatherLocationQuery,
-            WeatherMetaPayload, WeatherSnapshotResponse,
-        },
-    },
-    error::ApiError,
+use crate::error::ApiError;
+use crate::domains::weather::contracts::WeatherDataFetcher;
+use crate::domains::weather::model::{
+  CurrentWeatherPayload, HourlyWeatherPayload, WeatherForecastMetaPayload,
+  WeatherForecastResponse, WeatherLocationPayload, WeatherLocationQuery,
+  WeatherMetaPayload, WeatherSnapshotResponse,
 };
 
 const OPEN_METEO_PROVIDER: &str = "open-meteo";

@@ -2,18 +2,10 @@ use std::sync::{Arc, Mutex};
 
 use chrono::{DateTime, Utc};
 
-use crate::{
-    domains::weather::domain::{
-        contracts::{WeatherDataFetcher, WeatherDataStore},
-        model::{
-            CurrentWeatherPayload, HourlyWeatherPayload, WeatherForecastMetaPayload,
-            WeatherForecastResponse, WeatherLocationPayload, WeatherLocationQuery,
-            WeatherMetaPayload, WeatherSnapshotResponse,
-        },
-        service::WeatherSnapshotService,
-    },
-    error::ApiError,
-};
+use crate::domains::weather::model::{CurrentWeatherPayload, HourlyWeatherPayload, WeatherForecastMetaPayload, WeatherForecastResponse, WeatherLocationPayload, WeatherLocationQuery, WeatherMetaPayload, WeatherSnapshotResponse};
+use crate::domains::weather::service::WeatherService;
+use crate::error::ApiError;
+use crate::domains::weather::contracts::{WeatherDataFetcher, WeatherDataStore};
 
 type ForecastLoadCall = (WeatherLocationQuery, DateTime<Utc>, DateTime<Utc>);
 
@@ -285,7 +277,7 @@ async fn get_current_snapshot_uses_fresh_cached_snapshot() {
     *store.cached_current.lock().expect("lock cached current") =
         Some(test_snapshot_with_fetched_at(71, Utc::now()));
 
-    let service = WeatherSnapshotService::new(
+    let service = WeatherService::new(
         Arc::new(FakeFetcher {
             snapshot: Some(test_snapshot(3)),
             forecast: Some(test_forecast()),
@@ -335,7 +327,7 @@ async fn get_hourly_forecast_fetches_when_cached_data_is_stale() {
             stale_fetched_at,
         ));
 
-    let service = WeatherSnapshotService::new(
+    let service = WeatherService::new(
         Arc::new(FakeFetcher {
             snapshot: Some(test_snapshot(3)),
             forecast: Some(test_forecast()),
@@ -376,7 +368,7 @@ async fn fetch_and_store_snapshot_persists_and_returns_snapshot() {
     let store = fake_store(Vec::new());
     let expected_snapshot = test_snapshot(3);
 
-    let service = WeatherSnapshotService::new(
+    let service = WeatherService::new(
         Arc::new(FakeFetcher {
             snapshot: Some(expected_snapshot.clone()),
             forecast: Some(test_forecast()),
@@ -424,7 +416,7 @@ async fn fetch_and_store_snapshot_propagates_fetch_error_without_persisting() {
     let fetcher_forecast_calls = Arc::new(Mutex::new(Vec::new()));
     let store = fake_store(Vec::new());
 
-    let service = WeatherSnapshotService::new(
+    let service = WeatherService::new(
         Arc::new(FakeFetcher {
             snapshot: None,
             forecast: Some(test_forecast()),
@@ -480,7 +472,7 @@ async fn refresh_and_load_forecast_returns_db_range() {
     ];
     let store = fake_store(load_result.clone());
 
-    let service = WeatherSnapshotService::new(
+    let service = WeatherService::new(
         Arc::new(FakeFetcher {
             snapshot: Some(test_snapshot(2)),
             forecast: Some(test_forecast()),
@@ -532,7 +524,7 @@ async fn refresh_and_load_forecast_propagates_store_error() {
     let mut store = fake_store(Vec::new());
     store.forecast_fail_message = Some("db write failed".to_string());
 
-    let service = WeatherSnapshotService::new(
+    let service = WeatherService::new(
         Arc::new(FakeFetcher {
             snapshot: Some(test_snapshot(2)),
             forecast: Some(test_forecast()),

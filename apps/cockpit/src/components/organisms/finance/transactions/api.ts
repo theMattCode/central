@@ -1,12 +1,6 @@
 import { createServerFn } from '@tanstack/react-start';
-import type { CashTransaction, CashTransactionInput, CashTransactionList } from './model.ts';
-import { resolveBackendBaseUrl } from '@/utils/backend.ts';
-
-type BackendError = {
-  error?: {
-    message?: string;
-  };
-};
+import type { CashTransactionInput, Transaction } from './model.ts';
+import { fetchJson, resolveBackendBaseUrl, resolveErrorMessage } from '@/utils/backend.ts';
 
 type UpdateTransactionInput = CashTransactionInput & {
   id: string;
@@ -16,21 +10,8 @@ type DeleteTransactionInput = {
   id: string;
 };
 
-function createFinanceUrl(path: string): URL {
+export function createFinanceUrl(path: string): URL {
   return new URL(path, resolveBackendBaseUrl());
-}
-
-function validateMonthInput(input: unknown): { month: string } {
-  if (!input || typeof input !== 'object') {
-    throw new Error('Invalid cash month payload.');
-  }
-
-  const value = input as { month?: unknown };
-  if (typeof value.month !== 'string' || !/^\d{4}-\d{2}$/.test(value.month)) {
-    throw new Error('Invalid cash month payload.');
-  }
-
-  return { month: value.month };
 }
 
 function validateTransactionInput(input: unknown): CashTransactionInput {
@@ -89,57 +70,20 @@ function validateDeleteTransactionInput(input: unknown): DeleteTransactionInput 
   return { id: value.id };
 }
 
-async function toErrorMessage(response: Response): Promise<string> {
-  try {
-    const payload = (await response.json()) as BackendError;
-    if (payload.error?.message) {
-      return payload.error.message;
-    }
-  } catch {
-    // ignore JSON parse errors and return fallback below
-  }
-
-  return `Finance request failed with status ${response.status}.`;
-}
-
-async function requestJson<T>(url: URL, init?: RequestInit): Promise<T> {
-  const response = await fetch(url, {
-    ...init,
-    headers: {
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
-      ...init?.headers,
-    },
-  });
-
-  if (!response.ok) {
-    throw new Error(await toErrorMessage(response));
-  }
-
-  return (await response.json()) as T;
-}
-
-async function requestCashTransactions(month: string): Promise<CashTransactionList> {
-  const url = createFinanceUrl('api/v1/finance/transactions');
-  url.searchParams.set('month', month);
-
-  return requestJson<CashTransactionList>(url);
-}
-
-async function requestCreateCashTransaction(input: CashTransactionInput): Promise<CashTransaction> {
+async function requestCreateCashTransaction(input: CashTransactionInput): Promise<Transaction> {
   const url = createFinanceUrl('api/v1/finance/transactions');
 
-  return requestJson<CashTransaction>(url, {
+  return fetchJson<Transaction>(url, {
     method: 'POST',
     body: JSON.stringify(input),
   });
 }
 
-async function requestUpdateCashTransaction(input: UpdateTransactionInput): Promise<CashTransaction> {
+async function requestUpdateCashTransaction(input: UpdateTransactionInput): Promise<Transaction> {
   const url = createFinanceUrl(`api/v1/finance/transactions/${input.id}`);
   const { id: _id, ...transaction } = input;
 
-  return requestJson<CashTransaction>(url, {
+  return fetchJson<Transaction>(url, {
     method: 'PUT',
     body: JSON.stringify(transaction),
   });
@@ -150,13 +94,9 @@ async function requestDeleteCashTransaction(input: DeleteTransactionInput): Prom
   const response = await fetch(url, { method: 'DELETE' });
 
   if (!response.ok) {
-    throw new Error(await toErrorMessage(response));
+    throw new Error(await resolveErrorMessage(response));
   }
 }
-
-export const fetchFinanceTransactions = createServerFn({ method: 'GET' })
-  .inputValidator(validateMonthInput)
-  .handler(async ({ data }) => requestCashTransactions(data.month));
 
 export const createCashTransaction = createServerFn({ method: 'POST' })
   .inputValidator(validateTransactionInput)

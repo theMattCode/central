@@ -27,3 +27,7 @@ const FORMAT_OPTIONS: Intl.DateTimeFormatOptions = {
 export function getFormattedDate(date: Date = new Date()): string {
   return date.toLocaleString(LOCALE, FORMAT_OPTIONS);
 }
+
+export function toErrorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : `unknown error: ${error}`;
+}

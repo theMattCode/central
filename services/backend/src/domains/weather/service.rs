@@ -3,24 +3,20 @@ use std::sync::Arc;
 use chrono::{DateTime, Duration as ChronoDuration, Timelike, Utc};
 use tracing::{info, warn};
 
-use crate::{
-    domains::weather::domain::{
-        contracts::{WeatherDataFetcher, WeatherDataStore},
-        model::{WeatherForecastResponse, WeatherLocationQuery, WeatherSnapshotResponse},
-    },
-    error::ApiError,
-};
+use crate::error::ApiError;
+use crate::domains::weather::contracts::{WeatherDataFetcher, WeatherDataStore};
+use crate::domains::weather::model::{WeatherForecastResponse, WeatherLocationQuery, WeatherSnapshotResponse};
 
 const STALE_AFTER_MINUTES: i64 = 15;
 
 #[derive(Clone)]
-pub struct WeatherSnapshotService {
+pub struct WeatherService {
     fetcher: Arc<dyn WeatherDataFetcher>,
     store: Arc<dyn WeatherDataStore>,
     stale_after: ChronoDuration,
 }
 
-impl WeatherSnapshotService {
+impl WeatherService {
     pub fn new(fetcher: Arc<dyn WeatherDataFetcher>, store: Arc<dyn WeatherDataStore>) -> Self {
         Self {
             fetcher,

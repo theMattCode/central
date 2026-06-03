@@ -1,10 +1,13 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { FinanceTransactionsTracker } from '@/components/organisms/finance/transactions/FinanceTransactionsTracker.tsx';
+import { Transactions } from '@/components/organisms/finance/transactions/Transactions.tsx';
 
 export const Route = createFileRoute('/finance/transactions')({
-  component: FinanceTransactionsRoute,
+  component: TransactionsRoute,
+  staticData: {
+    crumb: { label: 'Transactions' },
+  },
 });
 
-function FinanceTransactionsRoute() {
-  return <FinanceTransactionsTracker />;
+function TransactionsRoute() {
+  return <Transactions />;
 }

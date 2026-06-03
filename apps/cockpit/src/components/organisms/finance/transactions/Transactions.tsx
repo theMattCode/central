@@ -1,93 +1,47 @@
-import { type ReactNode, useEffect, useMemo, useState } from 'react';
+import { type ReactNode, useState } from 'react';
 import {
   MdAdd as AddIcon,
   MdClose as CancelIcon,
   MdDeleteOutline as DeleteIcon,
   MdEdit as EditIcon,
   MdRefresh as RefreshIcon,
-  MdSave as SaveIcon,
+  MdSave as SaveIcon
 } from 'react-icons/md';
 import { GiPayMoney, GiReceiveMoney } from 'react-icons/gi';
-import {
-  type CashFormState,
-  type CashTransaction,
-  type CashTransactionList,
-  createEmptyCashFormState,
-  toCashTransactionInput,
-  type TransactionDirection,
-} from '@/components/organisms/finance/transactions/model/model.ts';
-import {
-  createCashTransaction,
-  deleteCashTransaction,
-  fetchFinanceTransactions,
-  updateCashTransaction,
-} from '@/components/organisms/finance/transactions/model/api.ts';
-import { cx } from '@/utils/styles.ts';
 import { Button } from '@/components/atoms/Button/Button.tsx';
-import { getCurrentLocalMonth } from '@/utils/datetime.ts';
-import { Typography } from '@/components/atoms/Typography/Typography.tsx';
 import { ButtonGroup, type Option as ButtonGroupOption } from '@/components/atoms/ButtonGroup/ButtonGroup.tsx';
-
-type LoadState =
-  | { status: 'loading' }
-  | { status: 'loaded'; data: CashTransactionList }
-  | { status: 'error'; message: string };
+import { toErrorMessage } from '@/utils/formatting.ts';
+import { cx } from '@/utils/styles.ts';
+import { createCashTransaction, deleteCashTransaction, updateCashTransaction } from './api.ts';
+import {
+  createEmptyTransactionFormState,
+  type Summary,
+  toCashTransactionInput,
+  type Transaction,
+  type TransactionDirection,
+  type TransactionFormState
+} from './model.ts';
+import { useTransactions } from './useTransactions.ts';
+import { useDateRange } from '@/utils/useDateRange.ts';
 
 export type Direction = { value: TransactionDirection; label: string };
 
-function toErrorMessage(error: unknown): string {
-  return error instanceof Error ? error.message : 'Unexpected finance request error.';
-}
+export function Transactions() {
+  const { dateRange /*, onFromChanged, onToChanged */ } = useDateRange();
+  const { data, loading, error, reload } = useTransactions(dateRange);
 
-export function FinanceTransactionsTracker() {
-  const [month, setMonth] = useState(getCurrentLocalMonth);
-  const [state, setState] = useState<LoadState>({ status: 'loading' });
-  const [form, setForm] = useState<CashFormState>(() => createEmptyCashFormState());
+  const [form, setForm] = useState<TransactionFormState>(() => createEmptyTransactionFormState());
   const [editingTransactionId, setEditingTransactionId] = useState<string | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [refreshVersion, setRefreshVersion] = useState(0);
-
-  useEffect(() => {
-    const abortController = new AbortController();
-    setState({ status: 'loading' });
-
-    const loadTransactions = async () => {
-      try {
-        const data = await fetchFinanceTransactions({ data: { month }, signal: abortController.signal });
-        setState({ status: 'loaded', data });
-      } catch (error) {
-        if (abortController.signal.aborted) {
-          return;
-        }
-        setState({ status: 'error', message: toErrorMessage(error) });
-      }
-    };
-
-    void loadTransactions();
-
-    return () => abortController.abort();
-  }, [month, refreshVersion]);
-
-  const categories = useMemo(() => {
-    if (state.status !== 'loaded') {
-      return [];
-    }
-
-    return Array.from(
-      new Set(state.data.transactions.map((transaction) => transaction.category).filter(Boolean) as string[]),
-    ).sort((left, right) => left.localeCompare(right));
-  }, [state]);
 
   const resetForm = () => {
     setEditingTransactionId(null);
-    setForm(createEmptyCashFormState());
+    setForm(createEmptyTransactionFormState());
     setFormError(null);
   };
 
-  const refresh = () => setRefreshVersion((version) => version + 1);
-
-  const startEdit = (transaction: CashTransaction) => {
+  const startEdit = (transaction: Transaction) => {
     setEditingTransactionId(transaction.id);
     setForm({
       direction: transaction.direction,
@@ -112,7 +66,7 @@ export function FinanceTransactionsTracker() {
         await createCashTransaction({ data: input });
       }
       resetForm();
-      refresh();
+      reload();
     } catch (error) {
       setFormError(toErrorMessage(error));
     } finally {
@@ -120,7 +74,7 @@ export function FinanceTransactionsTracker() {
     }
   };
 
-  const deleteTransaction = async (transaction: CashTransaction) => {
+  const deleteTransaction = async (transaction: Transaction) => {
     if (!window.confirm(`Delete "${transaction.description}"?`)) {
       return;
     }
@@ -130,7 +84,7 @@ export function FinanceTransactionsTracker() {
       if (editingTransactionId === transaction.id) {
         resetForm();
       }
-      refresh();
+      reload();
     } catch (error) {
       setFormError(toErrorMessage(error));
     }
@@ -139,40 +93,35 @@ export function FinanceTransactionsTracker() {
   return (
     <div className="w-full min-w-0 flex flex-col gap-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:justify-between">
-        <div>
-          <Typography variant="h1">Financial Transactions</Typography>
-        </div>
         <div className="flex items-center gap-2">
           <label className="flex flex-col gap-1 text-sm text-(--color-txt-sec)">
             Month
-            <input
+            {/*<input
               type="month"
               value={month}
               className="rounded-md border border-(--color-section-border) bg-(--color-bg) px-3 py-2 text-(--color-txt)"
-              onChange={(event) => setMonth(event.target.value)}
-            />
+              onChange={(event) => setDateRangeMonth(event.target.value)}
+            />*/}
           </label>
           <button
             type="button"
             aria-label="Refresh transactions"
             title="Refresh"
             className="mt-6 rounded-md border border-(--color-section-border) p-2 text-(--color-txt-sec) hover:bg-(--color-pri)/10 hover:text-(--color-pri)"
-            onClick={refresh}
+            onClick={reload}
           >
             <RefreshIcon className="h-5 w-5" />
           </button>
         </div>
       </div>
-
-      {state.status === 'loaded' && <SummaryStrip data={state.data} />}
-      {state.status === 'error' && (
-        <div className="rounded-md border border-red-500/40 bg-red-500/10 px-3 py-2 text-sm text-red-600 dark:text-red-300">
-          {state.message}
+      {data?.summary && <SummaryStrip summary={data.summary} />}
+      {error && (
+        <div className="rounded-md border border-red-500/40 bg-red-500/10 px-3 py-2 text-sm text-red-400 dark:text-red-300">
+          {error.message}
         </div>
       )}
-
       <TransactionForm
-        categories={categories}
+        categories={data?.categories ?? []}
         editing={Boolean(editingTransactionId)}
         error={formError}
         form={form}
@@ -181,21 +130,18 @@ export function FinanceTransactionsTracker() {
         onChange={setForm}
         onSubmit={submitForm}
       />
-
-      {state.status === 'loading' && <p className="text-sm text-(--color-txt-sec)">Loading transactions...</p>}
-      {state.status === 'loaded' && (
-        <TransactionList data={state.data} onDelete={deleteTransaction} onEdit={startEdit} />
-      )}
+      {loading && <p className="text-sm text-(--color-txt-sec)">Loading transactions...</p>}
+      {data && <TransactionList transactions={data.transactions} onDelete={deleteTransaction} onEdit={startEdit} />}
     </div>
   );
 }
 
-function SummaryStrip({ data }: { data: CashTransactionList }) {
+function SummaryStrip({ summary }: { summary: Summary }) {
   return (
     <div className="grid gap-2 sm:grid-cols-3">
-      <SummaryValue label="Income" value={data.summary.incomeTotal.amount} tone="income" />
-      <SummaryValue label="Expenses" value={data.summary.expenseTotal.amount} tone="expense" />
-      <SummaryValue label="Net" value={data.summary.netTotal.amount} tone="net" />
+      <SummaryValue label="Income" value={summary.incomeTotal.amount} tone="income" />
+      <SummaryValue label="Expenses" value={summary.expenseTotal.amount} tone="expense" />
+      <SummaryValue label="Net" value={summary.netTotal.amount} tone="net" />
     </div>
   );
 }
@@ -221,10 +167,10 @@ type TransactionFormProps = {
   categories: string[];
   editing: boolean;
   error: string | null;
-  form: CashFormState;
+  form: TransactionFormState;
   isSubmitting: boolean;
   onCancel: () => void;
-  onChange: (form: CashFormState) => void;
+  onChange: (form: TransactionFormState) => void;
   onSubmit: () => void;
 };
 
@@ -243,7 +189,7 @@ function TransactionForm({
   onChange,
   onSubmit,
 }: TransactionFormProps) {
-  const updateForm = (patch: Partial<CashFormState>) => onChange({ ...form, ...patch });
+  const updateForm = (patch: Partial<TransactionFormState>) => onChange({ ...form, ...patch });
   return (
     <form
       className="flex flex-col gap-3 rounded-md border border-(--color-section-border) p-3"
@@ -341,15 +287,15 @@ function TransactionForm({
 }
 
 function TransactionList({
-  data,
+  transactions,
   onDelete,
   onEdit,
 }: {
-  data: CashTransactionList;
-  onDelete: (transaction: CashTransaction) => void;
-  onEdit: (transaction: CashTransaction) => void;
+  transactions: Transaction[];
+  onDelete: (transaction: Transaction) => void;
+  onEdit: (transaction: Transaction) => void;
 }) {
-  if (data.transactions.length === 0) {
+  if (transactions.length === 0) {
     return <p className="text-sm text-(--color-txt-sec)">No transactions for this month.</p>;
   }
 
@@ -367,14 +313,14 @@ function TransactionList({
             </tr>
           </thead>
           <tbody>
-            {data.transactions.map((transaction) => (
+            {transactions.map((transaction) => (
               <TransactionRow key={transaction.id} transaction={transaction} onDelete={onDelete} onEdit={onEdit} />
             ))}
           </tbody>
         </table>
       </div>
       <div className="flex flex-col gap-2 md:hidden">
-        {data.transactions.map((transaction) => (
+        {transactions.map((transaction) => (
           <TransactionCard key={transaction.id} transaction={transaction} onDelete={onDelete} onEdit={onEdit} />
         ))}
       </div>
@@ -387,9 +333,9 @@ function TransactionRow({
   onDelete,
   onEdit,
 }: {
-  transaction: CashTransaction;
-  onDelete: (transaction: CashTransaction) => void;
-  onEdit: (transaction: CashTransaction) => void;
+  transaction: Transaction;
+  onDelete: (transaction: Transaction) => void;
+  onEdit: (transaction: Transaction) => void;
 }) {
   return (
     <tr>
@@ -431,9 +377,9 @@ function TransactionCard({
   onDelete,
   onEdit,
 }: {
-  transaction: CashTransaction;
-  onDelete: (transaction: CashTransaction) => void;
-  onEdit: (transaction: CashTransaction) => void;
+  transaction: Transaction;
+  onDelete: (transaction: Transaction) => void;
+  onEdit: (transaction: Transaction) => void;
 }) {
   return (
     <div className="rounded-md border border-(--color-section-border) p-3">

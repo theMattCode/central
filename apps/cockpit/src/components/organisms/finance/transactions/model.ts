@@ -7,7 +7,7 @@ export type MoneyAmount = Readonly<{
   currencyCode: string;
 }>;
 
-export type CashTransaction = Readonly<{
+export type Transaction = Readonly<{
   id: string;
   direction: TransactionDirection;
   transactionDate: string;
@@ -29,19 +29,13 @@ export type CashTransactionInput = Readonly<{
   note?: string;
 }>;
 
-export type CashSummary = Readonly<{
+export type Summary = Readonly<{
   incomeTotal: MoneyAmount;
   expenseTotal: MoneyAmount;
   netTotal: MoneyAmount;
 }>;
 
-export type CashTransactionList = Readonly<{
-  month: string;
-  summary: CashSummary;
-  transactions: CashTransaction[];
-}>;
-
-export type CashFormState = {
+export type TransactionFormState = {
   direction: TransactionDirection;
   transactionDate: string;
   amount: string;
@@ -50,7 +44,7 @@ export type CashFormState = {
   note: string;
 };
 
-export function createEmptyCashFormState(transactionDate = getCurrentLocalDate()): CashFormState {
+export function createEmptyTransactionFormState(transactionDate = getCurrentLocalDate()): TransactionFormState {
   return {
     direction: 'expense',
     transactionDate,
@@ -61,7 +55,7 @@ export function createEmptyCashFormState(transactionDate = getCurrentLocalDate()
   };
 }
 
-export function toCashTransactionInput(form: CashFormState): CashTransactionInput {
+export function toCashTransactionInput(form: TransactionFormState): CashTransactionInput {
   return {
     direction: form.direction,
     transactionDate: form.transactionDate,

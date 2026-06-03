@@ -11,7 +11,9 @@ function App() {
     <>
       <WeatherWidget location={LOCATION_MOESSINGEN} />
       <WeatherWidget location={LOCATION_OBERNHEIM} />
-      {/*<VoiceWidget />*/}
+      {/*
+      <VoiceWidget />
+      */}
     </>
   );
 }

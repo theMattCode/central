@@ -4,16 +4,12 @@ use chrono::{DateTime, Timelike, Utc};
 use tokio_postgres::{config::Host, Client, NoTls};
 use tracing::{error, info, warn};
 
-use crate::{
-    domains::weather::domain::{
-        contracts::WeatherDataStore,
-        model::{
-            HourlyWeatherPayload, WeatherForecastMetaPayload, WeatherForecastResponse,
-            WeatherLocationPayload, WeatherLocationQuery, WeatherMetaPayload,
-            WeatherSnapshotResponse,
-        },
-    },
-    error::ApiError,
+use crate::error::ApiError;
+use crate::domains::weather::contracts::WeatherDataStore;
+use crate::domains::weather::model::{
+  HourlyWeatherPayload, WeatherForecastMetaPayload, WeatherForecastResponse,
+  WeatherLocationPayload, WeatherLocationQuery, WeatherMetaPayload,
+  WeatherSnapshotResponse,
 };
 
 const DB_CONNECT_MAX_ATTEMPTS: usize = 10;

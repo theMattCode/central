@@ -46,7 +46,7 @@ export function ButtonGroup({ defaultValue, options, onChanged }: Props) {
               'transition-all duration-200',
               'border border-(--color-section-border) -ml-px first:ml-0 first:rounded-l-md last:rounded-r-md',
               'text-(--color-txt)',
-              isSelected ? 'bg-(--option-color)' : 'hover:bg-(--option-color)/20',
+              isSelected ? 'bg-(--option-color)' : 'hover:bg-(--option-color)/40',
             )}
             onClick={() => handleSelect(option)}
           >

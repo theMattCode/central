@@ -1,7 +1,7 @@
 import type { IconType } from 'react-icons';
 import { cx } from '@/utils/styles.ts';
-import { type MouseEventHandler } from 'react';
 import * as React from 'react';
+import { type MouseEventHandler } from 'react';
 
 export interface Props {
   name: string;
@@ -23,7 +23,8 @@ export function Button({ name, type = 'button', icon: Icon, text, shape, onClick
       disabled={disabled}
       className={cx(
         shape === 'circle' ? 'rounded-full aspect-square' : 'rounded-md',
-        'border-2 border-(--color-pri)/60 bg-(--color-pri)/10 hover:bg-(--color-pri)/15 active:bg-(--color-pri)/25 focus:bg-(--color-pri)/20 text-(--color-text) disabled:opacity-50 flex gap-2 py-1 px-2 items-center justify-center',
+        'flex gap-2 py-1 px-2 items-center justify-center',
+        'border-2 border-(--color-pri)/60 bg-(--color-pri)/10 hover:bg-(--color-pri)/15 active:bg-(--color-pri)/25 focus:bg-(--color-pri)/20 text-(--color-text) disabled:opacity-50',
       )}
       onClick={onClick}
     >

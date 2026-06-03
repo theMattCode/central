@@ -2,58 +2,58 @@ use std::{convert::Infallible, time::Duration};
 
 use async_stream::stream;
 use axum::{
-    extract::{Query, State},
-    response::sse::{Event, KeepAlive, Sse},
-    Json,
+  extract::{Query, State},
+  response::sse::{Event, KeepAlive, Sse},
+  Json,
 };
 use chrono::{DateTime, Utc};
 use serde::Serialize;
 use tokio::time::MissedTickBehavior;
 use tracing::{info, warn};
 
+use crate::domains::weather::model::{
+  WeatherForecastQueryInput, WeatherForecastResponse, WeatherQueryInput,
+  WeatherSnapshotResponse,
+};
 use crate::{
-    context::Context,
-    domains::weather::domain::model::{
-        WeatherForecastQueryInput, WeatherForecastResponse, WeatherQueryInput,
-        WeatherSnapshotResponse,
-    },
-    error::ApiError,
+  context::Context,
+  error::ApiError,
 };
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 struct StreamErrorPayload {
-    code: &'static str,
-    message: String,
-    timestamp: DateTime<Utc>,
+  code: &'static str,
+  message: String,
+  timestamp: DateTime<Utc>,
 }
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 struct StreamErrorEnvelope {
-    error: StreamErrorPayload,
+  error: StreamErrorPayload,
 }
 
-pub(super) async fn current_weather(
-    State(context): State<Context>,
-    Query(query): Query<WeatherQueryInput>,
+pub(in crate::domains::weather) async fn current_weather(
+  State(context): State<Context>,
+  Query(query): Query<WeatherQueryInput>,
 ) -> Result<Json<WeatherSnapshotResponse>, ApiError> {
-    let location = query.into_location()?;
-    info!(
+  let location = query.into_location()?;
+  info!(
         lat = location.latitude,
         lon = location.longitude,
         timezone = %location.timezone,
         "Received manual weather refresh request"
     );
 
-    let snapshot = match context
-        .weather_service
-        .get_current_snapshot(&location)
-        .await
-    {
-        Ok(snapshot) => snapshot,
-        Err(error) => {
-            warn!(
+  let snapshot = match context
+    .weather_service
+    .get_current_snapshot(&location)
+    .await
+  {
+    Ok(snapshot) => snapshot,
+    Err(error) => {
+      warn!(
                 lat = location.latitude,
                 lon = location.longitude,
                 timezone = %location.timezone,
@@ -61,11 +61,11 @@ pub(super) async fn current_weather(
                 error = %error,
                 "Manual weather refresh failed"
             );
-            return Err(error);
-        }
-    };
+      return Err(error);
+    }
+  };
 
-    info!(
+  info!(
         lat = snapshot.location.latitude,
         lon = snapshot.location.longitude,
         timezone = %snapshot.location.timezone,
@@ -73,18 +73,18 @@ pub(super) async fn current_weather(
         "Manual weather refresh succeeded"
     );
 
-    Ok(Json(snapshot))
+  Ok(Json(snapshot))
 }
 
-pub(super) async fn forecast_weather(
-    State(context): State<Context>,
-    Query(query): Query<WeatherForecastQueryInput>,
+pub(in crate::domains::weather) async fn forecast_weather(
+  State(context): State<Context>,
+  Query(query): Query<WeatherForecastQueryInput>,
 ) -> Result<Json<WeatherForecastResponse>, ApiError> {
-    let forecast_query = query.into_forecast_query()?;
-    let hours_past = forecast_query.hours_past;
-    let hours_future = forecast_query.hours_future;
-    let location = forecast_query.location;
-    info!(
+  let forecast_query = query.into_forecast_query()?;
+  let hours_past = forecast_query.hours_past;
+  let hours_future = forecast_query.hours_future;
+  let location = forecast_query.location;
+  info!(
         lat = location.latitude,
         lon = location.longitude,
         timezone = %location.timezone,
@@ -93,14 +93,14 @@ pub(super) async fn forecast_weather(
         "Received forecast refresh request"
     );
 
-    let forecast = match context
-        .weather_service
-        .get_hourly_forecast(&location, hours_past, hours_future)
-        .await
-    {
-        Ok(forecast) => forecast,
-        Err(error) => {
-            warn!(
+  let forecast = match context
+    .weather_service
+    .get_hourly_forecast(&location, hours_past, hours_future)
+    .await
+  {
+    Ok(forecast) => forecast,
+    Err(error) => {
+      warn!(
                 lat = location.latitude,
                 lon = location.longitude,
                 timezone = %location.timezone,
@@ -110,11 +110,11 @@ pub(super) async fn forecast_weather(
                 error = %error,
                 "Forecast refresh request failed"
             );
-            return Err(error);
-        }
-    };
+      return Err(error);
+    }
+  };
 
-    info!(
+  info!(
         lat = forecast.location.latitude,
         lon = forecast.location.longitude,
         timezone = %forecast.location.timezone,
@@ -122,22 +122,23 @@ pub(super) async fn forecast_weather(
         "Forecast refresh request succeeded"
     );
 
-    Ok(Json(forecast))
+  Ok(Json(forecast))
 }
 
-pub(super) async fn stream_weather(
-    State(context): State<Context>,
-    Query(query): Query<WeatherQueryInput>,
-) -> Result<Sse<impl futures_core::Stream<Item = Result<Event, Infallible>>>, ApiError> {
-    let location = query.into_location()?;
-    let latitude = location.latitude;
-    let longitude = location.longitude;
-    let timezone = location.timezone.clone();
-    let refresh_interval = context.config.refresh_interval;
-    let refresh_interval_seconds = refresh_interval.as_secs();
-    let context = context.clone();
+pub(in crate::domains::weather) async fn stream_weather(
+  State(context): State<Context>,
+  Query(query): Query<WeatherQueryInput>,
+) -> Result<Sse<impl futures_core::Stream<Item=Result<Event, Infallible>>>, ApiError> {
+  let location = query.into_location()?;
+  let latitude = location.latitude;
+  let longitude = location.longitude;
+  let timezone = location.timezone.clone();
+  let weather_config = context.config.get_weather_config().ok_or_else(|| ApiError::Internal("Weather config not found".to_string()))?;
+  let refresh_interval = weather_config.refresh_interval;
+  let refresh_interval_seconds = refresh_interval.as_secs();
+  let context = context.clone();
 
-    info!(
+  info!(
         lat = latitude,
         lon = longitude,
         timezone = %timezone,
@@ -145,7 +146,7 @@ pub(super) async fn stream_weather(
         "Opened weather snapshot stream"
     );
 
-    let updates = stream! {
+  let updates = stream! {
         let mut interval = tokio::time::interval(refresh_interval);
         interval.set_missed_tick_behavior(MissedTickBehavior::Skip);
         interval.tick().await;
@@ -211,9 +212,9 @@ pub(super) async fn stream_weather(
         }
     };
 
-    Ok(Sse::new(updates).keep_alive(
-        KeepAlive::new()
-            .interval(Duration::from_secs(20))
-            .text("keepalive"),
-    ))
+  Ok(Sse::new(updates).keep_alive(
+    KeepAlive::new()
+      .interval(Duration::from_secs(20))
+      .text("keepalive"),
+  ))
 }

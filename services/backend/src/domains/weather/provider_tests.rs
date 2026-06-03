@@ -1,11 +1,9 @@
 use std::time::Duration;
-
 use axum::{http::StatusCode, routing::get, Router};
 
-use crate::{
-    domains::weather::domain::model::WeatherLocationQuery,
-    domains::weather::infrastructure::provider::OpenMeteoClient, error::ApiError,
-};
+use crate::error::ApiError;
+use crate::domains::weather::model::WeatherLocationQuery;
+use crate::domains::weather::provider::OpenMeteoClient;
 
 async fn spawn_test_server(status: StatusCode, body: &'static str) -> String {
     let listener = tokio::net::TcpListener::bind("127.0.0.1:0")
