@@ -99,7 +99,7 @@ export function Transactions() {
   };
 
   return (
-    <div className="w-full min-w-0 h-full transition-all flex flex-col gap-4">
+    <div className="w-full min-w-0 transition-all flex flex-col gap-4">
       {data && (
         <>
           {data?.summary && (
