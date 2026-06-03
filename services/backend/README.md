@@ -22,7 +22,7 @@ The service is intentionally modular: shared process concerns live at the servic
 
 ### Finance Domain
 
-- `GET /api/v1/finance/transactions?month=2026-05`
+- `GET /api/v1/finance/transactions?from=2026-05-01&to=2026-05-31`
 - `POST /api/v1/finance/transactions`
 - `PUT /api/v1/finance/transactions/:id`
 - `DELETE /api/v1/finance/transactions/:id`

@@ -3,8 +3,7 @@
 :root {
   color-scheme: light;
   --color-bg: #fff;
-  --color-content-bg-start: #e6e6e6;
-  --color-content-bg-end: #fafafa;
+  --color-content-bg: #e6e6e6;
   --color-txt: #000000;
   --color-txt-sec: #707070;
   --color-pri: #22d9ff;
@@ -19,8 +18,7 @@
   :root {
     color-scheme: dark;
     --color-bg: #0a0b0a;
-    --color-content-bg-start: #202225;
-    --color-content-bg-end: #141414;
+    --color-content-bg: #141414;
     --color-txt: #e0e0e0;
     --color-txt-sec: #8f8f8f;
     --color-pri: #22d9ff;

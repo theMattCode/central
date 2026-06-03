@@ -23,8 +23,8 @@ pub fn build_router(context: Context) -> Router {
 
     Router::new()
         .route("/healthz", get(healthz))
-        .nest("/api/v1/finance", domains::finance::http::router())
-        .nest("/api/v1/weather", domains::weather::http::router())
+        .nest("/api/v1/finance", domains::finance::router())
+        .nest("/api/v1/weather", domains::weather::router())
         .with_state(context)
         .layer(cors)
         .layer(TraceLayer::new_for_http())

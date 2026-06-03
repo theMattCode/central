@@ -1,11 +1,13 @@
 import { type PropsWithChildren } from 'react';
-
-export { getBreadcrumbItems } from '@/components/molecules/Breadcrumb/Breadcrumb.tsx';
+import { Breadcrumb } from '@/components/Breadcrumb/Breadcrumb.tsx';
 
 export function ContentLayout({ children }: PropsWithChildren) {
   return (
-    <main className="w-full min-h-0 py-4 pr-4 flex flex-col lg:flex-row gap-4 overflow-hidden">
-      <div className="px-4 h-full border-l border-l-(--color-section-border) flex flex-row flex-1 flex-wrap gap-4 overflow-auto @container">
+    <main className="w-full min-h-0 flex flex-col lg:flex-row gap-4 overflow-hidden py-4 pr-4">
+      <div className="h-full flex flex-col flex-1 flex-wrap gap-4 overflow-auto rounded-2xl bg-(--color-content-bg) @container p-4">
+        <div className="flex flex-row items-center justify-between">
+          <Breadcrumb />
+        </div>
         {children}
       </div>
       {/*
