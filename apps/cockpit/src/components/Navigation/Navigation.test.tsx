@@ -2,7 +2,7 @@
 
 import { afterEach, describe, expect, it } from 'vitest';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
-import { Navigation } from '@/components/templates/layout/Navigation/Navigation.tsx';
+import { Navigation } from '@/components/Navigation/Navigation.tsx';
 
 describe('Navigation', () => {
   afterEach(() => {

@@ -1,8 +1,9 @@
 import { createServerFn } from '@tanstack/react-start';
-import type { CashTransactionInput, Transaction } from 'src/domain/finance/transactions/model.ts';
-import { fetchJson, resolveBackendBaseUrl, resolveErrorMessage } from '@/utils/backend.ts';
+import type { TransactionInput, Transaction } from 'src/domain/finance/transactions/model.ts';
+import { fetchJson, resolveErrorMessage } from '@/utils/backend.ts';
+import { getFinanceURL } from '@/domain/finance/financeClient.ts';
 
-type UpdateTransactionInput = CashTransactionInput & {
+type UpdateTransactionInput = TransactionInput & {
   id: string;
 };
 
@@ -10,16 +11,12 @@ type DeleteTransactionInput = {
   id: string;
 };
 
-export function createFinanceUrl(path: string): URL {
-  return new URL(path, resolveBackendBaseUrl());
-}
-
-function validateTransactionInput(input: unknown): CashTransactionInput {
+function validateTransactionInput(input: unknown): TransactionInput {
   if (!input || typeof input !== 'object') {
     throw new Error('Invalid cash transaction payload.');
   }
 
-  const value = input as Partial<CashTransactionInput>;
+  const value = input as Partial<TransactionInput>;
   if (
     (value.direction !== 'income' && value.direction !== 'expense') ||
     typeof value.transactionDate !== 'string' ||
@@ -70,8 +67,8 @@ function validateDeleteTransactionInput(input: unknown): DeleteTransactionInput 
   return { id: value.id };
 }
 
-async function requestCreateCashTransaction(input: CashTransactionInput): Promise<Transaction> {
-  const url = createFinanceUrl('api/v1/finance/transactions');
+async function requestCreateCashTransaction(input: TransactionInput): Promise<Transaction> {
+  const url = getFinanceURL('api/v1/finance/transactions');
 
   return fetchJson<Transaction>(url, {
     method: 'POST',
@@ -80,7 +77,7 @@ async function requestCreateCashTransaction(input: CashTransactionInput): Promis
 }
 
 async function requestUpdateCashTransaction(input: UpdateTransactionInput): Promise<Transaction> {
-  const url = createFinanceUrl(`api/v1/finance/transactions/${input.id}`);
+  const url = getFinanceURL(`api/v1/finance/transactions/${input.id}`);
   const { id: _id, ...transaction } = input;
 
   return fetchJson<Transaction>(url, {
@@ -90,7 +87,7 @@ async function requestUpdateCashTransaction(input: UpdateTransactionInput): Prom
 }
 
 async function requestDeleteCashTransaction(input: DeleteTransactionInput): Promise<void> {
-  const url = createFinanceUrl(`api/v1/finance/transactions/${input.id}`);
+  const url = getFinanceURL(`api/v1/finance/transactions/${input.id}`);
   const response = await fetch(url, { method: 'DELETE' });
 
   if (!response.ok) {

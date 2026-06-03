@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { getBreadcrumbItems } from '@/components/templates/layout/ContentLayout.tsx';
+import { getBreadcrumbItems } from '@/components/ContentLayout/ContentLayout.tsx';
 
 describe('getBreadcrumbItems', () => {
   it('returns the Jarvis breadcrumb for the Jarvis route', () => {

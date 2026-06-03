@@ -40,15 +40,15 @@ export function useTransactions({ from, to }: TransactionsProps): Transactions {
     const loadTransactions = async () => {
       try {
         setTransactions((prev) => ({ ...prev, loading: true }));
-        const data = await financeClient.getTransactions({ from, to }, { signal: abortController.signal });
+        const response = await financeClient.getTransactions({ from, to }, { signal: abortController.signal });
         setTransactions((prev) => ({
           ...prev,
           loading: false,
           error: null,
           data: {
-            transactions: data.transactions,
-            summary: data.summary,
-            categories: extractCategories(data.transactions),
+            transactions: response.transactions,
+            summary: response.summary,
+            categories: extractCategories(response.transactions),
           },
         }));
       } catch (error) {

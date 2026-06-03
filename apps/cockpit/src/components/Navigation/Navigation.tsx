@@ -1,5 +1,5 @@
-import { NavigationItem } from '@/components/templates/layout/Navigation/NavigationItem.tsx';
-import { Logo } from '@/components/templates/layout/Brand/Logo.tsx';
+import { NavigationItem } from '@/components/Navigation/NavigationItem.tsx';
+import { Logo } from '@/components/Brand/Logo.tsx';
 import {
   MdClose as CloseIcon,
   MdMenu as MenuIcon,
@@ -7,14 +7,14 @@ import {
   MdOutlineMail as MailIcon,
   MdOutlineMonitorWeight as MonitorModeIcon,
   MdOutlineTask as TaskIcon,
-  MdSettings as SettingsIcon
+  MdSettings as SettingsIcon,
 } from 'react-icons/md';
 import { RiArrowLeftRightLine as IncomeAndExpenseIcon, RiStockLine as InvestIcon } from 'react-icons/ri';
 import { PiSidebarSimpleDuotone as NavigationToggleIcon, PiWaveform as JarvisIcon } from 'react-icons/pi';
-import { NavigationGroup } from '@/components/templates/layout/Navigation/NavigationGroup.tsx';
+import { NavigationGroup } from '@/components/Navigation/NavigationGroup.tsx';
 import { useState } from 'react';
 import { cx } from '@/utils/styles.ts';
-import { BrandIdentity } from '@/components/templates/layout/Brand/BrandIdentity.tsx';
+import { BrandIdentity } from '@/components/Brand/BrandIdentity.tsx';
 
 export function Navigation() {
   const [isDesktopOpen, setIsDesktopOpen] = useState(true);

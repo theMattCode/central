@@ -20,7 +20,7 @@ export type Transaction = Readonly<{
   updatedAt: string;
 }>;
 
-export type CashTransactionInput = Readonly<{
+export type TransactionInput = Readonly<{
   direction: TransactionDirection;
   transactionDate: string;
   amount: string;
@@ -55,7 +55,7 @@ export function createEmptyTransactionFormState(transactionDate = getCurrentLoca
   };
 }
 
-export function toCashTransactionInput(form: TransactionFormState): CashTransactionInput {
+export function toCashTransactionInput(form: TransactionFormState): TransactionInput {
   return {
     direction: form.direction,
     transactionDate: form.transactionDate,

@@ -4,7 +4,6 @@ import {
   MdClose as CancelIcon,
   MdDeleteOutline as DeleteIcon,
   MdEdit as EditIcon,
-  MdRefresh as RefreshIcon,
   MdSave as SaveIcon,
 } from 'react-icons/md';
 import { GiPayMoney, GiReceiveMoney } from 'react-icons/gi';
@@ -27,6 +26,7 @@ import {
 } from 'src/domain/finance/transactions/model.ts';
 import { useTransactions } from '@/domain/finance/transactions/data.ts';
 import { useDateRange } from '@/utils/useDateRange.ts';
+import { Grid } from '@/components/Grid/Grid.tsx';
 
 export type Direction = { value: TransactionDirection; label: string };
 
@@ -65,7 +65,9 @@ export function Transactions() {
     try {
       const input = toCashTransactionInput(form);
       if (editingTransactionId) {
-        await updateCashTransaction({ data: { id: editingTransactionId, ...input } });
+        await updateCashTransaction({
+          data: { id: editingTransactionId, ...input },
+        });
       } else {
         await createCashTransaction({ data: input });
       }
@@ -95,68 +97,61 @@ export function Transactions() {
   };
 
   return (
-    <div className="w-full min-w-0 flex flex-col gap-4">
-      <div className="flex flex-col gap-3 sm:flex-row sm:justify-between">
-        <div className="flex items-center gap-2">
-          <label className="flex flex-col gap-1 text-sm text-(--color-txt-sec)">
-            Month
-            {/*<input
-              type="month"
-              value={month}
-              className="rounded-md border border-(--color-section-border) bg-(--color-bg) px-3 py-2 text-(--color-txt)"
-              onChange={(event) => setDateRangeMonth(event.target.value)}
-            />*/}
-          </label>
-          <button
-            type="button"
-            aria-label="Refresh transactions"
-            title="Refresh"
-            className="mt-6 rounded-md border border-(--color-section-border) p-2 text-(--color-txt-sec) hover:bg-(--color-pri)/10 hover:text-(--color-pri)"
-            onClick={reload}
-          >
+    <div className="w-full min-w-0 h-full transition-all flex flex-col gap-4">
+      {data && (
+        <>
+          {data?.summary && (
+            <Grid>
+              <SummaryStrip summary={data.summary} />
+            </Grid>
+          )}
+          {error && (
+            <div className="rounded-md border border-red-500/40 bg-red-500/10 px-3 py-2 text-sm text-red-400 dark:text-red-300">
+              {error.message}
+            </div>
+          )}
+          <TransactionForm
+            categories={data?.categories ?? []}
+            editing={Boolean(editingTransactionId)}
+            error={formError}
+            form={form}
+            isSubmitting={isSubmitting}
+            onCancel={resetForm}
+            onChange={setForm}
+            onSubmit={submitForm}
+          />
+          {loading && <p className="text-sm text-(--color-txt-sec)">Loading transactions...</p>}
+          {/* Transaction list should have kind of toolbar
+          <input type="month" value={month} className="rounded-md border border-(--color-section-border) bg-(--color-bg) px-3 py-2 text-(--color-txt)" onChange={(event) => setDateRangeMonth(event.target.value)} />
+          <label className="flex flex-col gap-1 text-sm text-(--color-txt-sec)"></label>
+          <button type="button" aria-label="Refresh transactions" title="Refresh" className="mt-6 rounded-md border border-(--color-section-border) p-2 text-(--color-txt-sec) hover:bg-(--color-pri)/10 hover:text-(--color-pri)" onClick={reload} >
             <RefreshIcon className="h-5 w-5" />
           </button>
-        </div>
-      </div>
-      {data?.summary && <SummaryStrip summary={data.summary} />}
-      {error && (
-        <div className="rounded-md border border-red-500/40 bg-red-500/10 px-3 py-2 text-sm text-red-400 dark:text-red-300">
-          {error.message}
-        </div>
+       */}
+          {data && <TransactionList transactions={data.transactions} onDelete={deleteTransaction} onEdit={startEdit} />}
+        </>
       )}
-      <TransactionForm
-        categories={data?.categories ?? []}
-        editing={Boolean(editingTransactionId)}
-        error={formError}
-        form={form}
-        isSubmitting={isSubmitting}
-        onCancel={resetForm}
-        onChange={setForm}
-        onSubmit={submitForm}
-      />
-      {loading && <p className="text-sm text-(--color-txt-sec)">Loading transactions...</p>}
-      {data && <TransactionList transactions={data.transactions} onDelete={deleteTransaction} onEdit={startEdit} />}
     </div>
   );
 }
 
 function SummaryStrip({ summary }: { summary: Summary }) {
   return (
-    <div className="grid gap-2 sm:grid-cols-3">
+    <>
       <SummaryValue label="Income" value={summary.incomeTotal.amount} tone="income" />
       <SummaryValue label="Expenses" value={summary.expenseTotal.amount} tone="expense" />
       <SummaryValue label="Net" value={summary.netTotal.amount} tone="net" />
-    </div>
+    </>
   );
 }
 
 function SummaryValue({ label, value, tone }: { label: string; value: string; tone: 'income' | 'expense' | 'net' }) {
   return (
-    <div className="rounded-md border border-(--color-section-border) px-3 py-2">
+    <div className="rounded-md border border-(--color-section-border) px-3 py-2 flex flex-col">
       <div className="text-xs uppercase text-(--color-txt-sec)">{label}</div>
       <div
         className={cx(
-          'text-xl font-semibold',
+          'text-xl font-semibold text-center',
           tone === 'income' ? 'text-emerald-600 dark:text-emerald-300' : undefined,
           tone === 'expense' ? 'text-rose-600 dark:text-rose-300' : undefined,
         )}
@@ -179,8 +174,18 @@ type TransactionFormProps = {
 };
 
 const DIRECTION_OPTIONS: ButtonGroupOption[] = [
-  { id: 'expense', text: 'Ausgabe', style: { optionColor: 'var(--color-sem-negative)' }, icon: GiPayMoney },
-  { id: 'income', text: 'Einnahme', style: { optionColor: 'var(--color-sem-positive)' }, icon: GiReceiveMoney },
+  {
+    id: 'expense',
+    text: 'Ausgabe',
+    style: { optionColor: 'var(--color-sem-negative)' },
+    icon: GiPayMoney,
+  },
+  {
+    id: 'income',
+    text: 'Einnahme',
+    style: { optionColor: 'var(--color-sem-positive)' },
+    icon: GiReceiveMoney,
+  },
 ];
 
 function TransactionForm({

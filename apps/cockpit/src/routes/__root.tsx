@@ -1,11 +1,11 @@
 import type { PropsWithChildren } from 'react';
 import { createRootRoute, HeadContent, Scripts } from '@tanstack/react-router';
 import appCss from '../styles.css?url';
-import { PageLayout } from '@/components/templates/layout/PageLayout.tsx';
+import { PageLayout } from '@/components/PageLayout/PageLayout.tsx';
 import { Devtools } from '@/components/Devtools/Devtools.tsx';
 import { Section } from '@/components/Section/Section.tsx';
-import { ContentLayout } from '@/components/templates/layout/ContentLayout.tsx';
-import { Navigation } from '@/components/templates/layout/Navigation/Navigation.tsx';
+import { ContentLayout } from '@/components/ContentLayout/ContentLayout.tsx';
+import { Navigation } from '@/components/Navigation/Navigation.tsx';
 import { MdOutlineHome as HomeIcon } from 'react-icons/md';
 
 export const Route = createRootRoute({

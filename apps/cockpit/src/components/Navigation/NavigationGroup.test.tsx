@@ -2,7 +2,7 @@
 
 import { describe, expect, it } from 'vitest';
 import { fireEvent, render, screen } from '@testing-library/react';
-import { NavigationGroup } from '@/components/templates/layout/Navigation/NavigationGroup.tsx';
+import { NavigationGroup } from '@/components/Navigation/NavigationGroup.tsx';
 
 describe('NavigationGroup', () => {
   it('renders a divider after the title', () => {

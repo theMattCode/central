@@ -1,16 +1,27 @@
 import { createServerFn } from '@tanstack/react-start';
-import { fetchJson } from '@/utils/backend.ts';
-import { createFinanceUrl } from '@/domain/finance/transactions/api.ts';
+import { fetchJson, resolveBackendBaseUrl } from '@/utils/backend.ts';
 import type { Summary, Transaction } from '@/domain/finance/transactions/model.ts';
 import { isIsoDateRange, type IsoDateRange } from '@/utils/datetime.ts';
+
+export interface FinanceClient {
+  getTransactions(input: IsoDateRange, options?: { signal?: AbortSignal }): Promise<TransactionsResponse>;
+}
+
+// TODO remove export (once api.ts is migrated to finance client)
+export function getFinanceURL(): URL {
+  return new URL('api/v1/finance/transactions', resolveBackendBaseUrl());
+}
 
 export interface TransactionsResponse extends IsoDateRange {
   summary: Summary;
   transactions: Transaction[];
 }
 
-export interface FinanceClient {
-  getTransactions(input: IsoDateRange, options?: { signal?: AbortSignal }): Promise<TransactionsResponse>;
+async function requestTransactions(from: string, to: string): Promise<TransactionsResponse> {
+  const url = getFinanceURL();
+  url.searchParams.set('from', from);
+  url.searchParams.set('to', to);
+  return fetchJson<TransactionsResponse>(url);
 }
 
 function validateTransactionsParameters(input: unknown): IsoDateRange {
@@ -20,17 +31,10 @@ function validateTransactionsParameters(input: unknown): IsoDateRange {
   return input;
 }
 
-async function requestTransactions(from: string, to: string): Promise<TransactionsResponse> {
-  const url = createFinanceUrl('api/v1/finance/transactions');
-  url.searchParams.set('from', from);
-  url.searchParams.set('to', to);
-  return fetchJson<TransactionsResponse>(url);
-}
-
 const fetchTransactions = createServerFn({ method: 'GET' })
   .inputValidator(validateTransactionsParameters)
   .handler(async ({ data }) => requestTransactions(data.from, data.to));
 
-export const defaultFinanceClient: FinanceClient = {
+export const DEFAULT_FINANCE_CLIENT: FinanceClient = {
   getTransactions: ({ from, to }, { signal } = {}) => fetchTransactions({ data: { from, to }, signal }),
 };
