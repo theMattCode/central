@@ -1,7 +1,16 @@
 import { useMatches } from '@tanstack/react-router';
 import { Fragment } from 'react';
-import type { Crumb } from '@/model/breadcrumb.ts';
 import { cx } from '@/utils/styles.ts';
+
+import type { IconType } from 'react-icons';
+
+export type Crumb = { label: string } | { icon: IconType };
+
+declare module '@tanstack/react-router' {
+  interface StaticDataRouteOption {
+    crumb?: Crumb;
+  }
+}
 
 export function Breadcrumb() {
   const matches = useMatches().filter((m) => m.staticData?.crumb);
