@@ -4,7 +4,7 @@ import {
   MdClose as CancelIcon,
   MdDeleteOutline as DeleteIcon,
   MdEdit as EditIcon,
-  MdSave as SaveIcon,
+  MdSave as SaveIcon
 } from 'react-icons/md';
 import { GiPayMoney, GiReceiveMoney } from 'react-icons/gi';
 import { Button } from '@/components/Button/Button.tsx';
@@ -14,19 +14,19 @@ import { cx } from '@/utils/styles.ts';
 import {
   createCashTransaction,
   deleteCashTransaction,
-  updateCashTransaction,
+  updateCashTransaction
 } from 'src/domain/finance/transactions/api.ts';
 import {
   createEmptyTransactionFormState,
-  type Summary,
   toCashTransactionInput,
   type Transaction,
   type TransactionDirection,
-  type TransactionFormState,
+  type TransactionFormState
 } from 'src/domain/finance/transactions/model.ts';
 import { useTransactions } from '@/domain/finance/transactions/data.ts';
 import { useDateRange } from '@/utils/useDateRange.ts';
 import { Grid } from '@/components/Grid/Grid.tsx';
+import { SummaryStrip } from '@/domain/finance/transactions/SummaryStrip.tsx';
 
 export type Direction = { value: TransactionDirection; label: string };
 
@@ -131,33 +131,6 @@ export function Transactions() {
           {data && <TransactionList transactions={data.transactions} onDelete={deleteTransaction} onEdit={startEdit} />}
         </>
       )}
-    </div>
-  );
-}
-
-function SummaryStrip({ summary }: { summary: Summary }) {
-  return (
-    <>
-      <SummaryValue label="Income" value={summary.incomeTotal.amount} tone="income" />
-      <SummaryValue label="Expenses" value={summary.expenseTotal.amount} tone="expense" />
-      <SummaryValue label="Net" value={summary.netTotal.amount} tone="net" />
-    </>
-  );
-}
-
-function SummaryValue({ label, value, tone }: { label: string; value: string; tone: 'income' | 'expense' | 'net' }) {
-  return (
-    <div className="rounded-md border border-(--color-section-border) px-3 py-2 flex flex-col">
-      <div className="text-xs uppercase text-(--color-txt-sec)">{label}</div>
-      <div
-        className={cx(
-          'text-xl font-semibold text-center',
-          tone === 'income' ? 'text-emerald-600 dark:text-emerald-300' : undefined,
-          tone === 'expense' ? 'text-rose-600 dark:text-rose-300' : undefined,
-        )}
-      >
-        {value} EUR
-      </div>
     </div>
   );
 }
