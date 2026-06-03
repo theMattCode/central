@@ -27,6 +27,8 @@ import { useTransactions } from '@/domain/finance/transactions/data.ts';
 import { useDateRange } from '@/utils/useDateRange.ts';
 import { Grid } from '@/components/Grid/Grid.tsx';
 import { SummaryStrip } from '@/domain/finance/transactions/SummaryStrip.tsx';
+import { Section } from '@/components/Section/Section.tsx';
+import { Input } from '@/components/Input/Input.tsx';
 
 export type Direction = { value: TransactionDirection; label: string };
 
@@ -173,98 +175,88 @@ function TransactionForm({
 }: TransactionFormProps) {
   const updateForm = (patch: Partial<TransactionFormState>) => onChange({ ...form, ...patch });
   return (
-    <form
-      className="flex flex-col gap-3 rounded-md border border-(--color-section-border) p-3"
-      onSubmit={(event) => {
-        event.preventDefault();
-        void onSubmit();
-      }}
-    >
-      <div className="flex flex-col md:flex-row md:flex-wrap flex-1 gap-3">
-        <label className="flex flex-col gap-1 text-sm text-(--color-txt-sec)">
-          Direction
-          <ButtonGroup
-            defaultValue={DIRECTION_OPTIONS[0]}
-            options={DIRECTION_OPTIONS}
-            onChanged={(option) => updateForm({ direction: option.id as TransactionDirection })}
-          />
-        </label>
-        <label className="flex flex-col gap-1 text-sm text-(--color-txt-sec)">
-          Date
-          <input
-            type="date"
-            value={form.transactionDate}
-            className="rounded-md border border-(--color-section-border) bg-(--color-bg) px-3 py-2 text-(--color-txt)"
-            onChange={(event) => updateForm({ transactionDate: event.target.value })}
-          />
-        </label>
-        <label className="flex flex-col gap-1 text-sm text-(--color-txt-sec)">
-          Amount
-          <input
-            inputMode="decimal"
-            value={form.amount}
-            placeholder="0.00"
-            className="rounded-md border border-(--color-section-border) bg-(--color-bg) px-3 py-2 text-(--color-txt)"
-            onChange={(event) => updateForm({ amount: event.target.value })}
-          />
-        </label>
-        <label className="flex flex-col gap-1 text-sm text-(--color-txt-sec)">
-          Description
-          <input
-            value={form.description}
-            className="rounded-md border border-(--color-section-border) bg-(--color-bg) px-3 py-2 text-(--color-txt)"
-            onChange={(event) => updateForm({ description: event.target.value })}
-          />
-        </label>
-        <label className="flex flex-col gap-1 text-sm text-(--color-txt-sec)">
-          Category
-          <input
-            list="cash-category-options"
-            value={form.category}
-            className="rounded-md border border-(--color-section-border) bg-(--color-bg) px-3 py-2 text-(--color-txt)"
-            onChange={(event) => updateForm({ category: event.target.value })}
-          />
-        </label>
-      </div>
-      <label className="flex flex-col gap-1 text-sm text-(--color-txt-sec) lg:col-span-4">
-        Note
-        <input
-          value={form.note}
-          className="rounded-md border border-(--color-section-border) bg-(--color-bg) px-3 py-2 text-(--color-txt)"
-          onChange={(event) => updateForm({ note: event.target.value })}
-        />
-      </label>
-      <div className="flex gap-2 lg:justify-end">
-        {editing && (
-          <button
-            type="button"
-            aria-label="Cancel edit"
-            title="Cancel"
-            className="rounded-md border border-(--color-section-border) p-2 text-(--color-txt-sec) hover:bg-(--color-pri)/10 hover:text-(--color-pri)"
-            onClick={onCancel}
-          >
-            <CancelIcon className="h-5 w-5" />
-          </button>
-        )}
-        <Button
-          type="submit"
-          name={editing ? 'Save Transaction' : 'Add transaction'}
-          text={editing ? 'Save' : 'Add'}
-          icon={editing ? SaveIcon : AddIcon}
-          disabled={isSubmitting}
-        />
-      </div>
-      {error && (
-        <div className="rounded-md border border-red-500/40 bg-red-500/10 px-3 py-2 text-sm text-red-600 dark:text-red-300 lg:col-span-5">
-          {error}
+    <Section>
+      <form
+        className="w-full flex flex-col gap-4"
+        onSubmit={(event) => {
+          event.preventDefault();
+          void onSubmit();
+        }}
+      >
+        <div className="w-full grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4">
+          <label className="w-full flex flex-col gap-1 text-sm text-(--color-txt-sec)">
+            Direction
+            <ButtonGroup
+              defaultValue={DIRECTION_OPTIONS[0]}
+              options={DIRECTION_OPTIONS}
+              onChanged={(option) => updateForm({ direction: option.id as TransactionDirection })}
+            />
+          </label>
+          <label className="w-full flex flex-col gap-1 text-sm text-(--color-txt-sec)">
+            Date
+            <Input
+              type="date"
+              value={form.transactionDate}
+              onChange={(event) => updateForm({ transactionDate: event.target.value })}
+            />
+          </label>
+          <label className="w-full flex flex-col gap-1 text-sm text-(--color-txt-sec)">
+            Amount
+            <Input
+              inputMode="decimal"
+              value={form.amount}
+              placeholder="0.00"
+              onChange={(event) => updateForm({ amount: event.target.value })}
+            />
+          </label>
+          <label className="flex flex-col gap-1 text-sm text-(--color-txt-sec)">
+            Description
+            <Input value={form.description} onChange={(event) => updateForm({ description: event.target.value })} />
+          </label>
+          <label className="flex flex-col gap-1 text-sm text-(--color-txt-sec)">
+            Category
+            <Input
+              list="cash-category-options"
+              value={form.category}
+              onChange={(event) => updateForm({ category: event.target.value })}
+            />
+          </label>
+          <label className="flex flex-col gap-1 text-sm text-(--color-txt-sec)">
+            Note
+            <Input value={form.note} onChange={(event) => updateForm({ note: event.target.value })} />
+          </label>
         </div>
-      )}
-      <datalist id="cash-category-options">
-        {categories.map((category) => (
-          <option key={category} value={category} />
-        ))}
-      </datalist>
-    </form>
+        <div className="flex gap-4 justify-end">
+          {editing && (
+            <Button
+              type="button"
+              aria-label="Cancel edit"
+              title="Cancel"
+              onClick={onCancel}
+              icon={CancelIcon}
+              text="Cancel"
+            />
+          )}
+          <Button
+            type="submit"
+            name={editing ? 'Save Transaction' : 'Add transaction'}
+            text={editing ? 'Save' : 'Add'}
+            icon={editing ? SaveIcon : AddIcon}
+            disabled={isSubmitting}
+          />
+        </div>
+        {error && (
+          <div className="rounded-md border border-red-500/40 bg-red-500/10 px-3 py-2 text-sm text-red-600 dark:text-red-300 lg:col-span-5">
+            {error}
+          </div>
+        )}
+        <datalist id="cash-category-options">
+          {categories.map((category) => (
+            <option key={category} value={category} />
+          ))}
+        </datalist>
+      </form>
+    </Section>
   );
 }
 
@@ -282,8 +274,8 @@ function TransactionList({
   }
 
   return (
-    <>
-      <div className="hidden overflow-x-auto md:block">
+    <Section>
+      <div className="w-full hidden overflow-x-auto sm:block">
         <table className="w-full border-separate border-spacing-0 text-sm">
           <thead className="text-left text-(--color-txt-sec)">
             <tr>
@@ -301,12 +293,12 @@ function TransactionList({
           </tbody>
         </table>
       </div>
-      <div className="flex flex-col gap-2 md:hidden">
+      <div className="w-full flex flex-col gap-4 sm:hidden">
         {transactions.map((transaction) => (
           <TransactionCard key={transaction.id} transaction={transaction} onDelete={onDelete} onEdit={onEdit} />
         ))}
       </div>
-    </>
+    </Section>
   );
 }
 
@@ -364,37 +356,39 @@ function TransactionCard({
   onEdit: (transaction: Transaction) => void;
 }) {
   return (
-    <div className="rounded-md border border-(--color-section-border) p-3">
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <div className="font-medium">{transaction.description}</div>
-          <div className="text-sm text-(--color-txt-sec)">
-            {transaction.transactionDate}
-            {transaction.category ? ` - ${transaction.category}` : ''}
+    <Section>
+      <div className="w-full flex flex-col">
+        <div className="w-full flex items-start justify-between gap-3">
+          <div>
+            <div className="font-medium">{transaction.description}</div>
+            <div className="text-sm text-(--color-txt-sec)">
+              {transaction.transactionDate}
+              {transaction.category ? ` - ${transaction.category}` : ''}
+            </div>
+            {transaction.note && <div className="mt-1 text-sm text-(--color-txt-sec)">{transaction.note}</div>}
           </div>
-          {transaction.note && <div className="mt-1 text-sm text-(--color-txt-sec)">{transaction.note}</div>}
+          <div
+            className={cx(
+              'shrink-0 text-right font-semibold',
+              transaction.direction === 'income'
+                ? 'text-emerald-600 dark:text-emerald-300'
+                : 'text-rose-600 dark:text-rose-300',
+            )}
+          >
+            {transaction.direction === 'income' ? '+' : '-'}
+            {transaction.amount} {transaction.currencyCode}
+          </div>
         </div>
-        <div
-          className={cx(
-            'shrink-0 text-right font-semibold',
-            transaction.direction === 'income'
-              ? 'text-emerald-600 dark:text-emerald-300'
-              : 'text-rose-600 dark:text-rose-300',
-          )}
-        >
-          {transaction.direction === 'income' ? '+' : '-'}
-          {transaction.amount} {transaction.currencyCode}
+        <div className="flex justify-end gap-1">
+          <IconButton label="Edit transaction" onClick={() => onEdit(transaction)}>
+            <EditIcon className="h-5 w-5" />
+          </IconButton>
+          <IconButton label="Delete transaction" onClick={() => onDelete(transaction)}>
+            <DeleteIcon className="h-5 w-5" />
+          </IconButton>
         </div>
       </div>
-      <div className="mt-2 flex justify-end gap-1">
-        <IconButton label="Edit transaction" onClick={() => onEdit(transaction)}>
-          <EditIcon className="h-5 w-5" />
-        </IconButton>
-        <IconButton label="Delete transaction" onClick={() => onDelete(transaction)}>
-          <DeleteIcon className="h-5 w-5" />
-        </IconButton>
-      </div>
-    </div>
+    </Section>
   );
 }
 

@@ -8,13 +8,11 @@ import { ContentLayout } from '@/components/ContentLayout/ContentLayout.tsx';
 import { Navigation } from '@/components/Navigation/Navigation.tsx';
 import { MdOutlineHome as HomeIcon } from 'react-icons/md';
 
+const title = 'Central Dashboard';
+
 export const Route = createRootRoute({
   head: () => ({
-    meta: [
-      { charSet: 'utf-8' },
-      { name: 'viewport', content: 'width=device-width, initial-scale=1' },
-      { title: 'Central Dashboard' },
-    ],
+    meta: [{ charSet: 'utf-8' }, { name: 'viewport', content: 'width=device-width, initial-scale=1' }, { title }],
     links: [{ rel: 'stylesheet', href: appCss }],
   }),
   errorComponent: RootErrorBoundary,
@@ -27,7 +25,7 @@ export const Route = createRootRoute({
 function RootDocument({ children }: PropsWithChildren) {
   return (
     <html lang="en">
-      <head>
+      <head title={title}>
         <HeadContent />
       </head>
       <body>

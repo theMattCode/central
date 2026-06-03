@@ -1,6 +1,6 @@
 import { cx } from '@/utils/styles.ts';
-import { useState } from 'react';
 import * as React from 'react';
+import { useState } from 'react';
 import type { IconType } from 'react-icons';
 
 export type Option = {
@@ -42,15 +42,16 @@ export function ButtonGroup({ defaultValue, options, onChanged }: Props) {
               } as React.CSSProperties
             }
             className={cx(
-              'px-3 py-2 flex flex-row items-center gap-2',
-              'transition-all duration-200',
-              'border border-(--color-section-border) -ml-px first:ml-0 first:rounded-l-md last:rounded-r-md',
-              'text-(--color-txt)',
-              isSelected ? 'bg-(--option-color)' : 'hover:bg-(--option-color)/40',
+              'px-3 py-2 flex flex-row items-center gap-2 transition-all duration-200 border border-(--color-section-border) first:rounded-l-md last:rounded-r-md text-(--color-txt) bg-(--color-bg)',
+              isSelected ? 'border-(--option-color)' : 'hover:border-(--option-color)/40',
             )}
             onClick={() => handleSelect(option)}
           >
-            {option.icon && <option.icon className="h-5 w-5" />}
+            {option.icon && (
+              <option.icon
+                className={cx('h-5 w-5', isSelected ? 'text-(--option-color)' : 'hover:text-(--option-color)/40')}
+              />
+            )}
             {option.text}
           </button>
         );

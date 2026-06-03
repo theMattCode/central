@@ -1,29 +1,25 @@
 import { cx } from '@/utils/styles.ts';
 import { Section } from '@/components/Section/Section.tsx';
 
-export function KPISection({
-  label,
-  value,
-  unit,
-  tone,
-}: {
+interface Props {
   label: string;
-  value: number;
-  unit?: string;
+  value: string;
   tone: 'positive' | 'negative' | 'neutral';
-}) {
+}
+
+export function KPISection({ label, value, tone }: Props) {
   return (
     <Section>
-      <div className="w-full h-full flex flex-col">
-        <div className="text-xs uppercase text-(--color-txt-sec)">{label}</div>
+      <div className="w-full h-full flex flex-col gap-1 text-center">
+        <div className="text-xs text-(--color-txt-sec) uppercase">{label}</div>
         <div
           className={cx(
-            'text-xl font-semibold text-center',
-            tone === 'positive' ? 'text-emerald-600 dark:text-emerald-300' : undefined,
-            tone === 'negative' ? 'text-rose-600 dark:text-rose-300' : undefined,
+            'text-xl font-semibold',
+            tone === 'positive' ? 'text-(--color-sem-positive)' : undefined,
+            tone === 'negative' ? 'text-(--color-sem-negative)' : undefined,
           )}
         >
-          {value} {unit}
+          {value}
         </div>
       </div>
     </Section>
