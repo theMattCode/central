@@ -25,7 +25,7 @@ import {
   type TransactionDirection,
   type TransactionFormState,
 } from 'src/domain/finance/transactions/model.ts';
-import { useTransactions } from 'src/domain/finance/transactions/useTransactions.ts';
+import { useTransactions } from '@/domain/finance/transactions/data.ts';
 import { useDateRange } from '@/utils/useDateRange.ts';
 
 export type Direction = { value: TransactionDirection; label: string };

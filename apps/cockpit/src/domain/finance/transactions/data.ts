@@ -1,49 +1,22 @@
-import { isIsoDateRange, type IsoDateRange } from '@/utils/datetime.ts';
-import { createServerFn } from '@tanstack/react-start';
-import { fetchJson } from '@/utils/backend.ts';
 import type { Summary, Transaction } from '@/domain/finance/transactions/model.ts';
-import { createFinanceUrl } from '@/domain/finance/transactions/api.ts';
 import { useEffect, useState } from 'react';
 import { toErrorMessage } from '@/utils/formatting.ts';
 
-export function validateTransactionsParameters(input: unknown): IsoDateRange {
-  if (!isIsoDateRange(input)) {
-    throw new Error(`invalid transactions parameters: ${input}`);
-  }
-  return input;
-}
-
-interface TransactionsPayload extends IsoDateRange {
-  summary: Summary;
-  transactions: Transaction[];
-}
-
-export type TransactionsResponse = Readonly<TransactionsPayload>;
-
-async function requestTransactions(from: string, to: string): Promise<TransactionsResponse> {
-  const url = createFinanceUrl('api/v1/finance/transactions');
-  url.searchParams.set('from', from);
-  url.searchParams.set('to', to);
-  return fetchJson<TransactionsResponse>(url);
-}
-
-export const fetchTransactions = createServerFn({ method: 'GET' })
-  .inputValidator(validateTransactionsParameters)
-  .handler(async ({ data }) => requestTransactions(data.from, data.to));
+import { useFinanceClient } from '@/domain/finance/FinanceClientContext.tsx';
 
 interface Error {
   source: unknown;
   message: string;
 }
 
-interface TransactionsData {
+interface ComputedData {
   transactions: Transaction[];
   summary: Summary;
   categories: string[];
 }
 
 interface Transactions {
-  data: TransactionsData | null;
+  data: ComputedData | null;
   error: Error | null;
   loading: boolean;
   reload: () => void;
@@ -52,6 +25,7 @@ interface Transactions {
 type TransactionsProps = { from: string; to: string };
 
 export function useTransactions({ from, to }: TransactionsProps): Transactions {
+  const financeClient = useFinanceClient();
   const [reloadVersion, setReloadVersion] = useState(0);
   const [transactions, setTransactions] = useState<Transactions>({
     data: null,
@@ -66,10 +40,11 @@ export function useTransactions({ from, to }: TransactionsProps): Transactions {
     const loadTransactions = async () => {
       try {
         setTransactions((prev) => ({ ...prev, loading: true }));
-        const data = await fetchTransactions({ data: { from, to }, signal: abortController.signal });
+        const data = await financeClient.getTransactions({ from, to }, { signal: abortController.signal });
         setTransactions((prev) => ({
           ...prev,
           loading: false,
+          error: null,
           data: {
             transactions: data.transactions,
             summary: data.summary,
@@ -80,16 +55,19 @@ export function useTransactions({ from, to }: TransactionsProps): Transactions {
         if (abortController.signal.aborted) {
           return;
         }
-        setTransactions((prev) => ({ ...prev, error: { source: error, message: toErrorMessage(error) } }));
+        setTransactions((prev) => ({
+          ...prev,
+          loading: false,
+          error: { source: error, message: toErrorMessage(error) },
+        }));
       }
     };
 
     void loadTransactions();
 
     return () => abortController.abort();
-  }, [from, to, reloadVersion]);
+  }, [financeClient, from, to, reloadVersion]);
 
-  console.log('transactions', transactions);
   return transactions;
 }
 
