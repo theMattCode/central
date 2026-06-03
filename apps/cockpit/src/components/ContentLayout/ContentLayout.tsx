@@ -3,7 +3,7 @@ import { Breadcrumb } from '@/components/Breadcrumb/Breadcrumb.tsx';
 
 export function ContentLayout({ children }: PropsWithChildren) {
   return (
-    <main className="w-full min-h-0 flex flex-col lg:flex-row gap-4 overflow-hidden py-4 pr-4">
+    <main className="w-full min-h-0 flex flex-col lg:flex-row gap-4 overflow-hidden py-4">
       <div className="h-full flex flex-1 flex-wrap gap-4 overflow-auto rounded-2xl bg-(--color-content-bg) @container p-4">
         <div className="flex flex-row items-center justify-between">
           <Breadcrumb />
