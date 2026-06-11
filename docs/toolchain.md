@@ -57,7 +57,7 @@ npx nx g @nx/js:lib libs/<name> --publishable --importPath=@central/<name>
 
 ### Persistence image project
 
-The persistence image uses PostgreSQL 18.3. Existing local PostgreSQL 16 data volumes cannot be reused directly with PostgreSQL 18; recreate the local dev volume or dump/restore data before running the upgraded image.
+The persistence image uses PostgreSQL 18.3. Existing local PostgreSQL 16 data volumes cannot be reused directly with PostgreSQL 18; recreate the local dev volume or dump/restore data before running the upgraded image. PostgreSQL 18 containers must mount the data volume at `/var/lib/postgresql`; the image stores database files under a versioned subdirectory.
 
 Build the persistence-layer PostgreSQL image:
 
