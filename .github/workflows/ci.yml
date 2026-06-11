@@ -85,12 +85,8 @@ jobs:
       - name: Validate registry production compose
         run: docker compose --env-file i12e/orchestrator/deploy/.env.prod.example --file i12e/orchestrator/deploy/docker-compose.prod.yml config --quiet
 
-  core-images:
+  validate-release-ref:
     runs-on: ubuntu-latest
-    needs:
-      - validate-cockpit
-      - validate-backend
-      - validate-i12e
     steps:
       - uses: actions/checkout@v4
         with:
@@ -102,36 +98,132 @@ jobs:
           git fetch origin main
           git merge-base --is-ancestor "$GITHUB_SHA" origin/main
 
-      - name: Log in to GHCR
-        if: github.event_name == 'push'
-        uses: docker/login-action@v3
+  build-image-cockpit:
+    runs-on: ubuntu-latest
+    needs:
+      - validate-release-ref
+      - validate-cockpit
+    steps:
+      - uses: actions/checkout@v4
         with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
 
-      - name: Build, smoke, and publish core image set
+      - name: Build cockpit image
         shell: bash
         run: |
           set -euo pipefail
 
           image_base="${REGISTRY}/${IMAGE_NAMESPACE,,}"
           sha_tag="sha-${GITHUB_SHA::12}"
+          image="${image_base}/app-cockpit:${sha_tag}"
+
+          docker build --file apps/cockpit/Dockerfile --tag "$image" .
+
+          mkdir -p dist/images
+          docker save "$image" --output dist/images/app-cockpit.tar
+
+      - name: Upload cockpit image
+        uses: actions/upload-artifact@v4
+        with:
+          name: image-app-cockpit
+          path: dist/images/app-cockpit.tar
+          retention-days: 1
+
+  build-image-backend:
+    runs-on: ubuntu-latest
+    needs:
+      - validate-release-ref
+      - validate-backend
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Build backend image
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          image_base="${REGISTRY}/${IMAGE_NAMESPACE,,}"
+          sha_tag="sha-${GITHUB_SHA::12}"
+          image="${image_base}/service-backend:${sha_tag}"
+
+          docker build --file services/backend/Dockerfile --tag "$image" .
+
+          mkdir -p dist/images
+          docker save "$image" --output dist/images/service-backend.tar
+
+      - name: Upload backend image
+        uses: actions/upload-artifact@v4
+        with:
+          name: image-service-backend
+          path: dist/images/service-backend.tar
+          retention-days: 1
+
+  build-images-i12e:
+    runs-on: ubuntu-latest
+    needs:
+      - validate-release-ref
+      - validate-i12e
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Build i12e images
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          image_base="${REGISTRY}/${IMAGE_NAMESPACE,,}"
+          sha_tag="sha-${GITHUB_SHA::12}"
+          postgres_image="${image_base}/i12e-postgres:${sha_tag}"
+          gateway_image="${image_base}/i12e-gateway:${sha_tag}"
+
+          docker build --file i12e/postgres/Dockerfile --tag "$postgres_image" i12e/postgres
+          docker build --file i12e/gateway/Dockerfile --tag "$gateway_image" .
+
+          mkdir -p dist/images
+          docker save "$postgres_image" "$gateway_image" --output dist/images/i12e.tar
+
+      - name: Upload i12e images
+        uses: actions/upload-artifact@v4
+        with:
+          name: images-i12e
+          path: dist/images/i12e.tar
+          retention-days: 1
+
+  test-images-integration:
+    runs-on: ubuntu-latest
+    needs:
+      - build-image-cockpit
+      - build-image-backend
+      - build-images-i12e
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download images
+        uses: actions/download-artifact@v4
+        with:
+          pattern: image-*
+          path: dist/images
+          merge-multiple: true
+
+      - name: Download i12e images
+        uses: actions/download-artifact@v4
+        with:
+          name: images-i12e
+          path: dist/images
+
+      - name: Smoke test core image set
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          sha_tag="sha-${GITHUB_SHA::12}"
           ci_env_file="$(mktemp)"
-          publish=false
-          version_tag=""
-          stable_tag=false
-
-          if [ "${GITHUB_EVENT_NAME}" = "push" ]; then
-            publish=true
-          fi
-
-          if [[ "${GITHUB_REF}" == refs/tags/v* ]]; then
-            version_tag="${GITHUB_REF_NAME}"
-            if [[ "$version_tag" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-              stable_tag=true
-            fi
-          fi
 
           compose_ci() {
             docker compose --env-file "$ci_env_file" --file i12e/orchestrator/deploy/docker-compose.prod.yml "$@"
@@ -143,6 +235,10 @@ jobs:
           }
 
           trap cleanup EXIT
+
+          docker load --input dist/images/app-cockpit.tar
+          docker load --input dist/images/service-backend.tar
+          docker load --input dist/images/i12e.tar
 
           {
             echo "CENTRAL_VERSION=$sha_tag"
@@ -159,14 +255,61 @@ jobs:
             echo "BACKEND_BASE_URL=http://service-backend:8080"
           } > "$ci_env_file"
 
-          build_image() {
-            local name="$1"
-            local dockerfile="$2"
-            local context="$3"
-            local image="${image_base}/${name}"
+          compose_ci up --detach --wait i12e-postgres
+          compose_ci run --rm i12e-postgres-migrate
+          compose_ci up --detach --wait service-backend app-cockpit i12e-gateway
+          curl --fail --silent --show-error http://127.0.0.1:48080/healthz >/dev/null
+          curl --fail --silent --show-error http://127.0.0.1:48080/ >/dev/null
+          compose_ci exec -T service-backend wget -qO- http://127.0.0.1:8080/healthz >/dev/null
 
-            docker build --file "$dockerfile" --tag "${image}:${sha_tag}" "$context"
-          }
+          docker compose --env-file "$ci_env_file" --file i12e/orchestrator/deploy/docker-compose.prod.yml ps
+
+  publish-images:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push'
+    needs:
+      - test-images-integration
+    steps:
+      - name: Download app and service images
+        uses: actions/download-artifact@v4
+        with:
+          pattern: image-*
+          path: dist/images
+          merge-multiple: true
+
+      - name: Download i12e images
+        uses: actions/download-artifact@v4
+        with:
+          name: images-i12e
+          path: dist/images
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Publish images
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          image_base="${REGISTRY}/${IMAGE_NAMESPACE,,}"
+          sha_tag="sha-${GITHUB_SHA::12}"
+          version_tag=""
+          stable_tag=false
+
+          if [[ "${GITHUB_REF}" == refs/tags/v* ]]; then
+            version_tag="${GITHUB_REF_NAME}"
+            if [[ "$version_tag" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+              stable_tag=true
+            fi
+          fi
+
+          docker load --input dist/images/app-cockpit.tar
+          docker load --input dist/images/service-backend.tar
+          docker load --input dist/images/i12e.tar
 
           publish_image() {
             local name="$1"
@@ -185,29 +328,22 @@ jobs:
             fi
           }
 
-          build_image app-cockpit apps/cockpit/Dockerfile .
-          build_image service-backend services/backend/Dockerfile .
-          build_image i12e-postgres i12e/postgres/Dockerfile i12e/postgres
-          build_image i12e-gateway i12e/gateway/Dockerfile .
+          publish_image app-cockpit
+          publish_image service-backend
+          publish_image i12e-postgres
+          publish_image i12e-gateway
 
-          compose_ci up --detach --wait i12e-postgres
-          compose_ci run --rm i12e-postgres-migrate
-          compose_ci up --detach --wait service-backend app-cockpit i12e-gateway
-          curl --fail --silent --show-error http://127.0.0.1:48080/healthz >/dev/null
-          curl --fail --silent --show-error http://127.0.0.1:48080/ >/dev/null
-          compose_ci exec -T service-backend wget -qO- http://127.0.0.1:8080/healthz >/dev/null
-
-          if [ "$publish" = true ]; then
-            publish_image app-cockpit
-            publish_image service-backend
-            publish_image i12e-postgres
-            publish_image i12e-gateway
-          fi
-
-          docker compose --env-file "$ci_env_file" --file i12e/orchestrator/deploy/docker-compose.prod.yml ps
+  package-deploy-bundle:
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+    needs:
+      - publish-images
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Package deploy bundle
-        if: startsWith(github.ref, 'refs/tags/')
         run: |
           mkdir -p dist
           tar -czf "dist/central-deploy-${GITHUB_REF_NAME}.tar.gz" \
@@ -217,7 +353,6 @@ jobs:
             .env.prod.example
 
       - name: Upload deploy bundle
-        if: startsWith(github.ref, 'refs/tags/')
         uses: actions/upload-artifact@v4
         with:
           name: central-deploy-${{ github.ref_name }}
