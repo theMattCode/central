@@ -12,6 +12,13 @@
         "command": "pnpm exec prettier --check \"src/**/*.{ts,tsx,css}\" \"!src/routeTree.gen.ts\""
       }
     },
+    "lint-fix": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "apps/cockpit",
+        "command": "pnpm exec prettier --write \"src/**/*.{ts,tsx,css}\" \"!src/routeTree.gen.ts\""
+      }
+    },
     "start": {
       "executor": "nx:run-commands",
       "options": {
