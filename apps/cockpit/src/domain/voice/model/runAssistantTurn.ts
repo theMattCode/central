@@ -69,9 +69,7 @@ async function toErrorMessage(response: Response): Promise<string> {
   return `Assistant service request failed with status ${response.status}.`;
 }
 
-function findNextSseFrameSeparator(
-  buffer: string,
-): { index: number; length: number } | null {
+function findNextSseFrameSeparator(buffer: string): { index: number; length: number } | null {
   const lineFeedIndex = buffer.indexOf('\n\n');
   const carriageReturnIndex = buffer.indexOf('\r\n\r\n');
 
@@ -159,8 +157,7 @@ export function validateAssistantTurnInput(input: unknown): AssistantTurnInput {
     typeof payload.audioMimeType !== 'string' ||
     payload.audioMimeType.length === 0 ||
     (payload.language !== undefined && typeof payload.language !== 'string') ||
-    (payload.voiceInstruction !== undefined &&
-      typeof payload.voiceInstruction !== 'string')
+    (payload.voiceInstruction !== undefined && typeof payload.voiceInstruction !== 'string')
   ) {
     getLogger().error('invalid-turn-payload', { payloadType: typeof input });
     throw new Error('Invalid assistant turn payload.');
@@ -174,10 +171,7 @@ export function validateAssistantTurnInput(input: unknown): AssistantTurnInput {
   };
 }
 
-async function requestAssistantTurn(
-  input: AssistantTurnInput,
-  signal?: AbortSignal,
-): Promise<AssistantTurnResult> {
+async function requestAssistantTurn(input: AssistantTurnInput, signal?: AbortSignal): Promise<AssistantTurnResult> {
   const baseUrl = resolveAssistantServiceBaseUrl();
   const url = createAssistantServiceUrl(baseUrl, 'api/v1/assistant/turn');
 
@@ -193,16 +187,8 @@ async function requestAssistantTurn(
       signal,
     });
   } catch (error) {
-    getLogger().error(
-      'request-assistant-turn-failed',
-      { url: url.toString() },
-      error,
-    );
-    throw new Error(
-      error instanceof Error && error.message
-        ? error.message
-        : 'Failed to request an assistant turn.',
-    );
+    getLogger().error('request-assistant-turn-failed', { url: url.toString() }, error);
+    throw new Error(error instanceof Error && error.message ? error.message : 'Failed to request an assistant turn.');
   }
 
   if (!response.ok) {
@@ -223,11 +209,7 @@ async function requestAssistantTurn(
   try {
     await dumpAssistantTurnArtifacts(input, result);
   } catch (error) {
-    getLogger().error(
-      'dump-assistant-turn-artifacts-failed',
-      { url: url.toString() },
-      error,
-    );
+    getLogger().error('dump-assistant-turn-artifacts-failed', { url: url.toString() }, error);
   }
 
   getLogger().info('requested assistant turn', {
@@ -264,15 +246,10 @@ async function emitFallbackStreamEvents(
   return fallbackResult;
 }
 
-export async function streamAssistantTurn(
-  options: StreamAssistantTurnOptions,
-): Promise<AssistantTurnStreamResult> {
+export async function streamAssistantTurn(options: StreamAssistantTurnOptions): Promise<AssistantTurnStreamResult> {
   const input = validateAssistantTurnInput(options.data);
   const baseUrl = resolveAssistantServiceBaseUrl();
-  const url = createAssistantServiceUrl(
-    baseUrl,
-    'api/v1/assistant/turn/stream',
-  );
+  const url = createAssistantServiceUrl(baseUrl, 'api/v1/assistant/turn/stream');
 
   let response: Response;
   try {
@@ -286,16 +263,8 @@ export async function streamAssistantTurn(
       signal: options.signal,
     });
   } catch (error) {
-    getLogger().error(
-      'stream-assistant-turn-failed',
-      { url: url.toString() },
-      error,
-    );
-    throw new Error(
-      error instanceof Error && error.message
-        ? error.message
-        : 'Failed to stream an assistant turn.',
-    );
+    getLogger().error('stream-assistant-turn-failed', { url: url.toString() }, error);
+    throw new Error(error instanceof Error && error.message ? error.message : 'Failed to stream an assistant turn.');
   }
 
   if (!response.ok) {
@@ -313,10 +282,7 @@ export async function streamAssistantTurn(
   }
 
   if (!response.body) {
-    return emitFallbackStreamEvents(
-      await requestAssistantTurn(input, options.signal),
-      options,
-    );
+    return emitFallbackStreamEvents(await requestAssistantTurn(input, options.signal), options);
   }
 
   const reader = response.body.getReader();
@@ -336,9 +302,7 @@ export async function streamAssistantTurn(
         return;
       }
       case 'response_delta': {
-        const payload = JSON.parse(
-          event.data,
-        ) as AssistantTurnResponseDeltaEvent;
+        const payload = JSON.parse(event.data) as AssistantTurnResponseDeltaEvent;
         responseText += payload.delta;
         await options.onResponseDelta?.(payload.delta);
         return;
@@ -351,10 +315,7 @@ export async function streamAssistantTurn(
       }
       case 'done': {
         const payload = JSON.parse(event.data) as AssistantTurnDoneEvent;
-        if (
-          payload.responseText &&
-          payload.responseText.length > responseText.length
-        ) {
+        if (payload.responseText && payload.responseText.length > responseText.length) {
           responseText = payload.responseText;
         }
         didReceiveDone = true;
@@ -412,11 +373,7 @@ export async function streamAssistantTurn(
   try {
     await dumpAssistantTurnStreamArtifacts(input, result);
   } catch (error) {
-    getLogger().error(
-      'dump-streamed-assistant-turn-artifacts-failed',
-      { url: url.toString() },
-      error,
-    );
+    getLogger().error('dump-streamed-assistant-turn-artifacts-failed', { url: url.toString() }, error);
   }
 
   await options.onDone?.(result);

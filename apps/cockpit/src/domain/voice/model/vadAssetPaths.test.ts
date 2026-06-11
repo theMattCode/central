@@ -9,18 +9,12 @@ import {
 
 describe.skip('resolveVoiceStaticAssetPath', () => {
   it('appends a relative asset path to the normalized base path', () => {
-    expect(resolveVoiceStaticAssetPath('vendor/vad/', '/')).toBe(
-      '/vendor/vad/',
-    );
-    expect(resolveVoiceStaticAssetPath('vendor/vad/', '/cockpit/')).toBe(
-      '/cockpit/vendor/vad/',
-    );
+    expect(resolveVoiceStaticAssetPath('vendor/vad/', '/')).toBe('/vendor/vad/');
+    expect(resolveVoiceStaticAssetPath('vendor/vad/', '/cockpit/')).toBe('/cockpit/vendor/vad/');
   });
 
   it('normalizes base paths without a trailing slash', () => {
-    expect(resolveVoiceStaticAssetPath('vendor/vad/', '/cockpit')).toBe(
-      '/cockpit/vendor/vad/',
-    );
+    expect(resolveVoiceStaticAssetPath('vendor/vad/', '/cockpit')).toBe('/cockpit/vendor/vad/');
   });
 });
 

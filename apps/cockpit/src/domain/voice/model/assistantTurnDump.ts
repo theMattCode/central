@@ -20,10 +20,7 @@ export function toAudioFileExtension(mimeType: string): string {
   return AUDIO_FILE_EXTENSION_BY_MIME_TYPE[mimeType.toLowerCase()] ?? 'bin';
 }
 
-export function createAssistantTurnDumpBaseName(
-  timestamp: Date,
-  turnId: string,
-): string {
+export function createAssistantTurnDumpBaseName(timestamp: Date, turnId: string): string {
   return `${timestamp.toISOString().replaceAll(':', '-').replaceAll('.', '-')}-${turnId}`;
 }
 
@@ -35,31 +32,21 @@ export async function dumpAssistantTurnArtifacts(
     return;
   }
 
-  const [{ Buffer }, { randomUUID }, { mkdir, writeFile }, { join }] =
-    await Promise.all([
-      import('node:buffer'),
-      import('node:crypto'),
-      import('node:fs/promises'),
-      import('node:path'),
-    ]);
+  const [{ Buffer }, { randomUUID }, { mkdir, writeFile }, { join }] = await Promise.all([
+    import('node:buffer'),
+    import('node:crypto'),
+    import('node:fs/promises'),
+    import('node:path'),
+  ]);
 
   const dumpDirectory = join(process.cwd(), ASSISTANT_TURN_DUMP_DIRECTORY_NAME);
   await mkdir(dumpDirectory, { recursive: true });
 
   const inputBuffer = Buffer.from(input.audioBase64, 'base64');
   const outputBuffer = Buffer.from(result.audioBase64, 'base64');
-  const dumpBaseName = createAssistantTurnDumpBaseName(
-    new Date(),
-    randomUUID(),
-  );
-  const inputFilePath = join(
-    dumpDirectory,
-    `${dumpBaseName}-input.${toAudioFileExtension(input.audioMimeType)}`,
-  );
-  const outputFilePath = join(
-    dumpDirectory,
-    `${dumpBaseName}-output.${toAudioFileExtension(result.audioMimeType)}`,
-  );
+  const dumpBaseName = createAssistantTurnDumpBaseName(new Date(), randomUUID());
+  const inputFilePath = join(dumpDirectory, `${dumpBaseName}-input.${toAudioFileExtension(input.audioMimeType)}`);
+  const outputFilePath = join(dumpDirectory, `${dumpBaseName}-output.${toAudioFileExtension(result.audioMimeType)}`);
   const metadataFilePath = join(dumpDirectory, `${dumpBaseName}.json`);
 
   await Promise.all([
@@ -102,26 +89,19 @@ export async function dumpAssistantTurnStreamArtifacts(
     return;
   }
 
-  const [{ Buffer }, { randomUUID }, { mkdir, writeFile }, { join }] =
-    await Promise.all([
-      import('node:buffer'),
-      import('node:crypto'),
-      import('node:fs/promises'),
-      import('node:path'),
-    ]);
+  const [{ Buffer }, { randomUUID }, { mkdir, writeFile }, { join }] = await Promise.all([
+    import('node:buffer'),
+    import('node:crypto'),
+    import('node:fs/promises'),
+    import('node:path'),
+  ]);
 
   const dumpDirectory = join(process.cwd(), ASSISTANT_TURN_DUMP_DIRECTORY_NAME);
   await mkdir(dumpDirectory, { recursive: true });
 
   const inputBuffer = Buffer.from(input.audioBase64, 'base64');
-  const dumpBaseName = createAssistantTurnDumpBaseName(
-    new Date(),
-    randomUUID(),
-  );
-  const inputFilePath = join(
-    dumpDirectory,
-    `${dumpBaseName}-input.${toAudioFileExtension(input.audioMimeType)}`,
-  );
+  const dumpBaseName = createAssistantTurnDumpBaseName(new Date(), randomUUID());
+  const inputFilePath = join(dumpDirectory, `${dumpBaseName}-input.${toAudioFileExtension(input.audioMimeType)}`);
   const metadataFilePath = join(dumpDirectory, `${dumpBaseName}.json`);
 
   const outputFiles = result.audioChunks.map((chunk) => {

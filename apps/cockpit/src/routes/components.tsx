@@ -57,11 +57,7 @@ function ShowcaseButtonGroup() {
   return (
     <div className="flex flex-col gap-2">
       <h3 className="text-lg font-bold">Button Group</h3>
-      <ButtonGroup
-        options={options}
-        defaultValue={options[0]}
-        onChanged={(opt) => console.log('Selected:', opt)}
-      />
+      <ButtonGroup options={options} defaultValue={options[0]} onChanged={(opt) => console.log('Selected:', opt)} />
     </div>
   );
 }

@@ -25,8 +25,4 @@ export interface AssistantTurnStreamResult {
   audioChunks: AssistantTurnAudioChunk[];
 }
 
-export type VoiceConversationStatus =
-  | 'idle'
-  | 'processing'
-  | 'playing'
-  | 'error';
+export type VoiceConversationStatus = 'idle' | 'processing' | 'playing' | 'error';

@@ -1,8 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import {
-  formatJarvisPercent,
-  resolveJarvisSystemState,
-} from 'src/domain/assistant/Jarvis/model.ts';
+import { formatJarvisPercent, resolveJarvisSystemState } from 'src/domain/assistant/Jarvis/model.ts';
 
 describe('resolveJarvisSystemState', () => {
   it('returns offline while disabled', () => {

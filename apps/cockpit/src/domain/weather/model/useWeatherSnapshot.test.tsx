@@ -2,10 +2,7 @@
 
 import { act, cleanup, renderHook, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type {
-  WeatherData,
-  WeatherLocation,
-} from '@/domain/weather/model/model.ts';
+import type { WeatherData, WeatherLocation } from '@/domain/weather/model/model.ts';
 import { fetchWeatherData } from '@/domain/weather/model/fetchWeatherData.ts';
 import { useWeatherSnapshot } from '@/domain/weather/model/useWeatherSnapshot.ts';
 
@@ -153,12 +150,9 @@ describe.skip('useWeatherSnapshot', () => {
       label: 'Next Location',
     };
 
-    const { result, rerender } = renderHook(
-      ({ location }) => useWeatherSnapshot(location),
-      {
-        initialProps: { location: TEST_LOCATION },
-      },
-    );
+    const { result, rerender } = renderHook(({ location }) => useWeatherSnapshot(location), {
+      initialProps: { location: TEST_LOCATION },
+    });
 
     await waitFor(() => {
       expect(result.current.status).toBe('loaded');

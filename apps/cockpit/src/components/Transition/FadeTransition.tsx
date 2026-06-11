@@ -9,12 +9,7 @@ type FadeTransitionProps = PropsWithChildren<{
 
 type FadePhase = 'entered' | 'exiting' | 'entering';
 
-export function FadeTransition({
-  children,
-  transitionKey,
-  durationMs = 300,
-  className,
-}: FadeTransitionProps) {
+export function FadeTransition({ children, transitionKey, durationMs = 300, className }: FadeTransitionProps) {
   const [visibleChildren, setVisibleChildren] = useState(children);
   const [visibleKey, setVisibleKey] = useState(transitionKey);
   const [phase, setPhase] = useState<FadePhase>('entered');
@@ -52,11 +47,7 @@ export function FadeTransition({
 
   return (
     <div
-      className={cx(
-        'transition-opacity',
-        phase === 'entered' ? 'opacity-100' : 'opacity-0',
-        className,
-      )}
+      className={cx('transition-opacity', phase === 'entered' ? 'opacity-100' : 'opacity-0', className)}
       style={{ transitionDuration: `${durationMs}ms` }}
     >
       {visibleChildren}

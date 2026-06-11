@@ -10,10 +10,7 @@ function clamp01(value: number): number {
   return value;
 }
 
-function toRootMeanSquare(
-  samples: ArrayLike<number>,
-  centerSample: (sample: number) => number,
-): number {
+function toRootMeanSquare(samples: ArrayLike<number>, centerSample: (sample: number) => number): number {
   if (samples.length === 0) {
     return 0;
   }
@@ -36,10 +33,6 @@ export function getFloat32SignalLevel(samples: ArrayLike<number>): number {
   return normalizeLevel(toRootMeanSquare(samples, (sample) => sample));
 }
 
-export function getByteTimeDomainSignalLevel(
-  samples: ArrayLike<number>,
-): number {
-  return normalizeLevel(
-    toRootMeanSquare(samples, (sample) => (sample - 128) / 128),
-  );
+export function getByteTimeDomainSignalLevel(samples: ArrayLike<number>): number {
+  return normalizeLevel(toRootMeanSquare(samples, (sample) => (sample - 128) / 128));
 }

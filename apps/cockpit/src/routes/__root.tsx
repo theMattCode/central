@@ -12,11 +12,7 @@ const title = 'Central Dashboard';
 
 export const Route = createRootRoute({
   head: () => ({
-    meta: [
-      { charSet: 'utf-8' },
-      { name: 'viewport', content: 'width=device-width, initial-scale=1' },
-      { title },
-    ],
+    meta: [{ charSet: 'utf-8' }, { name: 'viewport', content: 'width=device-width, initial-scale=1' }, { title }],
     links: [{ rel: 'stylesheet', href: appCss }],
   }),
   errorComponent: RootErrorBoundary,
@@ -45,8 +41,7 @@ function RootDocument({ children }: PropsWithChildren) {
 }
 
 function RootErrorBoundary({ error }: { error: unknown }) {
-  const message =
-    error instanceof Error ? error.message : 'unexpected application error.';
+  const message = error instanceof Error ? error.message : 'unexpected application error.';
 
   return (
     <Section>

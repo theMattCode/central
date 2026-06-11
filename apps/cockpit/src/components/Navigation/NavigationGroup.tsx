@@ -6,11 +6,7 @@ type NavigationGroupProps = PropsWithChildren<{
   title: string;
 }>;
 
-export function NavigationGroup({
-  Icon,
-  title,
-  children,
-}: NavigationGroupProps) {
+export function NavigationGroup({ Icon, title, children }: NavigationGroupProps) {
   return (
     <details className="group w-full" open>
       <summary className="hidden w-full cursor-pointer list-none @[14rem]:flex [&::-webkit-details-marker]:hidden py-2">
@@ -30,17 +26,11 @@ export function NavigationGroup({
   );
 }
 
-function NavigationGroupHeading({
-  Icon,
-  title,
-  children,
-}: NavigationGroupProps & { children?: ReactNode }) {
+function NavigationGroupHeading({ Icon, title, children }: NavigationGroupProps & { children?: ReactNode }) {
   return (
     <div className="flex w-full flex-row items-center gap-2 px-2 text-(--color-txt-sec)">
       {Icon && <Icon className="w-4 h-4" />}
-      <div className="truncate text-xs uppercase tracking-[0.14em] text-(--color-txt-sec)">
-        {title}
-      </div>
+      <div className="truncate text-xs uppercase tracking-[0.14em] text-(--color-txt-sec)">{title}</div>
       <div
         aria-hidden="true"
         data-testid="navigation-group-divider"

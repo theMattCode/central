@@ -4,8 +4,7 @@ import { extractSseEvents } from 'src/domain/voice/model/runAssistantTurn.ts';
 describe('extractSseEvents', () => {
   it('parses multiple event frames from a single buffer', () => {
     const payload =
-      'event: transcript\ndata: {"transcript":"Hallo"}\n\n' +
-      'event: response_delta\ndata: {"delta":" Welt"}\n\n';
+      'event: transcript\ndata: {"transcript":"Hallo"}\n\n' + 'event: response_delta\ndata: {"delta":" Welt"}\n\n';
 
     expect(extractSseEvents(payload)).toEqual({
       buffer: '',

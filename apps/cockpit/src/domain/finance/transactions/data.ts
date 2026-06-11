@@ -1,7 +1,4 @@
-import type {
-  Summary,
-  Transaction,
-} from '@/domain/finance/transactions/model.ts';
+import type { Summary, Transaction } from '@/domain/finance/transactions/model.ts';
 import { useEffect, useState } from 'react';
 import { toErrorMessage } from '@/utils/formatting.ts';
 
@@ -43,10 +40,7 @@ export function useTransactions({ from, to }: TransactionsProps): Transactions {
     const loadTransactions = async () => {
       try {
         setTransactions((prev) => ({ ...prev, loading: true }));
-        const response = await financeClient.getTransactions(
-          { from, to },
-          { signal: abortController.signal },
-        );
+        const response = await financeClient.getTransactions({ from, to }, { signal: abortController.signal });
         setTransactions((prev) => ({
           ...prev,
           loading: false,
@@ -78,11 +72,7 @@ export function useTransactions({ from, to }: TransactionsProps): Transactions {
 }
 
 function extractCategories(transactions: Transaction[]) {
-  return Array.from(
-    new Set(
-      transactions
-        .map((transaction) => transaction.category)
-        .filter(Boolean) as string[],
-    ),
-  ).sort((left, right) => left.localeCompare(right));
+  return Array.from(new Set(transactions.map((transaction) => transaction.category).filter(Boolean) as string[])).sort(
+    (left, right) => left.localeCompare(right),
+  );
 }

@@ -15,14 +15,12 @@ describe('resolveAssistantServiceBaseUrl', () => {
   });
 
   it('falls back to the local orchestrator port', () => {
-    expect(resolveAssistantServiceBaseUrl({})).toBe(
-      `${DEFAULT_LOCAL_ASSISTANT_SERVICE_BASE_URL}/`,
-    );
+    expect(resolveAssistantServiceBaseUrl({})).toBe(`${DEFAULT_LOCAL_ASSISTANT_SERVICE_BASE_URL}/`);
   });
 
   it('throws for invalid URLs', () => {
-    expect(() =>
-      resolveAssistantServiceBaseUrl({ runtimeBaseUrl: 'not-a-url' }),
-    ).toThrow(/Invalid assistant service base URL/);
+    expect(() => resolveAssistantServiceBaseUrl({ runtimeBaseUrl: 'not-a-url' })).toThrow(
+      /Invalid assistant service base URL/,
+    );
   });
 });

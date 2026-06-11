@@ -17,8 +17,5 @@ export function useDateRange() {
     setDateRange((range) => ({ ...range, to }));
   }, []);
 
-  return useMemo(
-    () => ({ dateRange, onFromChanged, onToChanged }),
-    [dateRange],
-  );
+  return useMemo(() => ({ dateRange, onFromChanged, onToChanged }), [dateRange]);
 }

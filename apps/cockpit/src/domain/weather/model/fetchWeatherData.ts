@@ -1,9 +1,6 @@
 import { createServerFn } from '@tanstack/react-start';
 import { getLogger } from '@/domain/weather/log.ts';
-import type {
-  WeatherData,
-  WeatherLocation,
-} from 'src/domain/weather/model/model.ts';
+import type { WeatherData, WeatherLocation } from 'src/domain/weather/model/model.ts';
 import { resolveBackendBaseUrl } from '@/utils/backend.ts';
 
 type WeatherServiceSnapshot = {
@@ -32,11 +29,7 @@ type WeatherServiceError = {
   };
 };
 
-function createWeatherServiceUrl(
-  baseUrl: string,
-  path: string,
-  location: WeatherLocation,
-): URL {
+function createWeatherServiceUrl(baseUrl: string, path: string, location: WeatherLocation): URL {
   const url = new URL(path, baseUrl);
   url.searchParams.set('lat', location.latitude.toString());
   url.searchParams.set('lon', location.longitude.toString());
@@ -62,10 +55,7 @@ async function toErrorMessage(response: Response): Promise<string> {
   return `Backend weather request failed with status ${response.status}.`;
 }
 
-function toWeatherData(
-  location: WeatherLocation,
-  snapshot: WeatherServiceSnapshot,
-): WeatherData {
+function toWeatherData(location: WeatherLocation, snapshot: WeatherServiceSnapshot): WeatherData {
   return {
     location: {
       ...location,
@@ -116,30 +106,16 @@ export function validateWeatherLocation(input: unknown): WeatherLocation {
   };
 }
 
-async function requestWeatherData(
-  location: WeatherLocation,
-): Promise<WeatherData> {
+async function requestWeatherData(location: WeatherLocation): Promise<WeatherData> {
   const baseUrl = resolveBackendBaseUrl();
-  const url = createWeatherServiceUrl(
-    baseUrl,
-    'api/v1/weather/current',
-    location,
-  );
+  const url = createWeatherServiceUrl(baseUrl, 'api/v1/weather/current', location);
 
   let response: Response;
   try {
     response = await fetch(url, { headers: { Accept: 'application/json' } });
   } catch (error) {
-    getLogger().error(
-      'request-current-weather-failed',
-      { url: url.toString(), location },
-      error,
-    );
-    throw new Error(
-      error instanceof Error && error.message
-        ? error.message
-        : 'Failed to fetch weather data',
-    );
+    getLogger().error('request-current-weather-failed', { url: url.toString(), location }, error);
+    throw new Error(error instanceof Error && error.message ? error.message : 'Failed to fetch weather data');
   }
   if (!response.ok) {
     const message = await toErrorMessage(response);

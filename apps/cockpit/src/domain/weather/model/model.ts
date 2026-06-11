@@ -73,7 +73,4 @@ export type WeatherDataError = {
   refresh: () => void;
 };
 
-export type WeatherDataState =
-  | WeatherDataLoading
-  | WeatherDataLoaded
-  | WeatherDataError;
+export type WeatherDataState = WeatherDataLoading | WeatherDataLoaded | WeatherDataError;

@@ -44,9 +44,7 @@ export type TransactionFormState = {
   note: string;
 };
 
-export function createEmptyTransactionFormState(
-  transactionDate = getCurrentLocalDate(),
-): TransactionFormState {
+export function createEmptyTransactionFormState(transactionDate = getCurrentLocalDate()): TransactionFormState {
   return {
     direction: 'expense',
     transactionDate,
@@ -57,9 +55,7 @@ export function createEmptyTransactionFormState(
   };
 }
 
-export function toCashTransactionInput(
-  form: TransactionFormState,
-): TransactionInput {
+export function toCashTransactionInput(form: TransactionFormState): TransactionInput {
   return {
     direction: form.direction,
     transactionDate: form.transactionDate,

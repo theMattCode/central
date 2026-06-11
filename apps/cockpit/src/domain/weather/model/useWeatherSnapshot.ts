@@ -1,8 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import type {
-  WeatherDataState,
-  WeatherLocation,
-} from '@/domain/weather/model/model.ts';
+import type { WeatherDataState, WeatherLocation } from '@/domain/weather/model/model.ts';
 import { fetchWeatherData } from '@/domain/weather/model/fetchWeatherData.ts';
 import { getLogger } from '@/domain/weather/log.ts';
 
@@ -20,14 +17,10 @@ function getLocationDependencyKey(location: WeatherLocation): string {
   return `${location.id}:${location.label}:${location.latitude}:${location.longitude}:${location.timezone ?? 'auto'}`;
 }
 
-export function useWeatherSnapshot(
-  location: WeatherLocation,
-): WeatherDataState {
+export function useWeatherSnapshot(location: WeatherLocation): WeatherDataState {
   const [refreshVersion, setRefreshVersion] = useState(0);
   const [state, setState] = useState<WeatherDataState>({ status: 'loading' });
-  const previousLocationDependencyKeyRef = useRef(
-    getLocationDependencyKey(location),
-  );
+  const previousLocationDependencyKeyRef = useRef(getLocationDependencyKey(location));
 
   const locationDependencyKey = getLocationDependencyKey(location);
 
@@ -45,8 +38,7 @@ export function useWeatherSnapshot(
 
   useEffect(() => {
     const abortController = new AbortController();
-    const hasLocationChanged =
-      previousLocationDependencyKeyRef.current !== locationDependencyKey;
+    const hasLocationChanged = previousLocationDependencyKeyRef.current !== locationDependencyKey;
     if (hasLocationChanged) {
       previousLocationDependencyKeyRef.current = locationDependencyKey;
       setState({ status: 'loading' });

@@ -8,10 +8,7 @@ type JarvisOrbProps = {
 };
 
 export function JarvisOrb({ bars, energy, mode }: JarvisOrbProps) {
-  const activity = useMemo(
-    () => bars.reduce((sum, value) => sum + value, 0) / bars.length,
-    [bars],
-  );
+  const activity = useMemo(() => bars.reduce((sum, value) => sum + value, 0) / bars.length, [bars]);
 
   return (
     <div

@@ -18,15 +18,10 @@ function writeAscii(view: DataView, offset: number, value: string): void {
 
 function float32ToInt16Sample(sample: number): number {
   const clamped = Math.max(-1, Math.min(1, sample));
-  return clamped < 0
-    ? Math.round(clamped * 0x8000)
-    : Math.round(clamped * 0x7fff);
+  return clamped < 0 ? Math.round(clamped * 0x8000) : Math.round(clamped * 0x7fff);
 }
 
-export function encodeFloat32ToWavBytes(
-  samples: Float32Array,
-  sampleRate: number = DEFAULT_SAMPLE_RATE,
-): Uint8Array {
+export function encodeFloat32ToWavBytes(samples: Float32Array, sampleRate: number = DEFAULT_SAMPLE_RATE): Uint8Array {
   const bytesPerSample = 2;
   const dataSize = samples.length * bytesPerSample;
   const buffer = new ArrayBuffer(44 + dataSize);
@@ -82,18 +77,13 @@ export function base64ToBytes(value: string): Uint8Array {
   return bytes;
 }
 
-export function encodeFloat32ToWavBase64(
-  samples: Float32Array,
-  sampleRate: number = DEFAULT_SAMPLE_RATE,
-): string {
+export function encodeFloat32ToWavBase64(samples: Float32Array, sampleRate: number = DEFAULT_SAMPLE_RATE): string {
   return bytesToBase64(encodeFloat32ToWavBytes(samples, sampleRate));
 }
 
 function toAudioHeaderAscii(bytes: Uint8Array): string {
   return Array.from(bytes.subarray(0, AUDIO_HEADER_BYTE_COUNT))
-    .map((byte) =>
-      byte >= 32 && byte <= 126 ? String.fromCharCode(byte) : '.',
-    )
+    .map((byte) => (byte >= 32 && byte <= 126 ? String.fromCharCode(byte) : '.'))
     .join('');
 }
 
@@ -103,10 +93,7 @@ function toAudioHeaderHex(bytes: Uint8Array): string {
     .join(' ');
 }
 
-export function describeAudioBytes(
-  bytes: Uint8Array,
-  mimeType: string,
-): AudioDiagnostics {
+export function describeAudioBytes(bytes: Uint8Array, mimeType: string): AudioDiagnostics {
   return {
     byteLength: bytes.byteLength,
     mimeType,
@@ -115,20 +102,14 @@ export function describeAudioBytes(
   };
 }
 
-export function createAudioObjectUrlFromBytes(
-  audioBytes: Uint8Array,
-  mimeType: string = WAV_AUDIO_MIME_TYPE,
-): string {
+export function createAudioObjectUrlFromBytes(audioBytes: Uint8Array, mimeType: string = WAV_AUDIO_MIME_TYPE): string {
   const audioBuffer = new ArrayBuffer(audioBytes.byteLength);
   new Uint8Array(audioBuffer).set(audioBytes);
   const blob = new Blob([audioBuffer], { type: mimeType });
   return URL.createObjectURL(blob);
 }
 
-export function createAudioObjectUrl(
-  audioBase64: string,
-  mimeType: string = WAV_AUDIO_MIME_TYPE,
-): string {
+export function createAudioObjectUrl(audioBase64: string, mimeType: string = WAV_AUDIO_MIME_TYPE): string {
   return createAudioObjectUrlFromBytes(base64ToBytes(audioBase64), mimeType);
 }
 

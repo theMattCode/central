@@ -1,8 +1,4 @@
-import type {
-  ComponentType,
-  MouseEventHandler,
-  PropsWithChildren,
-} from 'react';
+import type { ComponentType, MouseEventHandler, PropsWithChildren } from 'react';
 import { cx } from '@/utils/styles.ts';
 
 type NavigationItemProps = PropsWithChildren<{
@@ -19,40 +15,24 @@ function getNavigationItemClassName(compact: boolean) {
   );
 }
 
-export function NavigationItem({
-  Icon,
-  children,
-  href,
-  onClick,
-  compact = false,
-}: NavigationItemProps) {
+export function NavigationItem({ Icon, children, href, onClick, compact = false }: NavigationItemProps) {
   const content = (
     <>
       {Icon && <Icon className="h-6 w-6 text-(--color-txt-sec)" />}
-      {!compact && (
-        <div className="hidden truncate @[14rem]:block">{children}</div>
-      )}
+      {!compact && <div className="hidden truncate @[14rem]:block">{children}</div>}
     </>
   );
 
   if (href) {
     return (
-      <a
-        className={getNavigationItemClassName(compact)}
-        href={href}
-        onClick={onClick}
-      >
+      <a className={getNavigationItemClassName(compact)} href={href} onClick={onClick}>
         {content}
       </a>
     );
   }
 
   return (
-    <button
-      type="button"
-      className={getNavigationItemClassName(compact)}
-      onClick={onClick}
-    >
+    <button type="button" className={getNavigationItemClassName(compact)} onClick={onClick}>
       {content}
     </button>
   );

@@ -43,20 +43,13 @@ export function ButtonGroup({ defaultValue, options, onChanged }: Props) {
             }
             className={cx(
               'px-3 py-2 flex flex-row items-center gap-2 transition-all duration-200 border border-(--color-section-border) first:rounded-l-md last:rounded-r-md text-(--color-txt) bg-(--color-bg)',
-              isSelected
-                ? 'border-(--option-color)'
-                : 'hover:border-(--option-color)/40',
+              isSelected ? 'border-(--option-color)' : 'hover:border-(--option-color)/40',
             )}
             onClick={() => handleSelect(option)}
           >
             {option.icon && (
               <option.icon
-                className={cx(
-                  'h-5 w-5',
-                  isSelected
-                    ? 'text-(--option-color)'
-                    : 'hover:text-(--option-color)/40',
-                )}
+                className={cx('h-5 w-5', isSelected ? 'text-(--option-color)' : 'hover:text-(--option-color)/40')}
               />
             )}
             {option.text}

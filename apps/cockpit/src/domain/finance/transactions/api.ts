@@ -1,8 +1,5 @@
 import { createServerFn } from '@tanstack/react-start';
-import type {
-  TransactionInput,
-  Transaction,
-} from 'src/domain/finance/transactions/model.ts';
+import type { TransactionInput, Transaction } from 'src/domain/finance/transactions/model.ts';
 import { fetchJson, resolveErrorMessage } from '@/utils/backend.ts';
 import { getFinanceURL } from '@/domain/finance/financeClient.ts';
 
@@ -41,9 +38,7 @@ function validateTransactionInput(input: unknown): TransactionInput {
   };
 }
 
-function validateUpdateTransactionInput(
-  input: unknown,
-): UpdateTransactionInput {
+function validateUpdateTransactionInput(input: unknown): UpdateTransactionInput {
   if (!input || typeof input !== 'object') {
     throw new Error('Invalid cash transaction payload.');
   }
@@ -59,9 +54,7 @@ function validateUpdateTransactionInput(
   };
 }
 
-function validateDeleteTransactionInput(
-  input: unknown,
-): DeleteTransactionInput {
+function validateDeleteTransactionInput(input: unknown): DeleteTransactionInput {
   if (!input || typeof input !== 'object') {
     throw new Error('Invalid cash transaction payload.');
   }
@@ -74,9 +67,7 @@ function validateDeleteTransactionInput(
   return { id: value.id };
 }
 
-async function requestCreateCashTransaction(
-  input: TransactionInput,
-): Promise<Transaction> {
+async function requestCreateCashTransaction(input: TransactionInput): Promise<Transaction> {
   const url = getFinanceURL();
 
   return fetchJson<Transaction>(url, {
@@ -85,9 +76,7 @@ async function requestCreateCashTransaction(
   });
 }
 
-async function requestUpdateCashTransaction(
-  input: UpdateTransactionInput,
-): Promise<Transaction> {
+async function requestUpdateCashTransaction(input: UpdateTransactionInput): Promise<Transaction> {
   const url = getFinanceURL(/*`api/v1/finance/transactions/${input.id}`*/);
   const { id: _id, ...transaction } = input;
 
