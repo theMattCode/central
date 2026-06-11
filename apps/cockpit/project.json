@@ -9,7 +9,7 @@
       "executor": "nx:run-commands",
       "options": {
         "cwd": "apps/cockpit",
-        "command": "pnpm exec prettier --check \"src/**/*.{ts,tsx,css}\""
+        "command": "pnpm exec prettier --check \"src/**/*.{ts,tsx,css}\" \"!src/routeTree.gen.ts\""
       }
     },
     "start": {
