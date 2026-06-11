@@ -4,9 +4,6 @@ mod domains;
 mod error;
 mod http;
 
-use std::{net::SocketAddr, sync::Arc};
-
-use crate::error::ApiError;
 use config::Config;
 use context::Context;
 use domains::finance::repository::FinanceRepository;
@@ -14,6 +11,8 @@ use domains::finance::service::FinanceService;
 use domains::weather::provider::OpenMeteoClient;
 use domains::weather::repository::WeatherSnapshotRepository;
 use domains::weather::service::WeatherService;
+
+use std::{net::SocketAddr, sync::Arc};
 use tracing::{error, info};
 
 #[tokio::main]
