@@ -123,7 +123,7 @@ jobs:
           docker save "$image" --output dist/images/app-cockpit.tar
 
       - name: Upload cockpit image
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: image-app-cockpit
           path: dist/images/app-cockpit.tar
@@ -154,7 +154,7 @@ jobs:
           docker save "$image" --output dist/images/service-backend.tar
 
       - name: Upload backend image
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: image-service-backend
           path: dist/images/service-backend.tar
@@ -187,7 +187,7 @@ jobs:
           docker save "$postgres_image" "$gateway_image" --output dist/images/i12e.tar
 
       - name: Upload i12e images
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: images-i12e
           path: dist/images/i12e.tar
@@ -353,7 +353,7 @@ jobs:
             .env.prod.example
 
       - name: Upload deploy bundle
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: central-deploy-${{ github.ref_name }}
           path: dist/central-deploy-${{ github.ref_name }}.tar.gz
