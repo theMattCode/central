@@ -4,7 +4,7 @@ import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools';
 export function Devtools() {
   return (
     <TanStackDevtools
-      config={{ position: 'middle-right' }}
+      config={{ position: 'bottom-right' }}
       plugins={[{ name: 'Tanstack Router', render: <TanStackRouterDevtoolsPanel /> }]}
     />
   );

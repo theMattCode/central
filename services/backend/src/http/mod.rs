@@ -23,7 +23,8 @@ pub fn build_router(context: Context) -> Router {
 
     Router::new()
         .route("/healthz", get(healthz))
-        .nest("/api/v1/weather", domains::weather::http::router())
+        .nest("/api/v1/finance", domains::finance::router())
+        .nest("/api/v1/weather", domains::weather::router())
         .with_state(context)
         .layer(cors)
         .layer(TraceLayer::new_for_http())
@@ -35,7 +36,13 @@ async fn healthz() -> Json<HealthResponse> {
 
 fn build_cors_layer(allow_origin: &str) -> CorsLayer {
     let base = CorsLayer::new()
-        .allow_methods([Method::GET, Method::OPTIONS])
+        .allow_methods([
+            Method::GET,
+            Method::POST,
+            Method::PUT,
+            Method::DELETE,
+            Method::OPTIONS,
+        ])
         .allow_headers(Any);
 
     if allow_origin == "*" {

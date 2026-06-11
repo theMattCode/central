@@ -81,12 +81,12 @@ start_ollama_and_pull_model() {
 start_full_stack() {
   compose up --detach --build --wait \
     service-backend \
-    service-stt \
-    service-tts \
-    service-llm-runtime \
-    service-llm \
-    service-assistant \
     app-cockpit
+    # service-stt \
+    # service-tts \
+    # service-llm-runtime \
+    # service-llm \
+    # service-assistant \
 }
 
 start_llm_proxy_ollama_stack() {
@@ -102,15 +102,15 @@ start_llm_proxy_ollama_stack() {
 start_hot_stack() {
   compose_hot watch \
     service-backend \
-    service-stt \
-    service-tts \
-    service-llm \
-    service-assistant \
     app-cockpit
+    #service-stt \
+    #service-tts \
+    #service-llm \
+    #service-assistant \
 }
 
 start_postgres_and_migrate
-start_ollama_and_pull_model
+#start_ollama_and_pull_model
 
 case "$stack" in
   full)

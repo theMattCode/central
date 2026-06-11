@@ -1,6 +1,6 @@
 # i12e-postgres
 
-Nx project for the persistence-layer PostgreSQL image with bootstrap initialization and forward-only SQL migrations.
+Nx project for the persistence-layer PostgreSQL 18.3 image with bootstrap initialization and forward-only SQL migrations.
 
 ## Build
 
@@ -23,6 +23,8 @@ pnpm nx run i12e-postgres:run
 ```
 
 Default host-to-container mapping is `5001:5432`.
+
+The image uses PostgreSQL 18.3 for built-in UUID v7 generation. Existing local PostgreSQL 16 data volumes cannot be reused directly with PostgreSQL 18; recreate the local dev volume or dump/restore data before running the upgraded image.
 
 Override defaults when needed:
 

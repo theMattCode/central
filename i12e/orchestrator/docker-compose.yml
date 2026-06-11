@@ -5,7 +5,7 @@ services:
     build:
       context: ../postgres
       dockerfile: Dockerfile
-    image: central/i12e/postgres:16.4
+    image: central/i12e/postgres:18.3
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-central}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in the orchestrator environment file.}
@@ -14,7 +14,7 @@ services:
     ports:
       - '${POSTGRES_PORT:-3001}:5432'
     volumes:
-      - central_i12e-postgres_data:/var/lib/postgresql/data
+      - central_i12e-postgres_data:/var/lib/postgresql
     healthcheck:
       test: ['CMD-SHELL', 'pg_isready -U "$$POSTGRES_USER" -d "$$POSTGRES_DB"']
       interval: 10s
@@ -23,7 +23,7 @@ services:
       start_period: 30s
 
   i12e-postgres-migrate:
-    image: central/i12e/postgres:16.4
+    image: central/i12e/postgres:18.3
     depends_on:
       i12e-postgres:
         condition: service_healthy
@@ -61,150 +61,150 @@ services:
       retries: 5
       start_period: 10s
 
-  service-assistant:
-    build:
-      context: ../..
-      dockerfile: services/assistant/Dockerfile
-    image: central/services/assistant:latest
-    environment:
-      ASSISTANT_PORT: '8080'
-      ASSISTANT_REQUEST_TIMEOUT_SECONDS: ${ASSISTANT_REQUEST_TIMEOUT_SECONDS:-30}
-      TTS_STREAM_SOFT_LIMIT_CHARS: ${TTS_STREAM_SOFT_LIMIT_CHARS:-220}
-      ASSISTANT_CORS_ALLOW_ORIGIN: ${ASSISTANT_CORS_ALLOW_ORIGIN:-*}
-      ASSISTANT_BACKEND_MODE: ${ASSISTANT_BACKEND_MODE:-proxy}
-      ASSISTANT_DEFAULT_LANGUAGE: ${ASSISTANT_DEFAULT_LANGUAGE:-de}
-      ASSISTANT_DEFAULT_VOICE_INSTRUCTION: ${ASSISTANT_DEFAULT_VOICE_INSTRUCTION:-}
-      ASSISTANT_NAME: ${ASSISTANT_NAME:-}
-      LLM_SYSTEM_PROMPT: ${LLM_SYSTEM_PROMPT:-}
-      STT_URL: ${STT_URL:-http://service-stt:8081/transcribe}
-      STT_MODEL: ${STT_MODEL:-}
-      TTS_URL: ${TTS_URL:-http://service-tts:8082/synthesize}
-      TTS_MODEL: ${TTS_MODEL:-}
-      TTS_VOICE: ${TTS_VOICE:-}
-      LLM_BASE_URL: ${LLM_BASE_URL:-http://service-llm:8083}
-      LLM_API_KEY: ${LLM_API_KEY:-}
-      LLM_MODEL: ${LLM_MODEL:-qwen2.5:3b}
-    restart: ${SERVICE_RESTART_POLICY:-unless-stopped}
-    ports:
-      - '${ASSISTANT_PORT:-3020}:8080'
-    healthcheck:
-      test: ['CMD', 'wget', '-qO', '-', 'http://127.0.0.1:8080/healthz']
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 10s
-
-  service-stt:
-    build:
-      context: ../..
-      dockerfile: services/stt/Dockerfile
-      args:
-        STT_ENABLE_GPU: 'true'
-    image: central/services/stt:latest
-    environment:
-      STT_PORT: '8081'
-      STT_MODEL: ${STT_MODEL:-small}
-      STT_DEVICE: ${STT_DEVICE:-cuda}
-      STT_COMPUTE_TYPE: ${STT_COMPUTE_TYPE:-float16}
-      STT_BEAM_SIZE: ${STT_BEAM_SIZE:-5}
-      STT_VAD_FILTER: ${STT_VAD_FILTER:-true}
-      HF_HOME: ${STT_CACHE_DIR:-/models}
-    restart: ${SERVICE_RESTART_POLICY:-unless-stopped}
-    gpus: all
-    ports:
-      - '${STT_PORT:-3030}:8081'
-    volumes:
-      - central_stt_models:${STT_CACHE_DIR:-/models}
-    healthcheck:
-      test:
-        ['CMD', 'python', '-c', 'import urllib.request; urllib.request.urlopen("http://127.0.0.1:8081/healthz").read()']
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 20s
-
-  service-tts:
-    build:
-      context: ../..
-      dockerfile: services/tts/Dockerfile
-    image: central/services/tts:latest
-    environment:
-      TTS_PORT: '8082'
-      TTS_MODEL: ${TTS_MODEL:-Qwen/Qwen3-TTS-12Hz-1.7B-Base}
-      TTS_REFERENCE_AUDIO: ${TTS_REFERENCE_AUDIO:-/app/res/morgan-freeman.mp3}
-      TTS_REFERENCE_TEXT_FILE: ${TTS_REFERENCE_TEXT_FILE:-/app/res/morgan-freeman.txt}
-      TTS_REFERENCE_TEXT: ${TTS_REFERENCE_TEXT:-}
-      TTS_X_VECTOR_ONLY_MODE: ${TTS_X_VECTOR_ONLY_MODE:-false}
-      TTS_DEVICE_MAP: ${TTS_DEVICE_MAP:-cuda:0}
-      TTS_DTYPE: ${TTS_DTYPE:-bfloat16}
-      TTS_ATTENTION_IMPLEMENTATION: ${TTS_ATTENTION_IMPLEMENTATION:-flash_attention_2}
-      HF_HOME: ${TTS_CACHE_DIR:-/models/huggingface}
-    restart: ${SERVICE_RESTART_POLICY:-unless-stopped}
-    gpus: all
-    ports:
-      - '${TTS_PORT:-3040}:8082'
-    volumes:
-      - central_tts_models:/models
-    healthcheck:
-      test:
-        ['CMD', 'python', '-c', 'import urllib.request; urllib.request.urlopen("http://127.0.0.1:8082/healthz").read()']
-      interval: 10s
-      timeout: 10s
-      retries: 12
-      start_period: 15m
-
-  service-llm-runtime:
-    image: ${LLM_RUNTIME_IMAGE:-ollama/ollama:latest}
-    command: ['serve']
-    environment:
-      OLLAMA_KEEP_ALIVE: ${LLM_KEEP_ALIVE:-5m}
-    restart: ${SERVICE_RESTART_POLICY:-unless-stopped}
-    gpus: all
-    ports:
-      - '${LLM_RUNTIME_PORT:-3051}:11434'
-    volumes:
-      - central_llm_models:/root/.ollama
-    healthcheck:
-      test: ['CMD', 'ollama', 'list']
-      interval: 10s
-      timeout: 10s
-      retries: 10
-      start_period: 20s
-
-  service-llm-pull:
-    image: ${LLM_RUNTIME_IMAGE:-ollama/ollama:latest}
-    depends_on:
-      service-llm-runtime:
-        condition: service_healthy
-    environment:
-      OLLAMA_HOST: http://service-llm-runtime:11434
-      LLM_MODEL: ${LLM_MODEL:-qwen2.5:3b}
-    command: ['pull', '${LLM_MODEL:-qwen2.5:3b}']
-    restart: 'no'
-
-  service-llm:
-    build:
-      context: ../..
-      dockerfile: services/llm/Dockerfile
-    image: central/services/llm:latest
-    depends_on:
-      service-llm-runtime:
-        condition: service_healthy
-    environment:
-      LLM_PORT: '8083'
-      LLM_OLLAMA_URL: http://service-llm-runtime:11434
-      LLM_REQUEST_TIMEOUT_SECONDS: ${LLM_REQUEST_TIMEOUT_SECONDS:-120}
-      LLM_DEFAULT_MODEL: ${LLM_MODEL:-qwen2.5:3b}
-    restart: ${SERVICE_RESTART_POLICY:-unless-stopped}
-    ports:
-      - '${LLM_PORT:-3050}:8083'
-    healthcheck:
-      test:
-        ['CMD', 'python', '-c', 'import urllib.request; urllib.request.urlopen("http://127.0.0.1:8083/healthz").read()']
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 20s
+#   service-assistant:
+#     build:
+#       context: ../..
+#       dockerfile: services/assistant/Dockerfile
+#     image: central/services/assistant:latest
+#     environment:
+#       ASSISTANT_PORT: '8080'
+#       ASSISTANT_REQUEST_TIMEOUT_SECONDS: ${ASSISTANT_REQUEST_TIMEOUT_SECONDS:-30}
+#       TTS_STREAM_SOFT_LIMIT_CHARS: ${TTS_STREAM_SOFT_LIMIT_CHARS:-220}
+#       ASSISTANT_CORS_ALLOW_ORIGIN: ${ASSISTANT_CORS_ALLOW_ORIGIN:-*}
+#       ASSISTANT_BACKEND_MODE: ${ASSISTANT_BACKEND_MODE:-proxy}
+#       ASSISTANT_DEFAULT_LANGUAGE: ${ASSISTANT_DEFAULT_LANGUAGE:-de}
+#       ASSISTANT_DEFAULT_VOICE_INSTRUCTION: ${ASSISTANT_DEFAULT_VOICE_INSTRUCTION:-}
+#       ASSISTANT_NAME: ${ASSISTANT_NAME:-}
+#       LLM_SYSTEM_PROMPT: ${LLM_SYSTEM_PROMPT:-}
+#       STT_URL: ${STT_URL:-http://service-stt:8081/transcribe}
+#       STT_MODEL: ${STT_MODEL:-}
+#       TTS_URL: ${TTS_URL:-http://service-tts:8082/synthesize}
+#       TTS_MODEL: ${TTS_MODEL:-}
+#       TTS_VOICE: ${TTS_VOICE:-}
+#       LLM_BASE_URL: ${LLM_BASE_URL:-http://service-llm:8083}
+#       LLM_API_KEY: ${LLM_API_KEY:-}
+#       LLM_MODEL: ${LLM_MODEL:-qwen2.5:3b}
+#     restart: ${SERVICE_RESTART_POLICY:-unless-stopped}
+#     ports:
+#       - '${ASSISTANT_PORT:-3020}:8080'
+#     healthcheck:
+#       test: ['CMD', 'wget', '-qO', '-', 'http://127.0.0.1:8080/healthz']
+#       interval: 10s
+#       timeout: 5s
+#       retries: 5
+#       start_period: 10s
+#
+#   service-stt:
+#     build:
+#       context: ../..
+#       dockerfile: services/stt/Dockerfile
+#       args:
+#         STT_ENABLE_GPU: 'true'
+#     image: central/services/stt:latest
+#     environment:
+#       STT_PORT: '8081'
+#       STT_MODEL: ${STT_MODEL:-small}
+#       STT_DEVICE: ${STT_DEVICE:-cuda}
+#       STT_COMPUTE_TYPE: ${STT_COMPUTE_TYPE:-float16}
+#       STT_BEAM_SIZE: ${STT_BEAM_SIZE:-5}
+#       STT_VAD_FILTER: ${STT_VAD_FILTER:-true}
+#       HF_HOME: ${STT_CACHE_DIR:-/models}
+#     restart: ${SERVICE_RESTART_POLICY:-unless-stopped}
+#     gpus: all
+#     ports:
+#       - '${STT_PORT:-3030}:8081'
+#     volumes:
+#       - central_stt_models:${STT_CACHE_DIR:-/models}
+#     healthcheck:
+#       test:
+#         ['CMD', 'python', '-c', 'import urllib.request; urllib.request.urlopen("http://127.0.0.1:8081/healthz").read()']
+#       interval: 10s
+#       timeout: 5s
+#       retries: 5
+#       start_period: 20s
+#
+#   service-tts:
+#     build:
+#       context: ../..
+#       dockerfile: services/tts/Dockerfile
+#     image: central/services/tts:latest
+#     environment:
+#       TTS_PORT: '8082'
+#       TTS_MODEL: ${TTS_MODEL:-Qwen/Qwen3-TTS-12Hz-1.7B-Base}
+#       TTS_REFERENCE_AUDIO: ${TTS_REFERENCE_AUDIO:-/app/res/morgan-freeman.mp3}
+#       TTS_REFERENCE_TEXT_FILE: ${TTS_REFERENCE_TEXT_FILE:-/app/res/morgan-freeman.txt}
+#       TTS_REFERENCE_TEXT: ${TTS_REFERENCE_TEXT:-}
+#       TTS_X_VECTOR_ONLY_MODE: ${TTS_X_VECTOR_ONLY_MODE:-false}
+#       TTS_DEVICE_MAP: ${TTS_DEVICE_MAP:-cuda:0}
+#       TTS_DTYPE: ${TTS_DTYPE:-bfloat16}
+#       TTS_ATTENTION_IMPLEMENTATION: ${TTS_ATTENTION_IMPLEMENTATION:-flash_attention_2}
+#       HF_HOME: ${TTS_CACHE_DIR:-/models/huggingface}
+#     restart: ${SERVICE_RESTART_POLICY:-unless-stopped}
+#     gpus: all
+#     ports:
+#       - '${TTS_PORT:-3040}:8082'
+#     volumes:
+#       - central_tts_models:/models
+#     healthcheck:
+#       test:
+#         ['CMD', 'python', '-c', 'import urllib.request; urllib.request.urlopen("http://127.0.0.1:8082/healthz").read()']
+#       interval: 10s
+#       timeout: 10s
+#       retries: 12
+#       start_period: 15m
+#
+#   service-llm-runtime:
+#     image: ${LLM_RUNTIME_IMAGE:-ollama/ollama:latest}
+#     command: ['serve']
+#     environment:
+#       OLLAMA_KEEP_ALIVE: ${LLM_KEEP_ALIVE:-5m}
+#     restart: ${SERVICE_RESTART_POLICY:-unless-stopped}
+#     gpus: all
+#     ports:
+#       - '${LLM_RUNTIME_PORT:-3051}:11434'
+#     volumes:
+#       - central_llm_models:/root/.ollama
+#     healthcheck:
+#       test: ['CMD', 'ollama', 'list']
+#       interval: 10s
+#       timeout: 10s
+#       retries: 10
+#       start_period: 20s
+#
+#   service-llm-pull:
+#     image: ${LLM_RUNTIME_IMAGE:-ollama/ollama:latest}
+#     depends_on:
+#       service-llm-runtime:
+#         condition: service_healthy
+#     environment:
+#       OLLAMA_HOST: http://service-llm-runtime:11434
+#       LLM_MODEL: ${LLM_MODEL:-qwen2.5:3b}
+#     command: ['pull', '${LLM_MODEL:-qwen2.5:3b}']
+#     restart: 'no'
+#
+#   service-llm:
+#     build:
+#       context: ../..
+#       dockerfile: services/llm/Dockerfile
+#     image: central/services/llm:latest
+#     depends_on:
+#       service-llm-runtime:
+#         condition: service_healthy
+#     environment:
+#       LLM_PORT: '8083'
+#       LLM_OLLAMA_URL: http://service-llm-runtime:11434
+#       LLM_REQUEST_TIMEOUT_SECONDS: ${LLM_REQUEST_TIMEOUT_SECONDS:-120}
+#       LLM_DEFAULT_MODEL: ${LLM_MODEL:-qwen2.5:3b}
+#     restart: ${SERVICE_RESTART_POLICY:-unless-stopped}
+#     ports:
+#       - '${LLM_PORT:-3050}:8083'
+#     healthcheck:
+#       test:
+#         ['CMD', 'python', '-c', 'import urllib.request; urllib.request.urlopen("http://127.0.0.1:8083/healthz").read()']
+#       interval: 10s
+#       timeout: 5s
+#       retries: 5
+#       start_period: 20s
 
   app-cockpit:
     build:
@@ -221,8 +221,8 @@ services:
         condition: service_healthy
       service-backend:
         condition: service_healthy
-      service-assistant:
-        condition: service_healthy
+#       service-assistant:
+#         condition: service_healthy
     environment:
       NODE_ENV: ${COCKPIT_NODE_ENV:-production}
       BACKEND_BASE_URL: ${BACKEND_BASE_URL:-http://service-backend:8080}
@@ -233,6 +233,6 @@ services:
 
 volumes:
   central_i12e-postgres_data:
-  central_stt_models:
-  central_tts_models:
-  central_llm_models:
+#   central_stt_models:
+#   central_tts_models:
+#   central_llm_models:

@@ -2,7 +2,7 @@
 
 Rust + Axum backend service for Central.
 
-The service is intentionally modular: shared process concerns live at the service root, while feature code lives under `src/domains/*`. Weather is currently the first domain.
+The service is intentionally modular: shared process concerns live at the service root, while feature code lives under `src/domains/*`.
 
 ## Structure
 
@@ -11,6 +11,7 @@ The service is intentionally modular: shared process concerns live at the servic
 - `src/http`: integrated HTTP API router, health endpoint, CORS, and tracing middleware.
 - `src/context.rs`: request state shared by domain routers.
 - `src/error.rs`: shared application errors and HTTP mapping.
+- `src/domains/finance`: cash transaction domain model, use case, PostgreSQL repository, and HTTP routes.
 - `src/domains/weather`: weather domain model, use case, Open-Meteo adapter, PostgreSQL repository, and HTTP routes.
 
 ## API
@@ -18,6 +19,15 @@ The service is intentionally modular: shared process concerns live at the servic
 ### Backend
 
 - `GET /healthz`
+
+### Finance Domain
+
+- `GET /api/v1/finance/transactions?from=2026-05-01&to=2026-05-31`
+- `POST /api/v1/finance/transactions`
+- `PUT /api/v1/finance/transactions/:id`
+- `DELETE /api/v1/finance/transactions/:id`
+
+Finance tracks manual cash income and expense transactions. Amounts are exposed as decimal strings and stored in PostgreSQL as positive minor units with fixed `EUR` currency.
 
 ### Weather Domain
 

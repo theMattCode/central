@@ -1,35 +1,44 @@
-import { useRouterState } from '@tanstack/react-router';
+import { useMatches } from '@tanstack/react-router';
 import { Fragment } from 'react';
+import { cx } from '@/utils/styles.ts';
 
-const BREADCRUMB_BY_PATH: Record<string, readonly string[]> = {
-  '/': ['Home', 'Dashboard'],
-  '/jarvis': ['Home', 'Jarvis'],
-};
+import type { IconType } from 'react-icons';
 
-export function getBreadcrumbItems(pathname: string) {
-  return BREADCRUMB_BY_PATH[pathname] ?? BREADCRUMB_BY_PATH['/'];
+export type Crumb = { label: string } | { icon: IconType };
+
+declare module '@tanstack/react-router' {
+  interface StaticDataRouteOption {
+    crumb?: Crumb;
+  }
 }
 
 export function Breadcrumb() {
-  const pathname = useRouterState({ select: (state) => state.location.pathname });
-  const items = getBreadcrumbItems(pathname);
+  const matches = useMatches().filter((m) => m.staticData?.crumb);
 
   return (
-    <div className="w-full flex gap-2">
-      {items.map((item, index) => (
-        <Fragment key={item}>
-          {index > 0 && <BreadcrumbDelimiter />}
-          <BreadcrumbItem text={item} />
-        </Fragment>
-      ))}
+    <div className="w-full flex flex-row flex-nowrap gap-2 items-center">
+      {matches.map((item, index) => {
+        if (!item.staticData?.crumb) return null;
+        return (
+          <Fragment key={item.id}>
+            {index > 0 && <BreadcrumbDelimiter />}
+            <BreadcrumbItem crumb={item.staticData.crumb} href={item.pathname} />
+          </Fragment>
+        );
+      })}
     </div>
   );
 }
 
-export function BreadcrumbItem({ text }: { text: string }) {
-  return <span className="text-sm font-medium">{text}</span>;
+export function BreadcrumbItem({ crumb, href }: { crumb: Crumb; href?: string }) {
+  const iconMode = 'icon' in crumb;
+  return (
+    <a href={href} className={cx('font-medium', iconMode ? 'text-lg' : 'text-md')}>
+      {iconMode ? <crumb.icon /> : crumb.label}
+    </a>
+  );
 }
 
 export function BreadcrumbDelimiter() {
-  return <BreadcrumbItem text="&gt;" />;
+  return <span className="text-(--color-txt-sec)">|</span>;
 }

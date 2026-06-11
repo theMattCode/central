@@ -2,7 +2,7 @@
 
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { act, render, screen } from '@testing-library/react';
-import { FadeTransition } from '@/components/Transition/FadeTransition';
+import { FadeTransition } from '@/components/Transition/FadeTransition.tsx';
 
 describe('FadeTransition', () => {
   afterEach(() => {

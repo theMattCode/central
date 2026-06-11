@@ -3,34 +3,34 @@
 :root {
   color-scheme: light;
   --color-bg: #fff;
-  --color-content-bg-start: #e6e6e6;
-  --color-content-bg-end: #fafafa;
+  --color-content-bg: #e6e6e6;
   --color-txt: #000000;
   --color-txt-sec: #707070;
   --color-pri: #22d9ff;
   --color-sec: #44c56a;
   --color-section-border: #d6dde6;
+  --color-sem-positive: oklch(59.6% 0.145 163.225);
+  --color-sem-negative: oklch(58.6% 0.253 17.585);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
     color-scheme: dark;
     --color-bg: #0a0b0a;
-    --color-content-bg-start: #202225;
-    --color-content-bg-end: #141414;
+    --color-content-bg: #141414;
     --color-txt: #e0e0e0;
     --color-txt-sec: #8f8f8f;
     --color-pri: #22d9ff;
     --color-sec: #44c56a;
     --color-section-border: #272727;
+    --color-sem-positive: oklch(84.5% 0.143 164.978);
+    --color-sem-negative: oklch(71.2% 0.194 13.428);
   }
 }
 
 body {
   @apply m-0 bg-(--color-bg) text-(--color-txt) min-h-screen w-full overflow-hidden;
-  font-family:
-    -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans',
-    'Helvetica Neue', sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -39,30 +39,15 @@ code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New', monospace;
 }
 
-.dashboard-grid {
-  min-height: 100%;
+@keyframes rainbow {
+  from {
+    filter: hue-rotate(0deg);
+  }
+  to {
+    filter: hue-rotate(360deg);
+  }
 }
 
-.dashboard-grid .react-grid-item {
-  transition: all 200ms ease;
-}
-
-.dashboard-grid .react-grid-item.react-grid-placeholder {
-  border: 1px dashed color-mix(in srgb, var(--color-pri) 65%, transparent);
-  background: color-mix(in srgb, var(--color-pri) 20%, transparent);
-  border-radius: 0.75rem;
-}
-
-.dashboard-grid-item {
-  height: 100%;
-  overflow: auto;
-  border-radius: 0.75rem;
-  border: 1px solid color-mix(in srgb, var(--color-section-border) 85%, transparent);
-  background: color-mix(in srgb, var(--color-bg) 82%, transparent);
-  padding: 0.75rem;
-}
-
-.dashboard-grid-item .react-resizable-handle::after {
-  border-right-color: color-mix(in srgb, var(--color-pri) 70%, transparent);
-  border-bottom-color: color-mix(in srgb, var(--color-pri) 70%, transparent);
+.animate-rainbow {
+  animation: rainbow 30s linear infinite;
 }

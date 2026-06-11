@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { Jarvis } from '@/components/Jarvis/Jarvis.tsx';
+import { Jarvis } from '@/domain/assistant/Jarvis/Jarvis.tsx';
 
 export const Route = createFileRoute('/jarvis')({
   component: JarvisRoute,

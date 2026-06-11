@@ -7,7 +7,7 @@ import {
   MdOutlineMail as MailIcon,
   MdOutlineMonitorWeight as MonitorModeIcon,
   MdOutlineTask as TaskIcon,
-  MdSettings as SettingsIcon,
+  MdSettings as SettingsIcon
 } from 'react-icons/md';
 import { RiArrowLeftRightLine as IncomeAndExpenseIcon, RiStockLine as InvestIcon } from 'react-icons/ri';
 import { PiSidebarSimpleDuotone as NavigationToggleIcon, PiWaveform as JarvisIcon } from 'react-icons/pi';
@@ -44,7 +44,7 @@ export function Navigation() {
             className="absolute inset-0 bg-black/40"
             onClick={closeMobileDrawer}
           />
-          <aside className="absolute left-0 top-0 h-dvh w-72 max-w-[calc(100vw-2rem)] border-r border-(--color-section-border) bg-(--color-bg) p-4 flex flex-col gap-4 @container">
+          <aside className="absolute left-0 top-0 h-dvh w-72 max-w-[calc(100vw-2rem)] bg-(--color-bg) p-4 flex flex-col gap-4 @container">
             <div className="w-full flex items-center justify-between gap-2">
               <div className="flex items-center gap-3 @container">
                 <Logo />
@@ -109,7 +109,9 @@ function DrawerContent({ onNavigate }: { onNavigate?: () => void }) {
           <NavigationItem Icon={MailIcon}>E-Mail</NavigationItem>
         </NavigationGroup>
         <NavigationGroup title="Finance">
-          <NavigationItem Icon={IncomeAndExpenseIcon}>Income & Expense</NavigationItem>
+          <NavigationItem Icon={IncomeAndExpenseIcon} href="/finance/transactions" onClick={onNavigate}>
+            Transactions
+          </NavigationItem>
           <NavigationItem Icon={InvestIcon}>Invest</NavigationItem>
         </NavigationGroup>
       </nav>

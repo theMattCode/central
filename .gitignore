@@ -7,7 +7,7 @@ tmp
 out-tsc
 .output
 apps/cockpit/public/vendor
-apps/cockpit/src/widgets/voice/generated
+apps/cockpit/**/generated
 
 # dependencies
 node_modules
@@ -40,6 +40,7 @@ testem.log
 .env
 i12e/orchestrator/.env.prod
 .codex
+.junie
 __pycache__
 
 # System Files

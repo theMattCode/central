@@ -12,6 +12,8 @@ pub enum ApiError {
     #[error("{0}")]
     BadRequest(String),
     #[error("{0}")]
+    NotFound(String),
+    #[error("{0}")]
     Upstream(String),
     #[error("{0}")]
     Internal(String),
@@ -21,6 +23,7 @@ impl ApiError {
     pub fn code(&self) -> &'static str {
         match self {
             Self::BadRequest(_) => "bad_request",
+            Self::NotFound(_) => "not_found",
             Self::Upstream(_) => "upstream_error",
             Self::Internal(_) => "internal_error",
         }
@@ -29,6 +32,7 @@ impl ApiError {
     pub fn status_code(&self) -> StatusCode {
         match self {
             Self::BadRequest(_) => StatusCode::BAD_REQUEST,
+            Self::NotFound(_) => StatusCode::NOT_FOUND,
             Self::Upstream(_) => StatusCode::BAD_GATEWAY,
             Self::Internal(_) => StatusCode::INTERNAL_SERVER_ERROR,
         }
