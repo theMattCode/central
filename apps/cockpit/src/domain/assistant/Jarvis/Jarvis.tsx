@@ -222,9 +222,18 @@ export function Jarvis() {
 
   const leftTelemetry = useMemo(
     () => [
-      { label: 'MIC LEVEL', value: formatJarvisPercent(microphoneState.micLevel) },
-      { label: 'ARRAY', value: microphoneState.isListening ? 'ARMED' : isEnabled ? 'HOLD' : 'OFFLINE' },
-      { label: 'CAPTURE', value: microphoneState.userSpeaking ? 'LIVE' : shouldListen ? 'READY' : 'PAUSED' },
+      {
+        label: 'MIC LEVEL',
+        value: formatJarvisPercent(microphoneState.micLevel),
+      },
+      {
+        label: 'ARRAY',
+        value: microphoneState.isListening ? 'ARMED' : isEnabled ? 'HOLD' : 'OFFLINE',
+      },
+      {
+        label: 'CAPTURE',
+        value: microphoneState.userSpeaking ? 'LIVE' : shouldListen ? 'READY' : 'PAUSED',
+      },
       { label: 'TURN', value: conversation.status.toUpperCase() },
     ],
     [
@@ -239,7 +248,10 @@ export function Jarvis() {
 
   const rightTelemetry = useMemo(
     () => [
-      { label: 'OUT LEVEL', value: formatJarvisPercent(conversation.playbackLevel) },
+      {
+        label: 'OUT LEVEL',
+        value: formatJarvisPercent(conversation.playbackLevel),
+      },
       {
         label: 'REPLY',
         value: conversation.status === 'playing' ? 'STREAMING' : conversation.responseText ? 'BUFFERED' : 'IDLE',

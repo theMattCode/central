@@ -24,7 +24,7 @@ pnpm nx run i12e-postgres:run
 
 Default host-to-container mapping is `5001:5432`.
 
-The image uses PostgreSQL 18.3 for built-in UUID v7 generation. Existing local PostgreSQL 16 data volumes cannot be reused directly with PostgreSQL 18; recreate the local dev volume or dump/restore data before running the upgraded image.
+The image uses PostgreSQL 18.3 for built-in UUID v7 generation. Existing local PostgreSQL 16 data volumes cannot be reused directly with PostgreSQL 18; recreate the local dev volume or dump/restore data before running the upgraded image. PostgreSQL 18 containers must mount the data volume at `/var/lib/postgresql`; the image stores database files under a versioned subdirectory.
 
 Override defaults when needed:
 

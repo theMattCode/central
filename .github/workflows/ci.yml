@@ -1,46 +1,359 @@
 name: CI
 
 on:
+  pull_request:
   push:
     branches:
       - main
-  pull_request:
+    tags:
+      - 'v*.*.*'
 
 permissions:
-  actions: read
   contents: read
+  packages: write
+
+env:
+  I12E_PROJECTS: i12e-postgres,i12e-orchestrator,i12e-gateway
+  REGISTRY: ghcr.io
+  IMAGE_NAMESPACE: ${{ github.repository }}
 
 jobs:
-  main:
+  validate-cockpit:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
-          filter: tree:0
           fetch-depth: 0
 
-      # This enables task distribution via Nx Cloud
-      # Run this command as early as possible, before dependencies are installed
-      # Learn more at https://nx.dev/ci/reference/nx-cloud-cli#npx-nxcloud-startcirun
-      # Connect your workspace by running "nx connect" and uncomment this line to enable task distribution
-      # - run: npx nx start-ci-run --distribute-on="3 linux-medium-js" --stop-agents-after="build"
+      - run: corepack enable
 
-      # Cache pnpm store
       - uses: actions/setup-node@v4
         with:
-          node-version: 'lts/*'
-          cache: 'pnpm'
+          node-version: '24'
+          cache: pnpm
           cache-dependency-path: pnpm-lock.yaml
-      - uses: dtolnay/rust-toolchain@stable
-        with:
-          components: rustfmt, clippy
 
-      - run: corepack enable
       - run: pnpm install --frozen-lockfile
 
-      # Prepend any command with "nx record --" to record its logs to Nx Cloud
-      # - run: npx nx record -- echo Hello World
-      - run: pnpm nx run-many -t lint test build typecheck
-      # Nx Cloud recommends fixes for failures to help you get CI green faster. Learn more: https://nx.dev/ci/features/self-healing-ci
-      - run: pnpm nx fix-ci
-        if: always()
+      - name: Validate cockpit
+        run: pnpm nx run-many --projects=cockpit -t lint typecheck test
+
+  validate-backend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - run: corepack enable
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Validate backend
+        run: pnpm nx run-many --projects=backend -t lint typecheck test
+
+  validate-i12e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - run: corepack enable
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Validate i12e projects
+        run: pnpm nx run-many --projects="$I12E_PROJECTS" -t lint typecheck test
+
+      - name: Validate registry production compose
+        run: docker compose --env-file i12e/orchestrator/deploy/.env.prod.example --file i12e/orchestrator/deploy/docker-compose.prod.yml config --quiet
+
+  validate-release-ref:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Reject release tag outside main
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          git fetch origin main
+          git merge-base --is-ancestor "$GITHUB_SHA" origin/main
+
+  build-image-cockpit:
+    runs-on: ubuntu-latest
+    needs:
+      - validate-release-ref
+      - validate-cockpit
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Build cockpit image
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          image_base="${REGISTRY}/${IMAGE_NAMESPACE,,}"
+          sha_tag="sha-${GITHUB_SHA::12}"
+          image="${image_base}/app-cockpit:${sha_tag}"
+
+          docker build --file apps/cockpit/Dockerfile --tag "$image" .
+
+          mkdir -p dist/images
+          docker save "$image" --output dist/images/app-cockpit.tar
+
+      - name: Upload cockpit image
+        uses: actions/upload-artifact@v4
+        with:
+          name: image-app-cockpit
+          path: dist/images/app-cockpit.tar
+          retention-days: 1
+
+  build-image-backend:
+    runs-on: ubuntu-latest
+    needs:
+      - validate-release-ref
+      - validate-backend
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Build backend image
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          image_base="${REGISTRY}/${IMAGE_NAMESPACE,,}"
+          sha_tag="sha-${GITHUB_SHA::12}"
+          image="${image_base}/service-backend:${sha_tag}"
+
+          docker build --file services/backend/Dockerfile --tag "$image" .
+
+          mkdir -p dist/images
+          docker save "$image" --output dist/images/service-backend.tar
+
+      - name: Upload backend image
+        uses: actions/upload-artifact@v4
+        with:
+          name: image-service-backend
+          path: dist/images/service-backend.tar
+          retention-days: 1
+
+  build-images-i12e:
+    runs-on: ubuntu-latest
+    needs:
+      - validate-release-ref
+      - validate-i12e
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Build i12e images
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          image_base="${REGISTRY}/${IMAGE_NAMESPACE,,}"
+          sha_tag="sha-${GITHUB_SHA::12}"
+          postgres_image="${image_base}/i12e-postgres:${sha_tag}"
+          gateway_image="${image_base}/i12e-gateway:${sha_tag}"
+
+          docker build --file i12e/postgres/Dockerfile --tag "$postgres_image" i12e/postgres
+          docker build --file i12e/gateway/Dockerfile --tag "$gateway_image" .
+
+          mkdir -p dist/images
+          docker save "$postgres_image" "$gateway_image" --output dist/images/i12e.tar
+
+      - name: Upload i12e images
+        uses: actions/upload-artifact@v4
+        with:
+          name: images-i12e
+          path: dist/images/i12e.tar
+          retention-days: 1
+
+  test-images-integration:
+    runs-on: ubuntu-latest
+    needs:
+      - build-image-cockpit
+      - build-image-backend
+      - build-images-i12e
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download images
+        uses: actions/download-artifact@v4
+        with:
+          pattern: image-*
+          path: dist/images
+          merge-multiple: true
+
+      - name: Download i12e images
+        uses: actions/download-artifact@v4
+        with:
+          name: images-i12e
+          path: dist/images
+
+      - name: Smoke test core image set
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          sha_tag="sha-${GITHUB_SHA::12}"
+          ci_env_file="$(mktemp)"
+
+          compose_ci() {
+            docker compose --env-file "$ci_env_file" --file i12e/orchestrator/deploy/docker-compose.prod.yml "$@"
+          }
+
+          cleanup() {
+            compose_ci down --volumes --remove-orphans || true
+            rm -f "$ci_env_file"
+          }
+
+          trap cleanup EXIT
+
+          docker load --input dist/images/app-cockpit.tar
+          docker load --input dist/images/service-backend.tar
+          docker load --input dist/images/i12e.tar
+
+          {
+            echo "CENTRAL_VERSION=$sha_tag"
+            echo "COMPOSE_PROJECT_NAME=central-ci-${GITHUB_RUN_ID}"
+            echo "SERVICE_RESTART_POLICY=no"
+            echo "GATEWAY_BIND=127.0.0.1"
+            echo "GATEWAY_PORT=48080"
+            echo "CENTRAL_ORIGIN=http://127.0.0.1:48080"
+            echo "POSTGRES_USER=central"
+            echo "POSTGRES_PASSWORD=central"
+            echo "POSTGRES_DB=central"
+            echo "BACKEND_DATABASE_URL=postgres://central:central@i12e-postgres:5432/central"
+            echo "BACKEND_CORS_ALLOW_ORIGIN=http://127.0.0.1:48080"
+            echo "BACKEND_BASE_URL=http://service-backend:8080"
+          } > "$ci_env_file"
+
+          compose_ci up --detach --wait i12e-postgres
+          compose_ci run --rm i12e-postgres-migrate
+          compose_ci up --detach --wait service-backend app-cockpit i12e-gateway
+          curl --fail --silent --show-error http://127.0.0.1:48080/healthz >/dev/null
+          curl --fail --silent --show-error http://127.0.0.1:48080/ >/dev/null
+          compose_ci exec -T service-backend wget -qO- http://127.0.0.1:8080/healthz >/dev/null
+
+          docker compose --env-file "$ci_env_file" --file i12e/orchestrator/deploy/docker-compose.prod.yml ps
+
+  publish-images:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push'
+    needs:
+      - test-images-integration
+    steps:
+      - name: Download app and service images
+        uses: actions/download-artifact@v4
+        with:
+          pattern: image-*
+          path: dist/images
+          merge-multiple: true
+
+      - name: Download i12e images
+        uses: actions/download-artifact@v4
+        with:
+          name: images-i12e
+          path: dist/images
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Publish images
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          image_base="${REGISTRY}/${IMAGE_NAMESPACE,,}"
+          sha_tag="sha-${GITHUB_SHA::12}"
+          version_tag=""
+          stable_tag=false
+
+          if [[ "${GITHUB_REF}" == refs/tags/v* ]]; then
+            version_tag="${GITHUB_REF_NAME}"
+            if [[ "$version_tag" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+              stable_tag=true
+            fi
+          fi
+
+          docker load --input dist/images/app-cockpit.tar
+          docker load --input dist/images/service-backend.tar
+          docker load --input dist/images/i12e.tar
+
+          publish_image() {
+            local name="$1"
+            local image="${image_base}/${name}"
+
+            docker push "${image}:${sha_tag}"
+
+            if [ -n "$version_tag" ]; then
+              docker tag "${image}:${sha_tag}" "${image}:${version_tag}"
+              docker push "${image}:${version_tag}"
+
+              if [ "$stable_tag" = true ]; then
+                docker tag "${image}:${sha_tag}" "${image}:stable"
+                docker push "${image}:stable"
+              fi
+            fi
+          }
+
+          publish_image app-cockpit
+          publish_image service-backend
+          publish_image i12e-postgres
+          publish_image i12e-gateway
+
+  package-deploy-bundle:
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+    needs:
+      - publish-images
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Package deploy bundle
+        run: |
+          mkdir -p dist
+          tar -czf "dist/central-deploy-${GITHUB_REF_NAME}.tar.gz" \
+            -C i12e/orchestrator/deploy \
+            docker-compose.prod.yml \
+            central-update \
+            .env.prod.example
+
+      - name: Upload deploy bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: central-deploy-${{ github.ref_name }}
+          path: dist/central-deploy-${{ github.ref_name }}.tar.gz

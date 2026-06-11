@@ -1,5 +1,5 @@
-import ortThreadedJsepModuleUrl from '@/domain/voice/generated/onnxruntime-web/ort-wasm-simd-threaded.jsep.mjs?url';
-import ortThreadedJsepWasmUrl from '@/domain/voice/generated/onnxruntime-web/ort-wasm-simd-threaded.jsep.wasm?url';
+//import ortThreadedJsepModuleUrl from '@/domain/voice/generated/onnxruntime-web/ort-wasm-simd-threaded.jsep.mjs?url';
+//import ortThreadedJsepWasmUrl from '@/domain/voice/generated/onnxruntime-web/ort-wasm-simd-threaded.jsep.wasm?url';
 
 function ensureTrailingSlash(value: string): string {
   return value.endsWith('/') ? value : `${value}/`;
@@ -11,8 +11,8 @@ export function resolveVoiceStaticAssetPath(relativePath: string, basePath: stri
 }
 
 export const VAD_BASE_ASSET_PATH = resolveVoiceStaticAssetPath('vendor/vad/');
-export const VOICE_ORT_WASM_MODULE_URL = ortThreadedJsepModuleUrl;
-export const VOICE_ORT_WASM_BINARY_URL = ortThreadedJsepWasmUrl;
+export const VOICE_ORT_WASM_MODULE_URL = ''; //ortThreadedJsepModuleUrl;
+export const VOICE_ORT_WASM_BINARY_URL = ''; //ortThreadedJsepWasmUrl;
 
 export type VoiceOrtModule = {
   env: {

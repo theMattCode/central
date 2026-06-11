@@ -4,7 +4,7 @@ import {
   MdClose as CancelIcon,
   MdDeleteOutline as DeleteIcon,
   MdEdit as EditIcon,
-  MdSave as SaveIcon
+  MdSave as SaveIcon,
 } from 'react-icons/md';
 import { GiPayMoney, GiReceiveMoney } from 'react-icons/gi';
 import { Button } from '@/components/Button/Button.tsx';
@@ -14,14 +14,14 @@ import { cx } from '@/utils/styles.ts';
 import {
   createCashTransaction,
   deleteCashTransaction,
-  updateCashTransaction
+  updateCashTransaction,
 } from 'src/domain/finance/transactions/api.ts';
 import {
   createEmptyTransactionFormState,
   toCashTransactionInput,
   type Transaction,
   type TransactionDirection,
-  type TransactionFormState
+  type TransactionFormState,
 } from 'src/domain/finance/transactions/model.ts';
 import { useTransactions } from '@/domain/finance/transactions/data.ts';
 import { useDateRange } from '@/utils/useDateRange.ts';

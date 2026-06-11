@@ -46,14 +46,21 @@ export function useWeatherSnapshot(location: WeatherLocation): WeatherDataState 
 
     const loadWeather = async () => {
       try {
-        const weatherData = await fetchWeatherData({ data: location, signal: abortController.signal });
+        const weatherData = await fetchWeatherData({
+          data: location,
+          signal: abortController.signal,
+        });
         setState({ status: 'loaded', weatherData, refresh });
       } catch (error) {
         if (abortController.signal.aborted) {
           return;
         }
         getLogger().error('weather-refresh-failed', { location }, error);
-        setState({ status: 'error', errorMessage: toErrorMessage(error), refresh });
+        setState({
+          status: 'error',
+          errorMessage: toErrorMessage(error),
+          refresh,
+        });
       }
     };
 

@@ -19,10 +19,10 @@ RUN cargo build --release
 
 FROM alpine:3.22
 
-RUN apk add --no-cache ca-certificates
+RUN apk add --no-cache ca-certificates wget
 RUN adduser -D backend
 
-COPY --from=builder /workspace/services/backend/target/release/backend /usr/local/bin/backend
+COPY --from=builder /workspace/services/backend/target/release/central-backend /usr/local/bin/central-backend
 
 ENV BACKEND_PORT=8080
 
@@ -30,4 +30,4 @@ EXPOSE 8080
 
 USER backend
 
-CMD ["/usr/local/bin/backend"]
+CMD ["/usr/local/bin/central-backend"]

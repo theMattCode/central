@@ -55,7 +55,11 @@ describe('useTransactions', () => {
   it('loads transactions for the requested date range', async () => {
     const transactions = [
       createTransaction({ id: 'groceries', category: 'Groceries' }),
-      createTransaction({ id: 'salary', direction: 'income', category: 'Salary' }),
+      createTransaction({
+        id: 'salary',
+        direction: 'income',
+        category: 'Salary',
+      }),
       createTransaction({ id: 'uncategorized' }),
       createTransaction({ id: 'repeat-groceries', category: 'Groceries' }),
     ];
@@ -89,8 +93,14 @@ describe('useTransactions', () => {
   });
 
   it('reloads the current date range when reload is called', async () => {
-    const initialTransaction = createTransaction({ id: 'initial', description: 'Initial transaction' });
-    const reloadedTransaction = createTransaction({ id: 'reloaded', description: 'Reloaded transaction' });
+    const initialTransaction = createTransaction({
+      id: 'initial',
+      description: 'Initial transaction',
+    });
+    const reloadedTransaction = createTransaction({
+      id: 'reloaded',
+      description: 'Reloaded transaction',
+    });
     getTransactionsMock
       .mockResolvedValueOnce({
         from: '2026-05-01',

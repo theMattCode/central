@@ -195,7 +195,11 @@ async function requestAssistantTurn(input: AssistantTurnInput, signal?: AbortSig
     const message = await toErrorMessage(response);
     getLogger().error(
       'request-assistant-turn-response-error',
-      { status: response.status, statusText: response.statusText, url: url.toString() },
+      {
+        status: response.status,
+        statusText: response.statusText,
+        url: url.toString(),
+      },
       message,
     );
     throw new Error(message);
@@ -267,7 +271,11 @@ export async function streamAssistantTurn(options: StreamAssistantTurnOptions): 
     const message = await toErrorMessage(response);
     getLogger().error(
       'stream-assistant-turn-response-error',
-      { status: response.status, statusText: response.statusText, url: url.toString() },
+      {
+        status: response.status,
+        statusText: response.statusText,
+        url: url.toString(),
+      },
       message,
     );
     throw new Error(message);

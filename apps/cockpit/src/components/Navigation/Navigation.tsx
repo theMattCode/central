@@ -7,7 +7,7 @@ import {
   MdOutlineMail as MailIcon,
   MdOutlineMonitorWeight as MonitorModeIcon,
   MdOutlineTask as TaskIcon,
-  MdSettings as SettingsIcon
+  MdSettings as SettingsIcon,
 } from 'react-icons/md';
 import { RiArrowLeftRightLine as IncomeAndExpenseIcon, RiStockLine as InvestIcon } from 'react-icons/ri';
 import { PiSidebarSimpleDuotone as NavigationToggleIcon, PiWaveform as JarvisIcon } from 'react-icons/pi';

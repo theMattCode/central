@@ -1,7 +1,10 @@
 import type { Summary } from '@/domain/finance/transactions/model.ts';
 import { KPISection } from '@/components/KPI/KPISection.tsx/KPISection.tsx';
 
-const formatter = new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' });
+const formatter = new Intl.NumberFormat('de-DE', {
+  style: 'currency',
+  currency: 'EUR',
+});
 
 export function SummaryStrip({ summary }: { summary: Summary }) {
   const income = Number.parseFloat(summary.incomeTotal.amount);

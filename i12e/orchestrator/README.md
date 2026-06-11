@@ -69,6 +69,8 @@ pnpm logs:prod
 
 ## Startup Behavior
 
+`pnpm prod` is the local release-style stack used from the repository checkout. The production-server path is the code-free deploy bundle in [`deploy/`](./deploy/): CI publishes tested images to GHCR, and the server runs `central-update` with `stable` or an exact release tag.
+
 The `up-*` Nx targets delegate startup sequencing to [`scripts/up_stack.sh`](./scripts/up_stack.sh).
 
 Startup order:

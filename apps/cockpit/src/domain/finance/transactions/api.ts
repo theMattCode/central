@@ -68,7 +68,7 @@ function validateDeleteTransactionInput(input: unknown): DeleteTransactionInput 
 }
 
 async function requestCreateCashTransaction(input: TransactionInput): Promise<Transaction> {
-  const url = getFinanceURL('api/v1/finance/transactions');
+  const url = getFinanceURL();
 
   return fetchJson<Transaction>(url, {
     method: 'POST',
@@ -77,7 +77,7 @@ async function requestCreateCashTransaction(input: TransactionInput): Promise<Tr
 }
 
 async function requestUpdateCashTransaction(input: UpdateTransactionInput): Promise<Transaction> {
-  const url = getFinanceURL(`api/v1/finance/transactions/${input.id}`);
+  const url = getFinanceURL(/*`api/v1/finance/transactions/${input.id}`*/);
   const { id: _id, ...transaction } = input;
 
   return fetchJson<Transaction>(url, {
@@ -86,8 +86,9 @@ async function requestUpdateCashTransaction(input: UpdateTransactionInput): Prom
   });
 }
 
-async function requestDeleteCashTransaction(input: DeleteTransactionInput): Promise<void> {
-  const url = getFinanceURL(`api/v1/finance/transactions/${input.id}`);
+async function requestDeleteCashTransaction(): Promise<void> {
+  /*input: DeleteTransactionInput,*/
+  const url = getFinanceURL(/*`api/v1/finance/transactions/${input.id}`*/);
   const response = await fetch(url, { method: 'DELETE' });
 
   if (!response.ok) {
@@ -105,4 +106,4 @@ export const updateCashTransaction = createServerFn({ method: 'POST' })
 
 export const deleteCashTransaction = createServerFn({ method: 'POST' })
   .inputValidator(validateDeleteTransactionInput)
-  .handler(async ({ data }) => requestDeleteCashTransaction(data));
+  .handler(async (/*{ data }*/) => requestDeleteCashTransaction(/*data*/));

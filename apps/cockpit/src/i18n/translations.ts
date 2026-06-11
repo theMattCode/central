@@ -40,27 +40,78 @@ export const TRANSLATION: Record<I18NKey, Translation> = {
   [I18NKey.WmoPartlyCloudy]: { en: 'Partly cloudy', de: 'Teilweise bewoelkt' },
   [I18NKey.WmoOvercast]: { en: 'Overcast', de: 'Bedeckt' },
   [I18NKey.WmoFog]: { en: 'Fog', de: 'Nebel' },
-  [I18NKey.WmoDepositingRimeFog]: { en: 'Depositing rime fog', de: 'Reifnebel' },
-  [I18NKey.WmoLightDrizzle]: { en: 'Light drizzle', de: 'Leichter Nieselregen' },
-  [I18NKey.WmoModerateDrizzle]: { en: 'Moderate drizzle', de: 'Mässiger Nieselregen' },
+  [I18NKey.WmoDepositingRimeFog]: {
+    en: 'Depositing rime fog',
+    de: 'Reifnebel',
+  },
+  [I18NKey.WmoLightDrizzle]: {
+    en: 'Light drizzle',
+    de: 'Leichter Nieselregen',
+  },
+  [I18NKey.WmoModerateDrizzle]: {
+    en: 'Moderate drizzle',
+    de: 'Mässiger Nieselregen',
+  },
   [I18NKey.WmoDenseDrizzle]: { en: 'Dense drizzle', de: 'Dichter Nieselregen' },
-  [I18NKey.WmoLightFreezingDrizzle]: { en: 'Light freezing drizzle', de: 'Leichter gefrierender Nieselregen' },
-  [I18NKey.WmoHeavyFreezingDrizzle]: { en: 'Heavy freezing drizzle', de: 'Starker gefrierender Nieselregen' },
+  [I18NKey.WmoLightFreezingDrizzle]: {
+    en: 'Light freezing drizzle',
+    de: 'Leichter gefrierender Nieselregen',
+  },
+  [I18NKey.WmoHeavyFreezingDrizzle]: {
+    en: 'Heavy freezing drizzle',
+    de: 'Starker gefrierender Nieselregen',
+  },
   [I18NKey.WmoSlightRain]: { en: 'Slight rain', de: 'Leichter Regen' },
   [I18NKey.WmoModerateRain]: { en: 'Moderate rain', de: 'Mässiger Regen' },
   [I18NKey.WmoHeavyRain]: { en: 'Heavy rain', de: 'Starker Regen' },
-  [I18NKey.WmoLightFreezingRain]: { en: 'Light freezing rain', de: 'Leichter gefrierender Regen' },
-  [I18NKey.WmoHeavyFreezingRain]: { en: 'Heavy freezing rain', de: 'Starker gefrierender Regen' },
-  [I18NKey.WmoSlightSnowFall]: { en: 'Slight snow fall', de: 'Leichter Schneefall' },
-  [I18NKey.WmoModerateSnowFall]: { en: 'Moderate snow fall', de: 'Mässiger Schneefall' },
-  [I18NKey.WmoHeavySnowFall]: { en: 'Heavy snow fall', de: 'Starker Schneefall' },
+  [I18NKey.WmoLightFreezingRain]: {
+    en: 'Light freezing rain',
+    de: 'Leichter gefrierender Regen',
+  },
+  [I18NKey.WmoHeavyFreezingRain]: {
+    en: 'Heavy freezing rain',
+    de: 'Starker gefrierender Regen',
+  },
+  [I18NKey.WmoSlightSnowFall]: {
+    en: 'Slight snow fall',
+    de: 'Leichter Schneefall',
+  },
+  [I18NKey.WmoModerateSnowFall]: {
+    en: 'Moderate snow fall',
+    de: 'Mässiger Schneefall',
+  },
+  [I18NKey.WmoHeavySnowFall]: {
+    en: 'Heavy snow fall',
+    de: 'Starker Schneefall',
+  },
   [I18NKey.WmoSnowGrains]: { en: 'Snow grains', de: 'Schneegriesel' },
-  [I18NKey.WmoSlightRainShowers]: { en: 'Slight rain showers', de: 'Leichte Regenschauer' },
-  [I18NKey.WmoModerateRainShowers]: { en: 'Moderate rain showers', de: 'Mässige Regenschauer' },
-  [I18NKey.WmoViolentRainShowers]: { en: 'Violent rain showers', de: 'Heftige Regenschauer' },
-  [I18NKey.WmoSlightSnowShowers]: { en: 'Slight snow showers', de: 'Leichte Schneeschauer' },
-  [I18NKey.WmoHeavySnowShowers]: { en: 'Heavy snow showers', de: 'Starke Schneeschauer' },
+  [I18NKey.WmoSlightRainShowers]: {
+    en: 'Slight rain showers',
+    de: 'Leichte Regenschauer',
+  },
+  [I18NKey.WmoModerateRainShowers]: {
+    en: 'Moderate rain showers',
+    de: 'Mässige Regenschauer',
+  },
+  [I18NKey.WmoViolentRainShowers]: {
+    en: 'Violent rain showers',
+    de: 'Heftige Regenschauer',
+  },
+  [I18NKey.WmoSlightSnowShowers]: {
+    en: 'Slight snow showers',
+    de: 'Leichte Schneeschauer',
+  },
+  [I18NKey.WmoHeavySnowShowers]: {
+    en: 'Heavy snow showers',
+    de: 'Starke Schneeschauer',
+  },
   [I18NKey.WmoThunderstorm]: { en: 'Thunderstorm', de: 'Gewitter' },
-  [I18NKey.WmoThunderstormWithSlightHail]: { en: 'Thunderstorm with slight hail', de: 'Gewitter mit leichtem Hagel' },
-  [I18NKey.WmoThunderstormWithHeavyHail]: { en: 'Thunderstorm with heavy hail', de: 'Gewitter mit starkem Hagel' },
+  [I18NKey.WmoThunderstormWithSlightHail]: {
+    en: 'Thunderstorm with slight hail',
+    de: 'Gewitter mit leichtem Hagel',
+  },
+  [I18NKey.WmoThunderstormWithHeavyHail]: {
+    en: 'Thunderstorm with heavy hail',
+    de: 'Gewitter mit starkem Hagel',
+  },
 };

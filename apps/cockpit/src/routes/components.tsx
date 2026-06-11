@@ -38,9 +38,21 @@ function ShowcaseButtons() {
 
 function ShowcaseButtonGroup() {
   const options = [
-    { id: '1', text: 'Daily', style: { optionColor: 'var(--color-sem-positive)' } },
-    { id: '2', text: 'Weekly', style: { optionColor: 'var(--color-sem-neutral)' } },
-    { id: '3', text: 'Monthly', style: { optionColor: 'var(--color-sem-negative)' } },
+    {
+      id: '1',
+      text: 'Daily',
+      style: { optionColor: 'var(--color-sem-positive)' },
+    },
+    {
+      id: '2',
+      text: 'Weekly',
+      style: { optionColor: 'var(--color-sem-neutral)' },
+    },
+    {
+      id: '3',
+      text: 'Monthly',
+      style: { optionColor: 'var(--color-sem-negative)' },
+    },
   ];
   return (
     <div className="flex flex-col gap-2">

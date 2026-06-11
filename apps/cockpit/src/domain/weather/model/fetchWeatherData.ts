@@ -133,7 +133,10 @@ async function requestWeatherData(location: WeatherLocation): Promise<WeatherDat
 
   const snapshot = (await response.json()) as WeatherServiceSnapshot;
 
-  getLogger().info('requested current weather', { url: url.toString(), location: location.label });
+  getLogger().info('requested current weather', {
+    url: url.toString(),
+    location: location.label,
+  });
   return toWeatherData(location, snapshot);
 }
 

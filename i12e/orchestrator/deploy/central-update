@@ -1,0 +1,153 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+usage() {
+  cat >&2 <<'USAGE'
+Usage: central-update [version] [--allow-major] [--backup] [--skip-backup]
+
+Defaults version to stable. Major version jumps require --allow-major and a backup
+unless --skip-backup is passed explicitly.
+USAGE
+}
+
+allow_major=false
+force_backup=false
+skip_backup=false
+target_version=""
+
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    --allow-major)
+      allow_major=true
+      ;;
+    --backup)
+      force_backup=true
+      ;;
+    --skip-backup)
+      skip_backup=true
+      ;;
+    -h|--help)
+      usage
+      exit 0
+      ;;
+    -*)
+      usage
+      exit 2
+      ;;
+    *)
+      if [ -n "$target_version" ]; then
+        usage
+        exit 2
+      fi
+      target_version="$1"
+      ;;
+  esac
+  shift
+done
+
+script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+compose_file="${COMPOSE_FILE:-$script_dir/docker-compose.prod.yml}"
+env_file="${ENV_FILE:-$script_dir/.env.prod}"
+backup_dir="${BACKUP_DIR:-$script_dir/backups}"
+
+if [ ! -f "$compose_file" ]; then
+  echo "Missing compose file: $compose_file" >&2
+  exit 2
+fi
+
+if [ ! -f "$env_file" ]; then
+  echo "Missing env file: $env_file. Copy .env.prod.example to .env.prod first." >&2
+  exit 2
+fi
+
+if grep -Eq '^(POSTGRES_PASSWORD=change-me|BACKEND_DATABASE_URL=.*change-me)$' "$env_file"; then
+  echo "Refusing to deploy with placeholder database credentials in $env_file." >&2
+  exit 2
+fi
+
+current_version="$(grep -E '^CENTRAL_VERSION=' "$env_file" | tail -n 1 | cut -d= -f2- || true)"
+current_version="${current_version:-stable}"
+
+if [ -z "$target_version" ]; then
+  read -r -p "Version [stable]: " target_version
+  target_version="${target_version:-stable}"
+fi
+
+semver_major() {
+  case "$1" in
+    v[0-9]*.[0-9]*.[0-9]*)
+      printf '%s\n' "$1" | sed -E 's/^v([0-9]+)\..*/\1/'
+      ;;
+    *)
+      printf '\n'
+      ;;
+  esac
+}
+
+current_major="$(semver_major "$current_version")"
+target_major="$(semver_major "$target_version")"
+
+major_jump=false
+if [ -n "$current_major" ] && [ -n "$target_major" ] && [ "$current_major" != "$target_major" ]; then
+  major_jump=true
+fi
+
+if [ "$major_jump" = true ] && [ "$allow_major" != true ]; then
+  echo "Major version jump detected: $current_version -> $target_version." >&2
+  echo "Re-run with --allow-major after planning downtime and backup." >&2
+  exit 2
+fi
+
+update_env_version() {
+  tmp_file="$(mktemp)"
+  if grep -q '^CENTRAL_VERSION=' "$env_file"; then
+    sed -E "s/^CENTRAL_VERSION=.*/CENTRAL_VERSION=$target_version/" "$env_file" > "$tmp_file"
+  else
+    cp "$env_file" "$tmp_file"
+    printf '\nCENTRAL_VERSION=%s\n' "$target_version" >> "$tmp_file"
+  fi
+  mv "$tmp_file" "$env_file"
+}
+
+compose() {
+  docker compose --env-file "$env_file" --file "$compose_file" "$@"
+}
+
+backup_postgres() {
+  mkdir -p "$backup_dir"
+  timestamp="$(date -u +%Y%m%dT%H%M%SZ)"
+  backup_file="$backup_dir/central-$timestamp.dump"
+  echo "Writing PostgreSQL backup: $backup_file"
+  compose exec -T i12e-postgres pg_dump \
+    -U "${POSTGRES_USER:-central}" \
+    -d "${POSTGRES_DB:-central}" \
+    --format=custom > "$backup_file"
+}
+
+update_env_version
+set -a
+source "$env_file"
+set +a
+
+compose pull
+compose up --detach --wait i12e-postgres
+
+if [ "$major_jump" = true ] || [ "$force_backup" = true ]; then
+  if [ "$skip_backup" = true ]; then
+    echo "Skipping requested backup."
+  else
+    backup_postgres
+  fi
+fi
+
+compose run --rm i12e-postgres-migrate
+compose up --detach --wait service-backend app-cockpit i12e-gateway
+
+gateway_url="http://${GATEWAY_BIND:-127.0.0.1}:${GATEWAY_PORT:-4000}"
+curl --fail --silent --show-error "$gateway_url/healthz" >/dev/null
+curl --fail --silent --show-error "$gateway_url/" >/dev/null
+compose exec -T service-backend wget -qO- http://127.0.0.1:8080/healthz >/dev/null
+
+echo "Central deployed: $target_version"
+compose ps
+
