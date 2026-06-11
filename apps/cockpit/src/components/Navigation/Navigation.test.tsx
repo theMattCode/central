@@ -54,7 +54,7 @@ describe('Navigation', () => {
     expect(linkLabels).toEqual([
       { href: '/', label: 'Overview' },
       { href: '/jarvis', label: 'Jarvis' },
-      { href: '/finance/cash', label: 'Income & Expense' },
+      { href: '/finance/transactions', label: 'Transactions' },
     ]);
   });
 });

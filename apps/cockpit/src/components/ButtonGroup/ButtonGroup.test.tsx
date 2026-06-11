@@ -3,11 +3,14 @@
 import { describe, expect, it, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { userEvent } from '@testing-library/user-event';
-import { ButtonGroup } from 'src/components/ButtonGroup/ButtonGroup.tsx';
+import {
+  ButtonGroup,
+  type Option,
+} from 'src/components/ButtonGroup/ButtonGroup.tsx';
 
-const options = [
-  { id: '1', text: 'Option 1', colorVar: '--color-pri' },
-  { id: '2', text: 'Option 2', colorVar: '--color-sec' },
+const options: Option[] = [
+  { id: '1', text: 'Option 1', style: { optionColor: '--color-pri' } },
+  { id: '2', text: 'Option 2', style: { optionColor: '--color-sec' } },
 ];
 
 describe('ButtonGroup', () => {
