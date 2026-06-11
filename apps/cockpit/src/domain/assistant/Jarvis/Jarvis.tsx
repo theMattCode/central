@@ -8,8 +8,15 @@ import {
   MdPowerSettingsNew as PowerIcon,
 } from 'react-icons/md';
 import { cx } from '@/utils/styles.ts';
-import { formatJarvisPercent, type JarvisMode, resolveJarvisSystemState } from '@/domain/assistant/Jarvis/model.ts';
-import { configureVoiceOrt, VAD_BASE_ASSET_PATH } from '@/domain/voice/model/vadAssetPaths.ts';
+import {
+  formatJarvisPercent,
+  type JarvisMode,
+  resolveJarvisSystemState,
+} from '@/domain/assistant/Jarvis/model.ts';
+import {
+  configureVoiceOrt,
+  VAD_BASE_ASSET_PATH,
+} from '@/domain/voice/model/vadAssetPaths.ts';
 import { getFloat32SignalLevel } from '@/domain/voice/model/audioLevel.ts';
 import { useVoiceConversation } from '@/domain/voice/model/useVoiceConversation.ts';
 import { JarvisOrb } from '@/domain/assistant/Jarvis/JarvisOrb.tsx';
@@ -55,7 +62,12 @@ function clamp01(value: number): number {
   return value;
 }
 
-function getTargetEnergy(mode: JarvisMode, microphoneLevel: number, playbackLevel: number, tickSeconds: number) {
+function getTargetEnergy(
+  mode: JarvisMode,
+  microphoneLevel: number,
+  playbackLevel: number,
+  tickSeconds: number,
+) {
   switch (mode) {
     case 'offline':
       return 0;
@@ -74,7 +86,11 @@ function getTargetEnergy(mode: JarvisMode, microphoneLevel: number, playbackLeve
   }
 }
 
-function useJarvisMotion(mode: JarvisMode, microphoneLevel: number, playbackLevel: number) {
+function useJarvisMotion(
+  mode: JarvisMode,
+  microphoneLevel: number,
+  playbackLevel: number,
+) {
   const [frame, setFrame] = useState<JarvisMotionFrame>({
     bars: IDLE_BARS,
     energy: 0.08,
@@ -87,16 +103,28 @@ function useJarvisMotion(mode: JarvisMode, microphoneLevel: number, playbackLeve
       const tickSeconds = time / 1000;
 
       setFrame((currentFrame) => {
-        const targetEnergy = getTargetEnergy(mode, microphoneLevel, playbackLevel, tickSeconds);
-        const energySmoothing = mode === 'speaking' || mode === 'listening' ? 0.22 : 0.12;
-        const nextEnergy = currentFrame.energy + (targetEnergy - currentFrame.energy) * energySmoothing;
+        const targetEnergy = getTargetEnergy(
+          mode,
+          microphoneLevel,
+          playbackLevel,
+          tickSeconds,
+        );
+        const energySmoothing =
+          mode === 'speaking' || mode === 'listening' ? 0.22 : 0.12;
+        const nextEnergy =
+          currentFrame.energy +
+          (targetEnergy - currentFrame.energy) * energySmoothing;
 
         const nextBars = currentFrame.bars.map((currentValue, index) => {
           const indexRatio = index / BAR_COUNT;
-          const waveA = (Math.sin(tickSeconds * 4.8 + indexRatio * Math.PI * 8) + 1) / 2;
-          const waveB = (Math.sin(tickSeconds * 2.2 - indexRatio * Math.PI * 5) + 1) / 2;
-          const waveC = (Math.cos(tickSeconds * 6.1 + indexRatio * Math.PI * 13) + 1) / 2;
-          const liveEnergy = mode === 'speaking' ? playbackLevel : microphoneLevel;
+          const waveA =
+            (Math.sin(tickSeconds * 4.8 + indexRatio * Math.PI * 8) + 1) / 2;
+          const waveB =
+            (Math.sin(tickSeconds * 2.2 - indexRatio * Math.PI * 5) + 1) / 2;
+          const waveC =
+            (Math.cos(tickSeconds * 6.1 + indexRatio * Math.PI * 13) + 1) / 2;
+          const liveEnergy =
+            mode === 'speaking' ? playbackLevel : microphoneLevel;
           const dynamicBias =
             mode === 'listening' || mode === 'speaking'
               ? liveEnergy * (0.24 + waveC * 0.32)
@@ -107,8 +135,11 @@ function useJarvisMotion(mode: JarvisMode, microphoneLevel: number, playbackLeve
                   : mode === 'error'
                     ? waveC * 0.14
                     : 0;
-          const targetBar = clamp01(nextEnergy * (0.4 + waveA * 0.36) + waveB * 0.12 + dynamicBias);
-          const barSmoothing = mode === 'speaking' ? 0.34 : mode === 'listening' ? 0.28 : 0.18;
+          const targetBar = clamp01(
+            nextEnergy * (0.4 + waveA * 0.36) + waveB * 0.12 + dynamicBias,
+          );
+          const barSmoothing =
+            mode === 'speaking' ? 0.34 : mode === 'listening' ? 0.28 : 0.18;
 
           return currentValue + (targetBar - currentValue) * barSmoothing;
         });
@@ -130,7 +161,10 @@ function useJarvisMotion(mode: JarvisMode, microphoneLevel: number, playbackLeve
   return frame;
 }
 
-function ActiveMicrophone({ onSpeechSegment, onStateChange }: ActiveMicrophoneProps) {
+function ActiveMicrophone({
+  onSpeechSegment,
+  onStateChange,
+}: ActiveMicrophoneProps) {
   const [micLevel, setMicLevel] = useState(0);
   const vad = useMicVAD({
     startOnLoad: true,
@@ -154,7 +188,14 @@ function ActiveMicrophone({ onSpeechSegment, onStateChange }: ActiveMicrophonePr
       micLevel: vad.userSpeaking ? micLevel : Math.min(micLevel, 0.16),
       userSpeaking: vad.userSpeaking,
     });
-  }, [micLevel, onStateChange, vad.errored, vad.listening, vad.loading, vad.userSpeaking]);
+  }, [
+    micLevel,
+    onStateChange,
+    vad.errored,
+    vad.listening,
+    vad.loading,
+    vad.userSpeaking,
+  ]);
 
   useEffect(() => {
     return () => onStateChange(INITIAL_MICROPHONE_STATE);
@@ -163,7 +204,13 @@ function ActiveMicrophone({ onSpeechSegment, onStateChange }: ActiveMicrophonePr
   return null;
 }
 
-function TelemetryList({ items, title }: { items: ReadonlyArray<{ label: string; value: string }>; title: string }) {
+function TelemetryList({
+  items,
+  title,
+}: {
+  items: ReadonlyArray<{ label: string; value: string }>;
+  title: string;
+}) {
   return (
     <div className="jarvis-telemetry">
       <div className="jarvis-telemetry__title">{title}</div>
@@ -181,12 +228,17 @@ function TelemetryList({ items, title }: { items: ReadonlyArray<{ label: string;
 
 export function Jarvis() {
   const [isEnabled, setIsEnabled] = useState(false);
-  const [microphoneState, setMicrophoneState] = useState<MicrophoneState>(INITIAL_MICROPHONE_STATE);
+  const [microphoneState, setMicrophoneState] = useState<MicrophoneState>(
+    INITIAL_MICROPHONE_STATE,
+  );
   const conversation = useVoiceConversation({
     language: 'de',
   });
 
-  const shouldListen = isEnabled && conversation.status !== 'processing' && conversation.status !== 'playing';
+  const shouldListen =
+    isEnabled &&
+    conversation.status !== 'processing' &&
+    conversation.status !== 'playing';
 
   const systemState = useMemo(
     () =>
@@ -208,7 +260,11 @@ export function Jarvis() {
     ],
   );
 
-  const motion = useJarvisMotion(systemState.mode, microphoneState.micLevel, conversation.playbackLevel);
+  const motion = useJarvisMotion(
+    systemState.mode,
+    microphoneState.micLevel,
+    conversation.playbackLevel,
+  );
 
   const toggleEnabled = useCallback(() => {
     if (isEnabled) {
@@ -222,9 +278,26 @@ export function Jarvis() {
 
   const leftTelemetry = useMemo(
     () => [
-      { label: 'MIC LEVEL', value: formatJarvisPercent(microphoneState.micLevel) },
-      { label: 'ARRAY', value: microphoneState.isListening ? 'ARMED' : isEnabled ? 'HOLD' : 'OFFLINE' },
-      { label: 'CAPTURE', value: microphoneState.userSpeaking ? 'LIVE' : shouldListen ? 'READY' : 'PAUSED' },
+      {
+        label: 'MIC LEVEL',
+        value: formatJarvisPercent(microphoneState.micLevel),
+      },
+      {
+        label: 'ARRAY',
+        value: microphoneState.isListening
+          ? 'ARMED'
+          : isEnabled
+            ? 'HOLD'
+            : 'OFFLINE',
+      },
+      {
+        label: 'CAPTURE',
+        value: microphoneState.userSpeaking
+          ? 'LIVE'
+          : shouldListen
+            ? 'READY'
+            : 'PAUSED',
+      },
       { label: 'TURN', value: conversation.status.toUpperCase() },
     ],
     [
@@ -239,14 +312,27 @@ export function Jarvis() {
 
   const rightTelemetry = useMemo(
     () => [
-      { label: 'OUT LEVEL', value: formatJarvisPercent(conversation.playbackLevel) },
+      {
+        label: 'OUT LEVEL',
+        value: formatJarvisPercent(conversation.playbackLevel),
+      },
       {
         label: 'REPLY',
-        value: conversation.status === 'playing' ? 'STREAMING' : conversation.responseText ? 'BUFFERED' : 'IDLE',
+        value:
+          conversation.status === 'playing'
+            ? 'STREAMING'
+            : conversation.responseText
+              ? 'BUFFERED'
+              : 'IDLE',
       },
       {
         label: 'TRANSCRIPT',
-        value: conversation.status === 'processing' ? 'LIVE' : conversation.transcript ? 'LOCKED' : 'EMPTY',
+        value:
+          conversation.status === 'processing'
+            ? 'LIVE'
+            : conversation.transcript
+              ? 'LOCKED'
+              : 'EMPTY',
       },
       { label: 'STATUS', value: systemState.label.toUpperCase() },
     ],
@@ -272,7 +358,11 @@ export function Jarvis() {
   const errorMessage = microphoneState.error ?? conversation.errorMessage;
 
   return (
-    <section className="relative w-full h-full" data-mode={systemState.mode} id="jarvis">
+    <section
+      className="relative w-full h-full"
+      data-mode={systemState.mode}
+      id="jarvis"
+    >
       <div className="absolute scanline" aria-hidden="true" />
 
       <div className="jarvis-shell__header">
@@ -296,10 +386,17 @@ export function Jarvis() {
           </div>
           <button
             type="button"
-            className={cx('jarvis-shell__toggle', isEnabled ? 'jarvis-shell__toggle--active' : undefined)}
+            className={cx(
+              'jarvis-shell__toggle',
+              isEnabled ? 'jarvis-shell__toggle--active' : undefined,
+            )}
             onClick={toggleEnabled}
           >
-            {isEnabled ? <StandbyIcon className="h-5 w-5" /> : <MicIcon className="h-5 w-5" />}
+            {isEnabled ? (
+              <StandbyIcon className="h-5 w-5" />
+            ) : (
+              <MicIcon className="h-5 w-5" />
+            )}
             {isEnabled ? 'Stand down' : 'Activate system'}
           </button>
         </div>
@@ -307,7 +404,11 @@ export function Jarvis() {
 
       <div className="jarvis-shell__center">
         <TelemetryList items={leftTelemetry} title="Sensor rail" />
-        <JarvisOrb bars={motion.bars} energy={motion.energy} mode={systemState.mode} />
+        <JarvisOrb
+          bars={motion.bars}
+          energy={motion.energy}
+          mode={systemState.mode}
+        />
         <TelemetryList items={rightTelemetry} title="Output rail" />
       </div>
 
@@ -329,10 +430,15 @@ export function Jarvis() {
         </div>
       </div>
 
-      {errorMessage ? <div className="jarvis-shell__alert">{errorMessage}</div> : null}
+      {errorMessage ? (
+        <div className="jarvis-shell__alert">{errorMessage}</div>
+      ) : null}
 
       {shouldListen ? (
-        <ActiveMicrophone onSpeechSegment={conversation.processSpeech} onStateChange={setMicrophoneState} />
+        <ActiveMicrophone
+          onSpeechSegment={conversation.processSpeech}
+          onStateChange={setMicrophoneState}
+        />
       ) : null}
     </section>
   );

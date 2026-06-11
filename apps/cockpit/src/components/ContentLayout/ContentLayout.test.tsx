@@ -7,7 +7,11 @@ describe('getBreadcrumbItems', () => {
   });
 
   it('returns the finance cash breadcrumb for the cash route', () => {
-    expect(getBreadcrumbItems('/finance/cash')).toEqual(['Home', 'Finance', 'Cash']);
+    expect(getBreadcrumbItems('/finance/cash')).toEqual([
+      'Home',
+      'Finance',
+      'Cash',
+    ]);
   });
 
   it('falls back to the overview breadcrumb for unknown routes', () => {

@@ -28,7 +28,8 @@ function normalizeAssistantServiceBaseUrl(baseUrl: string): string {
 }
 
 function getAssistantServiceBaseUrlSources(): AssistantServiceBaseUrlSources {
-  const processEnv = (globalThis as { process?: { env?: ProcessEnv } }).process?.env;
+  const processEnv = (globalThis as { process?: { env?: ProcessEnv } }).process
+    ?.env;
 
   return {
     runtimeBaseUrl: processEnv?.ASSISTANT_SERVICE_BASE_URL,
@@ -39,7 +40,10 @@ function getAssistantServiceBaseUrlSources(): AssistantServiceBaseUrlSources {
 export function resolveAssistantServiceBaseUrl(
   sources: AssistantServiceBaseUrlSources = getAssistantServiceBaseUrlSources(),
 ): string {
-  const baseUrl = sources.runtimeBaseUrl ?? sources.buildTimeBaseUrl ?? DEFAULT_LOCAL_ASSISTANT_SERVICE_BASE_URL;
+  const baseUrl =
+    sources.runtimeBaseUrl ??
+    sources.buildTimeBaseUrl ??
+    DEFAULT_LOCAL_ASSISTANT_SERVICE_BASE_URL;
 
   return normalizeAssistantServiceBaseUrl(baseUrl);
 }

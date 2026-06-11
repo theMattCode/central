@@ -2,9 +2,15 @@
 import type { PropsWithChildren } from 'react';
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { Summary, Transaction } from '@/domain/finance/transactions/model.ts';
+import type {
+  Summary,
+  Transaction,
+} from '@/domain/finance/transactions/model.ts';
 import { useTransactions } from '@/domain/finance/transactions/data.ts';
-import { type FinanceClient, type TransactionsResponse } from '@/domain/finance/financeClient.ts';
+import {
+  type FinanceClient,
+  type TransactionsResponse,
+} from '@/domain/finance/financeClient.ts';
 import { FinanceClientProvider } from '@/domain/finance/FinanceClientContext.tsx';
 import type { IsoDateRange } from '@/utils/datetime.ts';
 
@@ -22,13 +28,20 @@ describe('useTransactions', () => {
   });
 
   const financeClientMock: FinanceClient = {
-    getTransactions(input: IsoDateRange, options?: { signal?: AbortSignal }): Promise<TransactionsResponse> {
+    getTransactions(
+      input: IsoDateRange,
+      options?: { signal?: AbortSignal },
+    ): Promise<TransactionsResponse> {
       return getTransactionsMock(input, options);
     },
   };
 
   function TestWrapper({ children }: PropsWithChildren) {
-    return <FinanceClientProvider client={financeClientMock}>{children}</FinanceClientProvider>;
+    return (
+      <FinanceClientProvider client={financeClientMock}>
+        {children}
+      </FinanceClientProvider>
+    );
   }
 
   const TEST_SUMMARY: Summary = {
@@ -37,7 +50,9 @@ describe('useTransactions', () => {
     netTotal: { amount: '75.00', currencyCode: 'EUR' },
   };
 
-  function createTransaction(partial: Partial<Transaction> & Pick<Transaction, 'id'>): Transaction {
+  function createTransaction(
+    partial: Partial<Transaction> & Pick<Transaction, 'id'>,
+  ): Transaction {
     return {
       id: partial.id,
       direction: partial.direction ?? 'expense',
@@ -55,7 +70,11 @@ describe('useTransactions', () => {
   it('loads transactions for the requested date range', async () => {
     const transactions = [
       createTransaction({ id: 'groceries', category: 'Groceries' }),
-      createTransaction({ id: 'salary', direction: 'income', category: 'Salary' }),
+      createTransaction({
+        id: 'salary',
+        direction: 'income',
+        category: 'Salary',
+      }),
       createTransaction({ id: 'uncategorized' }),
       createTransaction({ id: 'repeat-groceries', category: 'Groceries' }),
     ];
@@ -66,9 +85,12 @@ describe('useTransactions', () => {
       transactions,
     });
 
-    const { result } = renderHook(() => useTransactions({ from: '2026-05-01', to: '2026-05-31' }), {
-      wrapper: TestWrapper,
-    });
+    const { result } = renderHook(
+      () => useTransactions({ from: '2026-05-01', to: '2026-05-31' }),
+      {
+        wrapper: TestWrapper,
+      },
+    );
 
     expect(result.current.loading).toBe(true);
 
@@ -89,8 +111,14 @@ describe('useTransactions', () => {
   });
 
   it('reloads the current date range when reload is called', async () => {
-    const initialTransaction = createTransaction({ id: 'initial', description: 'Initial transaction' });
-    const reloadedTransaction = createTransaction({ id: 'reloaded', description: 'Reloaded transaction' });
+    const initialTransaction = createTransaction({
+      id: 'initial',
+      description: 'Initial transaction',
+    });
+    const reloadedTransaction = createTransaction({
+      id: 'reloaded',
+      description: 'Reloaded transaction',
+    });
     getTransactionsMock
       .mockResolvedValueOnce({
         from: '2026-05-01',
@@ -105,9 +133,12 @@ describe('useTransactions', () => {
         transactions: [reloadedTransaction],
       });
 
-    const { result } = renderHook(() => useTransactions({ from: '2026-05-01', to: '2026-05-31' }), {
-      wrapper: TestWrapper,
-    });
+    const { result } = renderHook(
+      () => useTransactions({ from: '2026-05-01', to: '2026-05-31' }),
+      {
+        wrapper: TestWrapper,
+      },
+    );
 
     await waitFor(() => {
       expect(result.current.data?.transactions).toEqual([initialTransaction]);
@@ -142,10 +173,13 @@ describe('useTransactions', () => {
       });
     });
 
-    const { rerender } = renderHook(({ from, to }) => useTransactions({ from, to }), {
-      initialProps: { from: '2026-05-01', to: '2026-05-31' },
-      wrapper: TestWrapper,
-    });
+    const { rerender } = renderHook(
+      ({ from, to }) => useTransactions({ from, to }),
+      {
+        initialProps: { from: '2026-05-01', to: '2026-05-31' },
+        wrapper: TestWrapper,
+      },
+    );
 
     await waitFor(() => {
       expect(getTransactionsMock).toHaveBeenCalledTimes(1);
@@ -169,9 +203,12 @@ describe('useTransactions', () => {
     const error = new Error('transactions unavailable');
     getTransactionsMock.mockRejectedValueOnce(error);
 
-    const { result } = renderHook(() => useTransactions({ from: '2026-05-01', to: '2026-05-31' }), {
-      wrapper: TestWrapper,
-    });
+    const { result } = renderHook(
+      () => useTransactions({ from: '2026-05-01', to: '2026-05-31' }),
+      {
+        wrapper: TestWrapper,
+      },
+    );
 
     await waitFor(() => {
       expect(result.current.error?.message).toBe('transactions unavailable');

@@ -1,9 +1,16 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useMicVAD } from '@ricky0123/vad-react';
-import { MdGraphicEq as VoiceIcon, MdMic as MicIcon, MdPauseCircle as StopIcon } from 'react-icons/md';
+import {
+  MdGraphicEq as VoiceIcon,
+  MdMic as MicIcon,
+  MdPauseCircle as StopIcon,
+} from 'react-icons/md';
 import { Section } from '@/components/Section/Section.tsx';
 import { cx } from '@/utils/styles.ts';
-import { configureVoiceOrt, VAD_BASE_ASSET_PATH } from '@/domain/voice/model/vadAssetPaths.ts';
+import {
+  configureVoiceOrt,
+  VAD_BASE_ASSET_PATH,
+} from '@/domain/voice/model/vadAssetPaths.ts';
 import { useVoiceConversation } from '@/domain/voice/model/useVoiceConversation.ts';
 
 type ListeningPhase = 'initializing' | 'ready' | 'speaking';
@@ -13,7 +20,10 @@ type ActiveMicrophoneProps = {
   onPhaseChange: (phase: ListeningPhase) => void;
 };
 
-function ActiveMicrophone({ onSpeechSegment, onPhaseChange }: ActiveMicrophoneProps) {
+function ActiveMicrophone({
+  onSpeechSegment,
+  onPhaseChange,
+}: ActiveMicrophoneProps) {
   useMicVAD({
     startOnLoad: true,
     baseAssetPath: VAD_BASE_ASSET_PATH,
@@ -73,15 +83,25 @@ function getStatusLabel(
 
 export function VoiceWidget() {
   const [isEnabled, setIsEnabled] = useState(false);
-  const [listeningPhase, setListeningPhase] = useState<ListeningPhase>('initializing');
+  const [listeningPhase, setListeningPhase] =
+    useState<ListeningPhase>('initializing');
   const conversation = useVoiceConversation({
     language: 'de',
   });
 
-  const shouldListen = isEnabled && conversation.status !== 'processing' && conversation.status !== 'playing';
+  const shouldListen =
+    isEnabled &&
+    conversation.status !== 'processing' &&
+    conversation.status !== 'playing';
 
   const statusLabel = useMemo(
-    () => getStatusLabel(isEnabled, listeningPhase, conversation.status, conversation.responseText),
+    () =>
+      getStatusLabel(
+        isEnabled,
+        listeningPhase,
+        conversation.status,
+        conversation.responseText,
+      ),
     [conversation.responseText, conversation.status, isEnabled, listeningPhase],
   );
 
@@ -107,7 +127,8 @@ export function VoiceWidget() {
             <div>
               <h2 className="text-lg font-semibold text-slate-50">Voice</h2>
               <p className="text-sm text-slate-400">
-                Deutscher Sprachmodus ueber Cockpit -&gt; service-assistant mit gestreamter LLM/TTS-Antwort.
+                Deutscher Sprachmodus ueber Cockpit -&gt; service-assistant mit
+                gestreamter LLM/TTS-Antwort.
               </p>
             </div>
           </div>
@@ -147,8 +168,10 @@ export function VoiceWidget() {
           </div>
 
           <p className="mt-3 text-sm text-slate-400">
-            Sprich nach dem Aktivieren frei in das Mikrofon. Das Widget trennt Sprache lokal im Browser, sendet nur
-            erkannte Sprachsegmente an den Assistant-Service und startet die Sprachausgabe bereits waehrend der Antwort.
+            Sprich nach dem Aktivieren frei in das Mikrofon. Das Widget trennt
+            Sprache lokal im Browser, sendet nur erkannte Sprachsegmente an den
+            Assistant-Service und startet die Sprachausgabe bereits waehrend der
+            Antwort.
           </p>
         </div>
 
@@ -169,13 +192,17 @@ export function VoiceWidget() {
           <div className="rounded-md border border-slate-800/90 bg-slate-950/40 p-4">
             <h3 className="text-sm font-medium text-slate-300">Antwort</h3>
             <p className="mt-2 text-sm leading-6 text-slate-100">
-              {conversation.responseText ?? 'Nach einer Spracheingabe erscheint hier die Modellantwort.'}
+              {conversation.responseText ??
+                'Nach einer Spracheingabe erscheint hier die Modellantwort.'}
             </p>
           </div>
         </div>
 
         {shouldListen ? (
-          <ActiveMicrophone onPhaseChange={setListeningPhase} onSpeechSegment={conversation.processSpeech} />
+          <ActiveMicrophone
+            onPhaseChange={setListeningPhase}
+            onSpeechSegment={conversation.processSpeech}
+          />
         ) : null}
       </div>
     </Section>

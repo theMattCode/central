@@ -38,14 +38,30 @@ function ShowcaseButtons() {
 
 function ShowcaseButtonGroup() {
   const options = [
-    { id: '1', text: 'Daily', style: { optionColor: 'var(--color-sem-positive)' } },
-    { id: '2', text: 'Weekly', style: { optionColor: 'var(--color-sem-neutral)' } },
-    { id: '3', text: 'Monthly', style: { optionColor: 'var(--color-sem-negative)' } },
+    {
+      id: '1',
+      text: 'Daily',
+      style: { optionColor: 'var(--color-sem-positive)' },
+    },
+    {
+      id: '2',
+      text: 'Weekly',
+      style: { optionColor: 'var(--color-sem-neutral)' },
+    },
+    {
+      id: '3',
+      text: 'Monthly',
+      style: { optionColor: 'var(--color-sem-negative)' },
+    },
   ];
   return (
     <div className="flex flex-col gap-2">
       <h3 className="text-lg font-bold">Button Group</h3>
-      <ButtonGroup options={options} defaultValue={options[0]} onChanged={(opt) => console.log('Selected:', opt)} />
+      <ButtonGroup
+        options={options}
+        defaultValue={options[0]}
+        onChanged={(opt) => console.log('Selected:', opt)}
+      />
     </div>
   );
 }

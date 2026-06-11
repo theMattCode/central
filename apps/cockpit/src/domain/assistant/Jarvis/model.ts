@@ -1,6 +1,13 @@
 import type { VoiceConversationStatus } from '@/domain/voice/model/model.ts';
 
-export type JarvisMode = 'offline' | 'booting' | 'standby' | 'listening' | 'transcribing' | 'speaking' | 'error';
+export type JarvisMode =
+  | 'offline'
+  | 'booting'
+  | 'standby'
+  | 'listening'
+  | 'transcribing'
+  | 'speaking'
+  | 'error';
 export type JarvisTone = 'normal' | 'attention' | 'error';
 
 export type JarvisSystemStateInput = {
@@ -41,7 +48,8 @@ export function resolveJarvisSystemState({
 }: JarvisSystemStateInput): JarvisSystemState {
   if (!isEnabled) {
     return {
-      detail: 'Voice control is offline. Activate the system to arm browser VAD and streamed speech playback.',
+      detail:
+        'Voice control is offline. Activate the system to arm browser VAD and streamed speech playback.',
       label: 'System offline',
       mode: 'offline',
       tone: 'normal',
@@ -50,7 +58,10 @@ export function resolveJarvisSystemState({
 
   if (vadError || conversationStatus === 'error') {
     return {
-      detail: vadError ?? conversationError ?? 'The voice pipeline reported an error. Cycle the system to re-arm it.',
+      detail:
+        vadError ??
+        conversationError ??
+        'The voice pipeline reported an error. Cycle the system to re-arm it.',
       label: 'Attention required',
       mode: 'error',
       tone: 'error',
@@ -59,7 +70,8 @@ export function resolveJarvisSystemState({
 
   if (conversationStatus === 'playing') {
     return {
-      detail: 'Streaming audio playback is active. Reactor motion is currently keyed to outgoing sound energy.',
+      detail:
+        'Streaming audio playback is active. Reactor motion is currently keyed to outgoing sound energy.',
       label: 'Voice reply online',
       mode: 'speaking',
       tone: 'normal',
@@ -68,7 +80,8 @@ export function resolveJarvisSystemState({
 
   if (conversationStatus === 'processing') {
     return {
-      detail: 'Speech turn captured. Transcription, model generation, and chunked synthesis are in flight.',
+      detail:
+        'Speech turn captured. Transcription, model generation, and chunked synthesis are in flight.',
       label: 'Processing turn',
       mode: 'transcribing',
       tone: 'attention',
@@ -94,7 +107,8 @@ export function resolveJarvisSystemState({
   }
 
   return {
-    detail: 'Standby loop active. The browser is armed and waiting for the next voice segment.',
+    detail:
+      'Standby loop active. The browser is armed and waiting for the next voice segment.',
     label: 'Standby',
     mode: 'standby',
     tone: 'normal',

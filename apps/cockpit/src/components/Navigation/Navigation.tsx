@@ -7,10 +7,16 @@ import {
   MdOutlineMail as MailIcon,
   MdOutlineMonitorWeight as MonitorModeIcon,
   MdOutlineTask as TaskIcon,
-  MdSettings as SettingsIcon
+  MdSettings as SettingsIcon,
 } from 'react-icons/md';
-import { RiArrowLeftRightLine as IncomeAndExpenseIcon, RiStockLine as InvestIcon } from 'react-icons/ri';
-import { PiSidebarSimpleDuotone as NavigationToggleIcon, PiWaveform as JarvisIcon } from 'react-icons/pi';
+import {
+  RiArrowLeftRightLine as IncomeAndExpenseIcon,
+  RiStockLine as InvestIcon,
+} from 'react-icons/ri';
+import {
+  PiSidebarSimpleDuotone as NavigationToggleIcon,
+  PiWaveform as JarvisIcon,
+} from 'react-icons/pi';
 import { NavigationGroup } from '@/components/Navigation/NavigationGroup.tsx';
 import { useState } from 'react';
 import { cx } from '@/utils/styles.ts';
@@ -82,11 +88,15 @@ export function Navigation() {
         <div className="w-full mt-auto flex justify-center @[14rem]:justify-end">
           <button
             type="button"
-            aria-label={isDesktopOpen ? 'Collapse navigation' : 'Expand navigation'}
+            aria-label={
+              isDesktopOpen ? 'Collapse navigation' : 'Expand navigation'
+            }
             className="rounded-lg p-2 text-(--color-txt-sec) hover:bg-(--color-pri)/10 hover:text-(--color-pri)"
             onClick={() => setIsDesktopOpen((value) => !value)}
           >
-            <NavigationToggleIcon className={cx('w-6 h-6 hover:text-(--color-pri)')} />
+            <NavigationToggleIcon
+              className={cx('w-6 h-6 hover:text-(--color-pri)')}
+            />
           </button>
         </div>
       </aside>
@@ -109,7 +119,11 @@ function DrawerContent({ onNavigate }: { onNavigate?: () => void }) {
           <NavigationItem Icon={MailIcon}>E-Mail</NavigationItem>
         </NavigationGroup>
         <NavigationGroup title="Finance">
-          <NavigationItem Icon={IncomeAndExpenseIcon} href="/finance/transactions" onClick={onNavigate}>
+          <NavigationItem
+            Icon={IncomeAndExpenseIcon}
+            href="/finance/transactions"
+            onClick={onNavigate}
+          >
             Transactions
           </NavigationItem>
           <NavigationItem Icon={InvestIcon}>Invest</NavigationItem>

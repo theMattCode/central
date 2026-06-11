@@ -36,7 +36,12 @@ describe('validateWeatherLocation', () => {
   });
 
   it('accepts locations without a timezone', () => {
-    const input = { id: 'obernheim', label: 'Obernheim', latitude: 48.163, longitude: 8.8611 };
+    const input = {
+      id: 'obernheim',
+      label: 'Obernheim',
+      latitude: 48.163,
+      longitude: 8.8611,
+    };
     const expected = { ...input, timezone: undefined };
     expect(validateWeatherLocation(input)).toEqual(expected);
   });

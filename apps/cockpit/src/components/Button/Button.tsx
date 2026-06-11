@@ -8,7 +8,12 @@ export interface Props extends ButtonHTMLAttributes<HTMLButtonElement> {
   shape?: 'circle' | 'square';
 }
 
-export function Button({ icon: Icon, text, shape, ...buttonProps }: PropsWithChildren<Props>) {
+export function Button({
+  icon: Icon,
+  text,
+  shape,
+  ...buttonProps
+}: PropsWithChildren<Props>) {
   return (
     <button
       className={cx(

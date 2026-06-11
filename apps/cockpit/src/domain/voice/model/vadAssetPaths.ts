@@ -5,7 +5,10 @@ function ensureTrailingSlash(value: string): string {
   return value.endsWith('/') ? value : `${value}/`;
 }
 
-export function resolveVoiceStaticAssetPath(relativePath: string, basePath: string = import.meta.env.BASE_URL): string {
+export function resolveVoiceStaticAssetPath(
+  relativePath: string,
+  basePath: string = import.meta.env.BASE_URL,
+): string {
   const normalizedBasePath = ensureTrailingSlash(basePath);
   return `${normalizedBasePath}${relativePath}`;
 }

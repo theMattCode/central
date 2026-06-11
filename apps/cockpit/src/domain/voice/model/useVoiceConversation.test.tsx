@@ -90,7 +90,9 @@ describe('useVoiceConversation', () => {
     vi.stubGlobal('Audio', FakeAudioElement as unknown as typeof Audio);
 
     streamAssistantTurnMock.mockImplementation(async (options) => {
-      const audioBase64 = encodeFloat32ToWavBase64(new Float32Array([0.1, -0.1]));
+      const audioBase64 = encodeFloat32ToWavBase64(
+        new Float32Array([0.1, -0.1]),
+      );
       const audioChunk = {
         audioBase64,
         audioMimeType: 'audio/wav',
@@ -129,7 +131,9 @@ describe('useVoiceConversation', () => {
   });
 
   it('ignores late media errors after playback has already ended', async () => {
-    const { result } = renderHook(() => useVoiceConversation({ language: 'de' }));
+    const { result } = renderHook(() =>
+      useVoiceConversation({ language: 'de' }),
+    );
 
     await act(async () => {
       await result.current.processSpeech(new Float32Array([0.25, -0.25]));

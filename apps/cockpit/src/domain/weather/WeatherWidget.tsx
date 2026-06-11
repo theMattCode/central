@@ -1,7 +1,10 @@
 import { FadeTransition } from '@/components/Transition/FadeTransition.tsx';
 import { Section } from '@/components/Section/Section.tsx';
 import { WeatherCurrentSummary } from '@/domain/weather/WeatherCurrentSummary.tsx';
-import type { WeatherDataLoaded, WeatherLocation } from '@/domain/weather/model/model.ts';
+import type {
+  WeatherDataLoaded,
+  WeatherLocation,
+} from '@/domain/weather/model/model.ts';
 import { Header } from '@/domain/weather/Header.tsx';
 import { useWeatherSnapshot } from '@/domain/weather/model/useWeatherSnapshot.ts';
 
@@ -29,7 +32,10 @@ type WeatherWidgetContentProps = {
   weather: WeatherDataLoaded;
 };
 
-function WeatherWidgetContent({ location, weather }: WeatherWidgetContentProps) {
+function WeatherWidgetContent({
+  location,
+  weather,
+}: WeatherWidgetContentProps) {
   return (
     <div className="flex flex-col gap-2">
       <Header location={location} data={weather} />

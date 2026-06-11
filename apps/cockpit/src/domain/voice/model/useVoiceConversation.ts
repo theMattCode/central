@@ -61,7 +61,10 @@ function toMediaErrorCodeName(code: number | null | undefined): string {
   }
 }
 
-function getAudioElementDiagnostics(audioElement: HTMLAudioElement, mimeType: string) {
+function getAudioElementDiagnostics(
+  audioElement: HTMLAudioElement,
+  mimeType: string,
+) {
   return {
     canPlayType: audioElement.canPlayType(mimeType) || 'empty',
     currentSrc: audioElement.currentSrc,
@@ -81,7 +84,9 @@ function releaseAudioElement(audioElement: HTMLAudioElement): void {
   audioElement.load();
 }
 
-export function useVoiceConversation(options: UseVoiceConversationOptions = {}): UseVoiceConversationResult {
+export function useVoiceConversation(
+  options: UseVoiceConversationOptions = {},
+): UseVoiceConversationResult {
   const [playbackLevel, setPlaybackLevel] = useState(0);
   const [status, setStatus] = useState<VoiceConversationStatus>('idle');
   const [transcript, setTranscript] = useState<string | null>(null);
@@ -114,7 +119,10 @@ export function useVoiceConversation(options: UseVoiceConversationOptions = {}):
 
   const attachPlaybackMonitoring = useCallback(
     (audioElement: HTMLAudioElement) => {
-      if (typeof window === 'undefined' || typeof window.AudioContext === 'undefined') {
+      if (
+        typeof window === 'undefined' ||
+        typeof window.AudioContext === 'undefined'
+      ) {
         setPlaybackLevel(0);
         return;
       }
@@ -122,7 +130,8 @@ export function useVoiceConversation(options: UseVoiceConversationOptions = {}):
       stopPlaybackMonitoring();
 
       try {
-        const audioContext = audioContextRef.current ?? new window.AudioContext();
+        const audioContext =
+          audioContextRef.current ?? new window.AudioContext();
         audioContextRef.current = audioContext;
 
         const analyser = audioContext.createAnalyser();
@@ -148,7 +157,9 @@ export function useVoiceConversation(options: UseVoiceConversationOptions = {}):
           analyser.getByteTimeDomainData(buffer);
           const nextPlaybackLevel = getByteTimeDomainSignalLevel(buffer);
           setPlaybackLevel((currentValue) =>
-            Math.abs(currentValue - nextPlaybackLevel) < 0.015 ? currentValue : nextPlaybackLevel,
+            Math.abs(currentValue - nextPlaybackLevel) < 0.015
+              ? currentValue
+              : nextPlaybackLevel,
           );
           playbackFrameRef.current = window.requestAnimationFrame(measure);
         };
@@ -223,7 +234,9 @@ export function useVoiceConversation(options: UseVoiceConversationOptions = {}):
 
       getLogger().info('voice-playback-loaded-metadata', {
         chunkIndex: nextChunk.chunkIndex,
-        durationSeconds: Number.isFinite(audioElement.duration) ? audioElement.duration : null,
+        durationSeconds: Number.isFinite(audioElement.duration)
+          ? audioElement.duration
+          : null,
         ...nextChunk.audioDiagnostics,
         ...getAudioElementDiagnostics(audioElement, nextChunk.audioMimeType),
       });
@@ -286,7 +299,9 @@ export function useVoiceConversation(options: UseVoiceConversationOptions = {}):
         mediaErrorCodeName,
       );
       setStatus('error');
-      setErrorMessage(`Voice playback failed (${mediaErrorCodeName}). Check cockpit.voice logs.`);
+      setErrorMessage(
+        `Voice playback failed (${mediaErrorCodeName}). Check cockpit.voice logs.`,
+      );
       stopPlayback();
     };
 
@@ -339,7 +354,9 @@ export function useVoiceConversation(options: UseVoiceConversationOptions = {}):
       const abortController = new AbortController();
       abortControllerRef.current = abortController;
 
-      const shouldIgnoreEvent = () => abortController.signal.aborted || abortControllerRef.current !== abortController;
+      const shouldIgnoreEvent = () =>
+        abortController.signal.aborted ||
+        abortControllerRef.current !== abortController;
 
       const queueAudioChunk = (chunk: AssistantTurnAudioChunk) => {
         if (shouldIgnoreEvent()) {
@@ -347,14 +364,20 @@ export function useVoiceConversation(options: UseVoiceConversationOptions = {}):
         }
 
         const responseAudioBytes = base64ToBytes(chunk.audioBase64);
-        const audioDiagnostics = describeAudioBytes(responseAudioBytes, chunk.audioMimeType);
+        const audioDiagnostics = describeAudioBytes(
+          responseAudioBytes,
+          chunk.audioMimeType,
+        );
         getLogger().info('assistant-turn-audio-chunk-received', {
           chunkIndex: chunk.chunkIndex,
           chunkTextLength: chunk.text.length,
           ...audioDiagnostics,
         });
 
-        const audioUrl = createAudioObjectUrlFromBytes(responseAudioBytes, chunk.audioMimeType);
+        const audioUrl = createAudioObjectUrlFromBytes(
+          responseAudioBytes,
+          chunk.audioMimeType,
+        );
         audioQueueRef.current.push({
           audioDiagnostics,
           audioMimeType: chunk.audioMimeType,

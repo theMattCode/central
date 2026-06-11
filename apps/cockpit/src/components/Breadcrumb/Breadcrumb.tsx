@@ -22,7 +22,10 @@ export function Breadcrumb() {
         return (
           <Fragment key={item.id}>
             {index > 0 && <BreadcrumbDelimiter />}
-            <BreadcrumbItem crumb={item.staticData.crumb} href={item.pathname} />
+            <BreadcrumbItem
+              crumb={item.staticData.crumb}
+              href={item.pathname}
+            />
           </Fragment>
         );
       })}
@@ -30,10 +33,19 @@ export function Breadcrumb() {
   );
 }
 
-export function BreadcrumbItem({ crumb, href }: { crumb: Crumb; href?: string }) {
+export function BreadcrumbItem({
+  crumb,
+  href,
+}: {
+  crumb: Crumb;
+  href?: string;
+}) {
   const iconMode = 'icon' in crumb;
   return (
-    <a href={href} className={cx('font-medium', iconMode ? 'text-lg' : 'text-md')}>
+    <a
+      href={href}
+      className={cx('font-medium', iconMode ? 'text-lg' : 'text-md')}
+    >
       {iconMode ? <crumb.icon /> : crumb.label}
     </a>
   );

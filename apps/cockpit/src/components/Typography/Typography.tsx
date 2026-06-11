@@ -8,7 +8,11 @@ type Props = {
 export function Typography({ children, variant }: Props) {
   switch (variant) {
     case 'h1':
-      return <span className="text-2xl text-(--color-txt) font-semibold">{children}</span>;
+      return (
+        <span className="text-2xl text-(--color-txt) font-semibold">
+          {children}
+        </span>
+      );
     default:
       return <span>{children}</span>;
   }

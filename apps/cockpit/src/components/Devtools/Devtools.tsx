@@ -5,7 +5,9 @@ export function Devtools() {
   return (
     <TanStackDevtools
       config={{ position: 'bottom-right' }}
-      plugins={[{ name: 'Tanstack Router', render: <TanStackRouterDevtoolsPanel /> }]}
+      plugins={[
+        { name: 'Tanstack Router', render: <TanStackRouterDevtoolsPanel /> },
+      ]}
     />
   );
 }
