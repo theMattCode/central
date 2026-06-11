@@ -72,7 +72,7 @@ jobs:
         run: |
           set -euo pipefail
 
-          image_base="${REGISTRY}/${IMAGE_NAMESPACE}"
+          image_base="${REGISTRY}/${IMAGE_NAMESPACE,,}"
           sha_tag="sha-${GITHUB_SHA::12}"
           ci_env_file="$(mktemp)"
           publish=false
