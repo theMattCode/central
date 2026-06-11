@@ -1,0 +1,80 @@
+name: ${COMPOSE_PROJECT_NAME:-central}
+
+services:
+  i12e-postgres:
+    image: ghcr.io/themattcode/central/i12e-postgres:${CENTRAL_VERSION:-stable}
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-central}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env.prod.}
+      POSTGRES_DB: ${POSTGRES_DB:-central}
+    restart: ${SERVICE_RESTART_POLICY:-unless-stopped}
+    volumes:
+      - central_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U "$$POSTGRES_USER" -d "$$POSTGRES_DB"']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  i12e-postgres-migrate:
+    image: ghcr.io/themattcode/central/i12e-postgres:${CENTRAL_VERSION:-stable}
+    depends_on:
+      i12e-postgres:
+        condition: service_healthy
+    environment:
+      PGHOST: i12e-postgres
+      PGPORT: '5432'
+      PGDATABASE: ${POSTGRES_DB:-central}
+      PGUSER: ${POSTGRES_USER:-central}
+      PGPASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env.prod.}
+    command: ['apply-migrations.sh']
+    restart: 'no'
+
+  service-backend:
+    image: ghcr.io/themattcode/central/service-backend:${CENTRAL_VERSION:-stable}
+    depends_on:
+      i12e-postgres:
+        condition: service_healthy
+    environment:
+      BACKEND_PORT: '8080'
+      BACKEND_DATABASE_URL: ${BACKEND_DATABASE_URL:?Set BACKEND_DATABASE_URL in .env.prod.}
+      BACKEND_CORS_ALLOW_ORIGIN: ${BACKEND_CORS_ALLOW_ORIGIN:-}
+      WEATHER_REFRESH_INTERVAL_SECONDS: ${WEATHER_REFRESH_INTERVAL_SECONDS:-900}
+      WEATHER_REQUEST_TIMEOUT_SECONDS: ${WEATHER_REQUEST_TIMEOUT_SECONDS:-10}
+      WEATHER_OPEN_METEO_BASE_URL: ${WEATHER_OPEN_METEO_BASE_URL:-https://api.open-meteo.com}
+    restart: ${SERVICE_RESTART_POLICY:-unless-stopped}
+    healthcheck:
+      test: ['CMD', 'wget', '-qO', '-', 'http://127.0.0.1:8080/healthz']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  app-cockpit:
+    image: ghcr.io/themattcode/central/app-cockpit:${CENTRAL_VERSION:-stable}
+    depends_on:
+      service-backend:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      BACKEND_BASE_URL: ${BACKEND_BASE_URL:-http://service-backend:8080}
+    restart: ${SERVICE_RESTART_POLICY:-unless-stopped}
+
+  i12e-gateway:
+    image: ghcr.io/themattcode/central/i12e-gateway:${CENTRAL_VERSION:-stable}
+    depends_on:
+      app-cockpit:
+        condition: service_started
+    restart: ${SERVICE_RESTART_POLICY:-unless-stopped}
+    ports:
+      - '${GATEWAY_BIND:-127.0.0.1}:${GATEWAY_PORT:-4000}:8080'
+    healthcheck:
+      test: ['CMD', 'wget', '-qO', '-', 'http://127.0.0.1:8080/healthz']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+
+volumes:
+  central_postgres_data:

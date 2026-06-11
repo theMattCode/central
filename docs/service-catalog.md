@@ -1,12 +1,16 @@
 # Service Catalog
 
-Source of truth: `i12e/orchestrator/docker-compose.yml`.
+Source of truth:
+
+- Local dev/release-style stack: `i12e/orchestrator/docker-compose.yml`
+- Production server deploy bundle: `i12e/orchestrator/deploy/docker-compose.prod.yml`
 
 ## Orchestrated services
 
 | Service                 | Purpose                                            | Container port(s)      |
 | ----------------------- | -------------------------------------------------- | ---------------------- |
 | `app-cockpit`           | Cockpit web application                            | `3000/tcp`             |
+| `i12e-gateway`          | Production Nginx entrypoint for Cockpit            | `8080/tcp`             |
 | `i12e-postgres`         | PostgreSQL database                                | `5432/tcp`             |
 | `i12e-postgres-migrate` | One-off migration runner                           | None (no exposed port) |
 | `service-backend`       | Integrated backend HTTP API                        | `8080/tcp`             |
@@ -17,14 +21,27 @@ Source of truth: `i12e/orchestrator/docker-compose.yml`.
 | `service-llm`           | OpenAI-compatible LLM adapter                      | `8083/tcp`             |
 | `service-assistant`     | Assistant turn orchestration (`STT -> LLM -> TTS`) | `8080/tcp`             |
 
-## Host port mappings by environment
+## Production server host port mappings
+
+Production server deployment uses the code-free deploy bundle. It exposes only the gateway by default.
+
+| Service        | Compose mapping                                | Default host -> container |
+| -------------- | ---------------------------------------------- | ------------------------- |
+| `i12e-gateway` | `${GATEWAY_BIND}:${GATEWAY_PORT}:8080`         | `127.0.0.1:4000 -> 8080`  |
+| `app-cockpit`  | None                                           | None                      |
+| `service-backend` | None                                        | None                      |
+| `i12e-postgres` | None                                         | None                      |
+
+Tailscale is managed by the host and can forward HTTPS traffic to `127.0.0.1:4000`.
+
+## Local host port mappings by environment
 
 Defaults come from:
 
 - `i12e/orchestrator/.env.dev`
-- `i12e/orchestrator/.env.prod.example`
+- `i12e/orchestrator/.env.prod.example` for local release-style testing
 
-Runtime production values come from ignored `i12e/orchestrator/.env.prod`.
+Runtime local production values come from ignored `i12e/orchestrator/.env.prod`.
 
 | Service                 | Compose mapping             | Dev / staging default (host -> container) | Prod default (host -> container) |
 | ----------------------- | --------------------------- | ----------------------------------------- | -------------------------------- |
@@ -54,10 +71,20 @@ Runtime production values come from ignored `i12e/orchestrator/.env.prod`.
 | `LLM_BASE_URL`                | `http://service-llm:8083`            | `http://service-llm:8083`            |
 | `LLM_MODEL`                   | `qwen3.5:4b`                         | `qwen3:8b`                           |
 
+The code-free production deploy bundle adds:
+
+| Variable          | Production default             |
+| ----------------- | ------------------------------ |
+| `CENTRAL_VERSION` | `stable`                       |
+| `GATEWAY_BIND`    | `127.0.0.1`                    |
+| `GATEWAY_PORT`    | `4000`                         |
+| `CENTRAL_ORIGIN`  | `https://central.example.ts.net` |
+
 ## Internal service endpoints (compose network)
 
 | Service               | Endpoint                           |
 | --------------------- | ---------------------------------- |
+| `i12e-gateway`        | `http://i12e-gateway:8080`         |
 | `app-cockpit`         | `http://app-cockpit:3000`          |
 | `i12e-postgres`       | `i12e-postgres:5432`               |
 | `service-backend`     | `http://service-backend:8080`      |

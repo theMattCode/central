@@ -11,7 +11,7 @@
 - Styling: Tailwind CSS
 - Unit tests: Vitest + Testing Library
 - E2E tests: Playwright
-- CI: GitHub Actions
+- CI: GitHub Actions, publishing tested release images to GHCR for tagged releases
 - Node requirement: `>=24` (`package.json`, `.nvmrc` uses `lts/*`)
 
 ## Command Reference
@@ -217,6 +217,14 @@ Start the production environment:
 ```bash
 pnpm prod
 ```
+
+The long-term production deployment path is the code-free deploy bundle under `i12e/orchestrator/deploy`. CI publishes release images to GHCR and packages:
+
+- `docker-compose.prod.yml`
+- `central-update`
+- `.env.prod.example`
+
+On the production host, run `./central-update` from the unpacked bundle and choose `stable` or an exact release tag such as `v1.2.3`.
 
 Stop it with:
 

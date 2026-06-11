@@ -59,8 +59,25 @@ The repository is organized as a multi-project Nx workspace:
 
 - Docker Compose project used to start the full local stack.
 - Separate environment files define dev and prod default port mappings and assistant model settings.
+- Production releases are code-free on the server: CI publishes a tested core image set to GHCR plus a deploy bundle with `docker-compose.prod.yml`, `central-update`, and `.env.prod.example`.
+- The production baseline runs PostgreSQL, a migration job, Backend, Cockpit, and an Nginx gateway on one Docker Compose host. Assistant, voice, STT, TTS, and LLM services are optional future production profiles, not part of the baseline.
+
+### Gateway (`i12e/gateway`)
+
+- Nginx reverse proxy for the production baseline.
+- Exposes one HTTP entrypoint to the host, bound to `127.0.0.1` by default for Tailscale Serve.
+- Proxies public application traffic to Cockpit.
+- Keeps Backend and PostgreSQL private on the Compose network.
 
 ## Data Flow
+
+### Production HTTP
+
+1. The user reaches the host through Tailscale.
+2. Tailscale Serve forwards to the local gateway port.
+3. Nginx proxies application traffic to Cockpit.
+4. Cockpit server functions call Backend over the private Compose network.
+5. Backend reads and writes PostgreSQL over the private Compose network.
 
 ### Weather
 
@@ -93,6 +110,7 @@ The repository is organized as a multi-project Nx workspace:
 - Keep infrastructure/container/migration concerns in `i12e/*`.
 - Promote cross-project reusable code into `libs/*` when duplication appears.
 - Prefer Cockpit server functions when they already own the boundary; direct browser-to-service calls are reserved for cases like the voice streaming path that need end-to-end streaming semantics.
+- In the production baseline, Backend is private and is not exposed directly through the gateway. System-health views should be implemented through Cockpit or another explicit web app boundary.
 
 ## Shared Library Packaging
 

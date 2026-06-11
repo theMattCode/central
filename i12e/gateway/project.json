@@ -1,0 +1,35 @@
+{
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "name": "i12e-gateway",
+  "projectType": "application",
+  "root": "i12e/gateway",
+  "sourceRoot": "i12e/gateway",
+  "targets": {
+    "lint": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "test -f i12e/gateway/nginx.conf && test -f i12e/gateway/Dockerfile"
+      }
+    },
+    "test": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "test -f i12e/gateway/nginx.conf"
+      }
+    },
+    "build": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "docker build --file i12e/gateway/Dockerfile --tag central/i12e/gateway:latest ."
+      }
+    },
+    "typecheck": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "test -f i12e/gateway/nginx.conf"
+      }
+    }
+  },
+  "tags": ["scope:platform", "type:infra"]
+}
+
