@@ -9,14 +9,14 @@
       "executor": "nx:run-commands",
       "options": {
         "cwd": "apps/cockpit",
-        "command": "pnpm exec prettier --check \"src/**/*.{ts,tsx,css}\" \"!src/routeTree.gen.ts\""
+        "command": "pnpm exec prettier --check \"src/**/*.{ts,tsx,css}\" \"!src/routeTree.gen.ts\" --config ../../.prettierrc"
       }
     },
     "lint-fix": {
       "executor": "nx:run-commands",
       "options": {
         "cwd": "apps/cockpit",
-        "command": "pnpm exec prettier --write \"src/**/*.{ts,tsx,css}\" \"!src/routeTree.gen.ts\""
+        "command": "pnpm exec prettier --write \"src/**/*.{ts,tsx,css}\" \"!src/routeTree.gen.ts\" --config ../../.prettierrc"
       }
     },
     "start": {
