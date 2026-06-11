@@ -13,12 +13,32 @@ permissions:
   packages: write
 
 env:
-  CORE_PROJECTS: cockpit,backend,i12e-postgres,i12e-orchestrator,i12e-gateway
+  I12E_PROJECTS: i12e-postgres,i12e-orchestrator,i12e-gateway
   REGISTRY: ghcr.io
   IMAGE_NAMESPACE: ${{ github.repository }}
 
 jobs:
-  validate:
+  validate-cockpit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - run: corepack enable
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Validate cockpit
+        run: pnpm nx run-many --projects=cockpit -t lint typecheck test
+
+  validate-backend:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -39,15 +59,38 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
-      - name: Validate core projects
-        run: pnpm nx run-many --projects="$CORE_PROJECTS" -t lint typecheck test
+      - name: Validate backend
+        run: pnpm nx run-many --projects=backend -t lint typecheck test
+
+  validate-i12e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - run: corepack enable
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Validate i12e projects
+        run: pnpm nx run-many --projects="$I12E_PROJECTS" -t lint typecheck test
 
       - name: Validate registry production compose
         run: docker compose --env-file i12e/orchestrator/deploy/.env.prod.example --file i12e/orchestrator/deploy/docker-compose.prod.yml config --quiet
 
   core-images:
     runs-on: ubuntu-latest
-    needs: validate
+    needs:
+      - validate-cockpit
+      - validate-backend
+      - validate-i12e
     steps:
       - uses: actions/checkout@v4
         with:
