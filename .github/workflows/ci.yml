@@ -357,3 +357,4 @@ jobs:
         with:
           name: central-deploy-${{ github.ref_name }}
           path: dist/central-deploy-${{ github.ref_name }}.tar.gz
+          retention-days: 1
