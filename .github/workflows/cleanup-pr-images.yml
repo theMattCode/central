@@ -1,0 +1,62 @@
+name: Cleanup PR Images
+
+on:
+  pull_request:
+    types:
+      - closed
+
+permissions:
+  packages: write
+
+jobs:
+  cleanup-pr-images:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Delete closed PR images
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const owner = context.repo.owner;
+            const ownerType = context.payload.repository.owner.type;
+            const packageNames = [
+              'central/app-cockpit',
+              'central/service-backend',
+              'central/i12e-postgres',
+              'central/i12e-gateway',
+            ];
+            const prTagPrefix = `pr-${context.payload.pull_request.number}-`;
+
+            for (const packageName of packageNames) {
+              const listRoute =
+                ownerType === 'Organization'
+                  ? 'GET /orgs/{org}/packages/{package_type}/{package_name}/versions'
+                  : 'GET /user/packages/{package_type}/{package_name}/versions';
+              const deleteRoute =
+                ownerType === 'Organization'
+                  ? 'DELETE /orgs/{org}/packages/{package_type}/{package_name}/versions/{package_version_id}'
+                  : 'DELETE /user/packages/{package_type}/{package_name}/versions/{package_version_id}';
+              const packageOwner = ownerType === 'Organization' ? { org: owner } : {};
+
+              for await (const versions of github.paginate.iterator(listRoute, {
+                ...packageOwner,
+                package_type: 'container',
+                package_name: packageName,
+                per_page: 100,
+              })) {
+                for (const version of versions.data) {
+                  const tags = version.metadata?.container?.tags ?? [];
+                  const hasClosedPrTag = tags.some((tag) => tag.startsWith(prTagPrefix));
+
+                  if (!hasClosedPrTag) {
+                    continue;
+                  }
+
+                  await github.request(deleteRoute, {
+                    ...packageOwner,
+                    package_type: 'container',
+                    package_name: packageName,
+                    package_version_id: version.id,
+                  });
+                }
+              }
+            }
