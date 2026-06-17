@@ -22,8 +22,8 @@ pnpm dev
 This delegates to `pnpm nx run i12e-orchestrator:dev`, which starts the stack with [`docker-compose.dev.yml`](./docker-compose.dev.yml):
 
 - Cockpit runs Vite dev server HMR.
-- Backend and assistant run under `cargo watch`.
-- STT, TTS, and LLM adapter containers restart when their Python source changes.
+- Backend runs under `cargo watch`.
+- Assistant, STT, TTS, and LLM adapter compose blocks are currently commented out, so they are not part of `pnpm dev`.
 
 Stop it with:
 
@@ -42,7 +42,7 @@ Edit `i12e/orchestrator/.env.prod` and set real secrets, especially:
 - `POSTGRES_PASSWORD`
 - `BACKEND_DATABASE_URL`
 - `BACKEND_CORS_ALLOW_ORIGIN`
-- `ASSISTANT_CORS_ALLOW_ORIGIN`
+- `ASSISTANT_CORS_ALLOW_ORIGIN` if assistant services are re-enabled
 
 Prod startup refuses placeholder DB credentials or wildcard CORS.
 
@@ -77,9 +77,7 @@ Startup order:
 
 1. Start PostgreSQL with Compose health waiting.
 2. Run migrations.
-3. Start Ollama with Compose health waiting.
-4. Pull configured model.
-5. Start application services.
+3. Start application services.
 
 Long-running services use `SERVICE_RESTART_POLICY`; dev sets `no`, prod example sets `unless-stopped`.
 
@@ -91,53 +89,50 @@ Release-style detached development stack:
 pnpm nx run i12e-orchestrator:up-dev
 ```
 
-Dev with mock STT/TTS and direct Ollama:
+Experimental dev with mock STT/TTS and direct Ollama:
 
 ```bash
 pnpm nx run i12e-orchestrator:up-dev-llm-proxy-ollama
 ```
 
-This keeps `service-assistant` in `llm-proxy` mode and points it at:
+This target currently references assistant and Ollama compose services that are commented out in `docker-compose.yml`. If those services are re-enabled, it keeps `service-assistant` in `llm-proxy` mode and points it at:
 
 - `http://service-llm-runtime:11434/v1/chat/completions`
 
-This is the thinnest LLM integration path in the repo because `service-assistant` talks to Ollama directly and keeps STT/TTS mocked. The Ollama runtime uses the standard GPU-backed compose configuration and requests `gpus: all`.
+This is the thinnest LLM integration path in the repo because `service-assistant` talks to Ollama directly and keeps STT/TTS mocked. The commented Ollama runtime definition requests `gpus: all`.
 
 ## Default assistant stack
 
-`up-dev`, `up-dev-hot`, and `pnpm dev` keep `service-assistant` in `proxy` mode and point it at:
+The default assistant stack is implemented in service code but disabled in the active orchestrator compose files. The commented configuration keeps `service-assistant` in `proxy` mode and points it at:
 
 - `http://service-stt:8081/transcribe`
 - `http://service-tts:8082/synthesize`
 - `http://service-llm:8083/chat/completions`
 
 This path keeps the `llm-service` wrapper in front of Ollama, which is useful when you want lazy model pulls and a repo-owned adapter boundary. It reuses `LLM_MODEL` from `i12e/orchestrator/.env.dev`.
-The STT, TTS, and Ollama runtime services request `gpus: all` in the main compose file. This requires Docker GPU support on the host, typically NVIDIA Container Toolkit on Linux.
+The STT, TTS, and Ollama runtime service definitions request `gpus: all`. Re-enabling them requires Docker GPU support on the host, typically NVIDIA Container Toolkit on Linux.
 
-## Smoke-test the complete voice stack
+## Experimental voice stack smoke test
 
 ```bash
 pnpm nx run i12e-orchestrator:smoke-dev-voice
 ```
 
-This target starts the complete voice stack if needed, then runs one spoken roundtrip through STT, Qwen via Ollama, and TTS.
+This target depends on the currently commented assistant support services. Once those are re-enabled, it starts the voice stack if needed, then runs one spoken roundtrip through STT, Qwen via Ollama, and TTS.
 
 Override these environment variables when needed:
 
 - `SMOKE_VOICE_TEXT`
 - `SMOKE_VOICE_LANGUAGE`
 
-`pnpm dev`, `pnpm prod`, and advanced `up-*` targets bring up:
+`pnpm dev`, `pnpm prod`, and `up-dev` bring up:
 
 - Cockpit app (`app-cockpit` service)
 - PostgreSQL (`i12e-postgres` service)
 - Migration runner (`i12e-postgres-migrate`) as a one-off container (`--rm`)
-- Backend (`service-backend` service, currently serving the weather domain)
-- Faster-whisper STT (`service-stt` service)
-- Qwen3-TTS voice cloning (`service-tts` service)
-- Ollama runtime (`service-llm-runtime` service)
-- LLM wrapper (`service-llm` service)
-- Assistant backend (`service-assistant` service)
+- Backend (`service-backend` service, serving finance and weather domains)
+
+Assistant backend, Faster-whisper STT, Qwen3-TTS, Ollama runtime, and LLM wrapper code exists in `services/*`, but the orchestrator service blocks are commented out.
 
 Environment files:
 
@@ -145,9 +140,9 @@ Environment files:
 - `i12e/orchestrator/.env.prod.example`: tracked production template.
 - `i12e/orchestrator/.env.prod`: ignored local production config.
 
-When cockpit runs inside the compose network, its server-side runtime must reach backend through `http://service-backend:8080` and assistant-service through `http://service-assistant:8080`.
+When cockpit runs inside the compose network, its server-side runtime reaches backend through `http://service-backend:8080`.
 
-Cockpit's browser bundle is separate: in Compose it should use the published host ports (`http://localhost:3010` and `http://localhost:3020` in dev by default) for any direct browser fetches.
+Cockpit's browser bundle is separate: in Compose it should use the published host port (`http://localhost:3010` in dev by default) for any direct browser fetches.
 
 Service and port mapping details (including dev/prod differences) are documented in [`docs/service-catalog.md`](../../docs/service-catalog.md).
 

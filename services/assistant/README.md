@@ -2,19 +2,21 @@
 
 Rust backend service that owns the assistant-turn orchestration boundary for Central.
 
-The intended request path is:
+The full voice request path is:
 
 1. Browser VAD cuts a speech segment locally.
 2. Cockpit posts the segment to `service-assistant`.
 3. `service-assistant` performs `STT -> streamed LLM -> chunked TTS`.
 4. Cockpit receives transcript, response deltas, and audio chunks, then starts playback before the full turn finishes.
 
+Cockpit currently has browser VAD disabled, so this path is available in the service and client code but is not started by the default UI.
+
 ## Why this shape fits `central`
 
 - Browser clients never call model-serving infrastructure directly.
 - Cockpit stays responsible for app/session/auth boundaries.
 - Model-serving details stay behind a Rust/Axum service, separate from the integrated `services/backend` API.
-- The standalone service can still run in `mock` mode for quick wiring tests, while the orchestrated stack defaults to STT, TTS, and LLM services.
+- The standalone service can run in `mock` mode for quick wiring tests. The orchestrator compose blocks for assistant, STT, TTS, and LLM services are currently commented out.
 
 ## Architecture
 
@@ -197,7 +199,7 @@ Or keep the `llm-service` wrapper when you want lazy model pulls and a repo-owne
 ## Configuration
 
 - `ASSISTANT_PORT` (default: `5020`)
-- `ASSISTANT_BACKEND_MODE` (`mock`, `llm-proxy`, `openai`, or `proxy`, standalone default: `mock`; orchestrator default: `proxy`)
+- `ASSISTANT_BACKEND_MODE` (`mock`, `llm-proxy`, `openai`, or `proxy`, standalone default: `mock`; commented orchestrator default: `proxy`)
 - `ASSISTANT_REQUEST_TIMEOUT_SECONDS` (default: `30`)
 - `TTS_STREAM_SOFT_LIMIT_CHARS` (default: `220`, larger values improve local TTS prosody but delay the first streamed audio chunk)
 - `ASSISTANT_CORS_ALLOW_ORIGIN` (default: `*`)

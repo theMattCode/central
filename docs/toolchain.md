@@ -5,12 +5,11 @@
 - Monorepo: Nx (integrated workspace)
 - Package manager: pnpm
 - Frontend framework: TanStack Start (React) + TypeScript
-- Backend services: Rust (Axum)
+- Backend services: Rust (Axum) for Backend and Assistant; Python HTTP adapters for STT, TTS, and LLM
 - Routing: TanStack Router
 - Build/dev server: Vite (via TanStack Start)
 - Styling: Tailwind CSS
-- Unit tests: Vitest + Testing Library
-- E2E tests: Playwright
+- Tests: Vitest + Testing Library for TypeScript, Cargo tests for Rust, `unittest`/`py_compile` for Python adapters
 - CI: GitHub Actions, staging tested build images in GHCR and publishing release tags from the tested image set
 - Node requirement: `>=24` (`package.json`, `.nvmrc` uses `lts/*`)
 
@@ -143,7 +142,7 @@ nx run assistant-service:container-run
 
 The assistant container run target publishes `5020:8080`.
 
-The standalone assistant container still defaults to `ASSISTANT_BACKEND_MODE=mock` unless environment overrides are supplied. The orchestrated dev and prod paths default to `ASSISTANT_BACKEND_MODE=proxy` with STT, TTS, and LLM services wired in.
+The standalone assistant container still defaults to `ASSISTANT_BACKEND_MODE=mock` unless environment overrides are supplied. The commented orchestrator assistant definition defaults to `ASSISTANT_BACKEND_MODE=proxy` with STT, TTS, and LLM services wired in.
 
 ### STT and TTS containers
 
@@ -186,17 +185,18 @@ The standalone LLM wrapper publishes `5050:8083`.
 
 ### Orchestrator project
 
-Start the complete hot-reload development environment:
+Start the active hot-reload development environment:
 
 ```bash
 pnpm dev
 ```
 
-This delegates to `nx run i12e-orchestrator:dev` / `up-dev-hot`. It starts PostgreSQL, runs migrations, starts Ollama and pulls the configured model, then starts the service stack with the dev compose overlay:
+This delegates to `nx run i12e-orchestrator:dev` / `up-dev-hot`. It starts PostgreSQL, runs migrations, then starts the active service stack with the dev compose overlay:
 
 - `app-cockpit` runs the Vite dev server for browser HMR.
-- `service-backend` and `service-assistant` run through `cargo watch`.
-- `service-stt`, `service-tts`, and `service-llm` use Docker Compose watch with restart-on-change.
+- `service-backend` runs through `cargo watch`.
+
+Assistant, STT, TTS, Ollama runtime, and LLM wrapper compose blocks exist as commented prototypes in the orchestrator compose files. Their standalone service projects and container targets are still available, but they are not part of the active `pnpm dev` or `pnpm prod` stack.
 
 Stop the dev stack with:
 
@@ -218,7 +218,7 @@ Start the production environment:
 pnpm prod
 ```
 
-The long-term production deployment path is the code-free deploy bundle under `i12e/orchestrator/deploy`. CI pushes PR and SHA build images to GHCR for integration testing, deletes PR-tagged images when pull requests close, publishes release tags from the tested SHA image set, and packages:
+The production deployment path is the code-free deploy bundle under `i12e/orchestrator/deploy`. CI pushes PR and SHA build images to GHCR for integration testing, publishes release tags from the tested SHA image set, and packages:
 
 - `docker-compose.prod.yml`
 - `central-update`
@@ -233,7 +233,7 @@ pnpm prod:down
 ```
 
 The orchestrator `up-*` targets share startup sequencing through `i12e/orchestrator/scripts/up_stack.sh`.
-Startup waits for PostgreSQL and Ollama health before running migrations or pulling the configured model.
+Startup waits for PostgreSQL health before running migrations.
 Long-running services use `SERVICE_RESTART_POLICY`; dev defaults to `no`, prod example defaults to `unless-stopped`.
 
 Advanced targets:
@@ -244,20 +244,19 @@ nx run i12e-orchestrator:up-dev-llm-proxy-ollama
 ```
 
 `up-dev` starts release-style dev containers without watchers.
-`up-dev-llm-proxy-ollama` keeps `service-assistant` in `llm-proxy` mode and points `LLM_BASE_URL` at the Ollama runtime's OpenAI-compatible `/v1` endpoint.
+`up-dev-llm-proxy-ollama` is retained as an experimental target, but it currently references assistant and Ollama compose services that are commented out in `docker-compose.yml`.
 
-The tracked `i12e/orchestrator/.env.dev` biases this path toward quality over speed with a larger STT model, less aggressive extra STT VAD, and slightly less choppy TTS streaming.
-The main compose file is GPU-backed by default for assistant support services: `service-stt`, `service-tts`, and `service-llm-runtime` request `gpus: all`. STT defaults to CUDA/FP16, TTS defaults to CUDA with FlashAttention 2 installed from a prebuilt wheel, and the stack requires a Docker host with working GPU container support.
+The tracked `i12e/orchestrator/.env.dev` still includes assistant tuning values. Those values are not consumed by the active compose stack unless the commented assistant support services are re-enabled. The commented service definitions request `gpus: all` for STT, TTS, and Ollama runtime.
 
-Run a full voice smoke test, including stack startup, STT, LLM, and TTS:
+Run the experimental voice smoke test target:
 
 ```bash
 nx run i12e-orchestrator:smoke-dev-voice
 ```
 
-Override `SMOKE_VOICE_TEXT` and `SMOKE_VOICE_LANGUAGE` when you want to exercise a different sample input.
+Override `SMOKE_VOICE_TEXT` and `SMOKE_VOICE_LANGUAGE` when you want to exercise a different sample input. This target depends on the currently commented assistant support services and is not part of the active default stack.
 
-The production target starts the same service classes by default, using port mappings from ignored `i12e/orchestrator/.env.prod`.
+The local production target starts PostgreSQL, migrations, Backend, and Cockpit by default, using port mappings from ignored `i12e/orchestrator/.env.prod`.
 
 The migration step runs as a one-off `postgres-migrate` container and is removed after completion.
 

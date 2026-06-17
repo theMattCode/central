@@ -4,6 +4,8 @@
 
 ### Scripts
 
+These rules are preferred for new or changed package scripts. Some root-level convenience scripts predate the convention; do not churn them unless the task already touches that area.
+
 - **Names**: npm script names MUST contain only lower case letters, `:` to separate parts, `-` to separate words, and `+` to separate file extensions. Each part name SHOULD be either a full English word (e.g. `coverage` not `cov`) or a well-known initialism in all lowercase (e.g. `wasm`). Here is a summary of the proposal in ABNF:
   ```
   name         = life-cycle / main target? option* ":watch"?

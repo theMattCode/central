@@ -4,7 +4,7 @@ OpenAI-compatible chat completion adapter for `service-assistant`.
 
 It exposes the `POST /chat/completions` contract expected by `services/assistant` and forwards requests to an Ollama runtime.
 
-The default model for the orchestrated dev flow is `qwen2.5:3b`, because it keeps startup and response latency reasonable while still supporting German chat well. Override it with `LLM_MODEL` when you want a larger Qwen variant.
+When the commented orchestrator LLM services are re-enabled, `LLM_MODEL` selects the Ollama model. The tracked dev env currently sets `qwen3.5:4b`; standalone service code still falls back through `LLM_DEFAULT_MODEL`.
 
 ## Endpoints
 

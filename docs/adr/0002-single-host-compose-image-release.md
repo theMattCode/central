@@ -4,4 +4,4 @@ Central production runs on one Linux host with Docker Compose as the deployment 
 
 The core production stack is Cockpit, Backend, PostgreSQL, migrations, and an Nginx gateway exposed through Tailscale. Assistant, voice, STT, TTS, and LLM services are excluded from the baseline until they are reliable enough to ship as an optional profile. Major SemVer releases signal incompatible changes that may require planned downtime.
 
-Deployments coordinate with backend work through a DB-backed maintenance mode, a deploy advisory lock, and bounded task draining before migrations run. This keeps old services serving while images are pulled, stops new mutating/background work before schema changes, and only restarts the app stack after migrations pass.
+Future deployment hardening may add DB-backed maintenance mode, a deploy advisory lock, and bounded task draining before migrations run. The current `central-update` script pulls images, starts PostgreSQL, optionally backs up the database, runs migrations, starts Backend/Cockpit/Gateway, and checks health.

@@ -18,6 +18,8 @@ pnpm dev:down
 
 ## Prod
 
+Production releases and server updates are documented in [docs/deployment.md](docs/deployment.md).
+
 Create the local production environment file once:
 
 ```bash
