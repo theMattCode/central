@@ -6,22 +6,15 @@
     "#/*": "./src/*"
   },
   "scripts": {
-    "sync:voice-vad-assets": "node scripts/sync-vad-assets.mjs",
-    "prebuild": "pnpm run sync:voice-vad-assets",
     "build": "vite build",
-    "prestart:dev": "pnpm run sync:voice-vad-assets",
     "start:dev": "vite dev --port 5000",
-    "prestart:preview": "pnpm run sync:voice-vad-assets",
     "start:preview": "vite preview",
-    "pretest": "pnpm run sync:voice-vad-assets",
     "test": "vitest run",
-    "pretypecheck": "pnpm run sync:voice-vad-assets",
     "typecheck": "tsc --noEmit -p tsconfig.json"
   },
   "dependencies": {
     "@central/ts-log": "workspace:*",
     "@meteocons/svg": "^0.1.0",
-    "@ricky0123/vad-react": "0.0.33",
     "@tailwindcss/vite": "4.2.1",
     "@tanstack/react-router": "1.163.2",
     "@tanstack/react-router-ssr-query": "1.163.2",

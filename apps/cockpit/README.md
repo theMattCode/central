@@ -67,8 +67,7 @@ The `/finance/cash` route manages manual income and expense transactions:
 The voice widget keeps `service-assistant` as the backend boundary, but its primary turn path is now streamed:
 
 - Browser speech segments are cut locally with browser VAD.
-- Browser VAD model/worklet assets are self-hosted from cockpit under `public/vendor/` instead of loading from a CDN.
-- The ONNX runtime module and WASM binary are self-hosted as Vite-managed app assets, so dev/build keep working without CDN requests.
+- Browser voice activity detection is temporarily disabled.
 - The browser streams turns directly to `service-assistant` via `POST /api/v1/assistant/turn/stream`.
 - `service-assistant` then performs `STT -> streamed LLM -> chunked TTS`.
 - Cockpit starts audio playback as soon as the first synthesized chunk arrives.
@@ -85,15 +84,7 @@ Voice widget diagnostics are written as structured `@central/ts-log` records wit
 
 For local debugging in Node-backed assistant turns, cockpit dumps artifacts into `apps/cockpit/tmp/` as input audio, per-chunk output audio files, and a JSON metadata file.
 
-Self-hosted voice assets are synchronized from the installed `@ricky0123/vad-web` and `onnxruntime-web` packages by:
-
-```bash
-pnpm --dir apps/cockpit run sync:voice-vad-assets
-```
-
-The workspace `postinstall` runs that sync automatically after `pnpm install` or dependency updates from the repository root.
-
-`build`, `start:dev`, `start:preview`, `test`, and `typecheck` also run the sync automatically before execution, so the matching runtime assets are always refreshed without manual copying.
+VAD asset synchronization is disabled while browser VAD is offline.
 
 ## Container
 

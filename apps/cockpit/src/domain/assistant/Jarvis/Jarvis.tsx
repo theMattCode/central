@@ -1,6 +1,5 @@
 import 'src/domain/assistant/Jarvis/jarvis.css';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useMicVAD } from '@ricky0123/vad-react';
 import {
   MdGraphicEq as OutputIcon,
   MdMic as MicIcon,
@@ -9,8 +8,6 @@ import {
 } from 'react-icons/md';
 import { cx } from '@/utils/styles.ts';
 import { formatJarvisPercent, type JarvisMode, resolveJarvisSystemState } from '@/domain/assistant/Jarvis/model.ts';
-import { configureVoiceOrt, VAD_BASE_ASSET_PATH } from '@/domain/voice/model/vadAssetPaths.ts';
-import { getFloat32SignalLevel } from '@/domain/voice/model/audioLevel.ts';
 import { useVoiceConversation } from '@/domain/voice/model/useVoiceConversation.ts';
 import { JarvisOrb } from '@/domain/assistant/Jarvis/JarvisOrb.tsx';
 
@@ -36,11 +33,6 @@ const INITIAL_MICROPHONE_STATE: MicrophoneState = {
   isLoading: false,
   micLevel: 0,
   userSpeaking: false,
-};
-
-type ActiveMicrophoneProps = {
-  onSpeechSegment: (audio: Float32Array) => Promise<void>;
-  onStateChange: (state: MicrophoneState) => void;
 };
 
 function clamp01(value: number): number {
@@ -130,39 +122,6 @@ function useJarvisMotion(mode: JarvisMode, microphoneLevel: number, playbackLeve
   return frame;
 }
 
-function ActiveMicrophone({ onSpeechSegment, onStateChange }: ActiveMicrophoneProps) {
-  const [micLevel, setMicLevel] = useState(0);
-  const vad = useMicVAD({
-    startOnLoad: true,
-    baseAssetPath: VAD_BASE_ASSET_PATH,
-    ortConfig: configureVoiceOrt,
-    onFrameProcessed: (_probabilities, frame) => {
-      setMicLevel(getFloat32SignalLevel(frame));
-    },
-    onSpeechEnd: (audio) => {
-      setMicLevel(0);
-      void onSpeechSegment(audio);
-    },
-    onVADMisfire: () => setMicLevel(0),
-  });
-
-  useEffect(() => {
-    onStateChange({
-      error: vad.errored ? String(vad.errored) : null,
-      isListening: vad.listening,
-      isLoading: vad.loading,
-      micLevel: vad.userSpeaking ? micLevel : Math.min(micLevel, 0.16),
-      userSpeaking: vad.userSpeaking,
-    });
-  }, [micLevel, onStateChange, vad.errored, vad.listening, vad.loading, vad.userSpeaking]);
-
-  useEffect(() => {
-    return () => onStateChange(INITIAL_MICROPHONE_STATE);
-  }, [onStateChange]);
-
-  return null;
-}
-
 function TelemetryList({ items, title }: { items: ReadonlyArray<{ label: string; value: string }>; title: string }) {
   return (
     <div className="jarvis-telemetry">
@@ -181,12 +140,13 @@ function TelemetryList({ items, title }: { items: ReadonlyArray<{ label: string;
 
 export function Jarvis() {
   const [isEnabled, setIsEnabled] = useState(false);
-  const [microphoneState, setMicrophoneState] = useState<MicrophoneState>(INITIAL_MICROPHONE_STATE);
+  const microphoneState = INITIAL_MICROPHONE_STATE;
   const conversation = useVoiceConversation({
     language: 'de',
   });
 
-  const shouldListen = isEnabled && conversation.status !== 'processing' && conversation.status !== 'playing';
+  const isVadEnabled = false;
+  const shouldListen = false;
 
   const systemState = useMemo(
     () =>
@@ -217,8 +177,10 @@ export function Jarvis() {
       return;
     }
 
-    setIsEnabled(true);
-  }, [conversation, isEnabled]);
+    if (isVadEnabled) {
+      setIsEnabled(true);
+    }
+  }, [conversation, isEnabled, isVadEnabled]);
 
   const leftTelemetry = useMemo(
     () => [
@@ -228,7 +190,7 @@ export function Jarvis() {
       },
       {
         label: 'ARRAY',
-        value: microphoneState.isListening ? 'ARMED' : isEnabled ? 'HOLD' : 'OFFLINE',
+        value: microphoneState.isListening ? 'ARMED' : isVadEnabled && isEnabled ? 'HOLD' : 'OFFLINE',
       },
       {
         label: 'CAPTURE',
@@ -275,7 +237,7 @@ export function Jarvis() {
     conversation.transcript ??
     (isEnabled
       ? 'Awaiting a captured speech segment from the live microphone.'
-      : 'Activate the system to arm local speech detection.');
+      : 'Voice Activity Detection is temporarily disabled.');
   const responseCopy =
     conversation.responseText ??
     (conversation.status === 'playing'
@@ -310,9 +272,10 @@ export function Jarvis() {
             type="button"
             className={cx('jarvis-shell__toggle', isEnabled ? 'jarvis-shell__toggle--active' : undefined)}
             onClick={toggleEnabled}
+            disabled={!isVadEnabled}
           >
             {isEnabled ? <StandbyIcon className="h-5 w-5" /> : <MicIcon className="h-5 w-5" />}
-            {isEnabled ? 'Stand down' : 'Activate system'}
+            {isEnabled ? 'Stand down' : 'VAD disabled'}
           </button>
         </div>
       </div>
@@ -342,10 +305,6 @@ export function Jarvis() {
       </div>
 
       {errorMessage ? <div className="jarvis-shell__alert">{errorMessage}</div> : null}
-
-      {shouldListen ? (
-        <ActiveMicrophone onSpeechSegment={conversation.processSpeech} onStateChange={setMicrophoneState} />
-      ) : null}
     </section>
   );
 }
