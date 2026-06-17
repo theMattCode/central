@@ -2,6 +2,8 @@
 
 This directory is the source for the code-free production deploy bundle published by CI for release tags.
 
+See `docs/deployment.md` in the repository for the full release and production deployment flow.
+
 ## Server setup
 
 Install Docker and Tailscale on the production host. Central assumes Tailscale is managed at the host level; the Compose stack binds the gateway to `127.0.0.1:4000` by default so Tailscale Serve can expose it over the tailnet.
@@ -31,4 +33,3 @@ Major version jumps require:
 ```
 
 The script pulls the selected image set, starts PostgreSQL, runs migrations, restarts the core application services, checks health, and prints Compose status.
-

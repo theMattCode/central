@@ -40,7 +40,7 @@ Response body:
 `STT_MODEL` can be a standard `faster-whisper` model name or a local converted model path.
 
 For browser-segmented audio in this repository, better quality usually comes from a larger model such as `medium` or better and disabling the extra `faster-whisper` VAD layer with `STT_VAD_FILTER=false`, because the cockpit VAD already trims speech locally.
-In the orchestrator compose stack, this service is built with CUDA runtime dependencies, requests `gpus: all`, and defaults to `STT_DEVICE=cuda` and `STT_COMPUTE_TYPE=float16`.
+The commented orchestrator service definition is built with CUDA runtime dependencies, requests `gpus: all`, and defaults to `STT_DEVICE=cuda` and `STT_COMPUTE_TYPE=float16`. The service is not active in the default orchestrator stack while that compose block remains commented out.
 
 ## Nx targets
 
