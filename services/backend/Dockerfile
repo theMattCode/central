@@ -5,6 +5,9 @@ RUN apt-get update \
 WORKDIR /workspace/services/backend
 
 FROM base AS dev
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends wget \
+    && rm -rf /var/lib/apt/lists/*
 RUN cargo install cargo-watch --locked
 COPY services/backend/Cargo.toml ./Cargo.toml
 COPY services/backend/Cargo.lock ./Cargo.lock
