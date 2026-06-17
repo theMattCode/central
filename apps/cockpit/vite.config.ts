@@ -7,7 +7,7 @@ import tailwindcss from '@tailwindcss/vite';
 
 const config = defineConfig(({ mode }) => ({
   plugins: [
-    devtools(),
+    ...(mode === 'development' ? [devtools()] : []),
     tsconfigPaths({ projects: ['./tsconfig.json'] }),
     tailwindcss(),
     ...(mode === 'test' ? [] : [tanstackStart()]),
