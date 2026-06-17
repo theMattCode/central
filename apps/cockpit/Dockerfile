@@ -31,7 +31,7 @@ FROM base AS build
 COPY . .
 
 RUN pnpm --dir apps/cockpit run build \
-    && pnpm --filter @central/cockpit deploy --prod --legacy --offline /workspace/cockpit-deploy
+    && pnpm --filter @central/cockpit deploy --prod --legacy /workspace/cockpit-deploy
 
 FROM node:24-alpine AS prod
 ARG BACKEND_BASE_URL=http://localhost:5010
