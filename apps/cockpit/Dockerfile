@@ -66,7 +66,9 @@ WORKDIR /workspace
 
 COPY --from=prod-deps /workspace/node_modules ./node_modules
 COPY --from=prod-deps /workspace/apps/cockpit/node_modules ./apps/cockpit/node_modules
-COPY . .
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY apps/cockpit/package.json apps/cockpit/package.json
+COPY libs/ts-log/package.json libs/ts-log/package.json
 COPY --from=build /workspace/apps/cockpit/dist apps/cockpit/dist
 
 WORKDIR /workspace/apps/cockpit
