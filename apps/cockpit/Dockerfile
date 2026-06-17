@@ -35,4 +35,4 @@ RUN pnpm --dir apps/cockpit run build
 
 WORKDIR /workspace/apps/cockpit
 EXPOSE 3000
-CMD ["pnpm", "exec", "vite", "preview", "--host", "0.0.0.0", "--port", "3000", "--strictPort"]
+CMD ["pnpm", "exec", "srvx", "serve", "--dir", ".", "--entry", "dist/server/server.js", "--static", "dist/client", "--prod"]
