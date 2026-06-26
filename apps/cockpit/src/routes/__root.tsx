@@ -3,7 +3,7 @@ import { createRootRoute, HeadContent, Scripts } from '@tanstack/react-router';
 import appCss from '../styles.css?url';
 import { PageLayout } from '@/components/PageLayout/PageLayout.tsx';
 import { Section } from '@/components/Section/Section.tsx';
-import { ContentLayout } from '@/components/ContentLayout/ContentLayout.tsx';
+import { ContentArea } from '@/components/ContentArea/ContentArea.tsx';
 import { Navigation } from '@/components/Navigation/Navigation.tsx';
 import { MdOutlineHome as HomeIcon } from 'react-icons/md';
 
@@ -33,7 +33,7 @@ function RootDocument({ children }: PropsWithChildren) {
       <body>
         <PageLayout>
           <Navigation />
-          <ContentLayout>{children}</ContentLayout>
+          <ContentArea>{children}</ContentArea>
         </PageLayout>
         {Devtools ? <Devtools /> : null}
         <Scripts />
