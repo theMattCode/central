@@ -11,6 +11,7 @@
   --color-section-border: #d6dde6;
   --color-sem-positive: oklch(59.6% 0.145 163.225);
   --color-sem-negative: oklch(58.6% 0.253 17.585);
+  --color-skeleton: #e6e6e6;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -25,6 +26,7 @@
     --color-section-border: #272727;
     --color-sem-positive: oklch(84.5% 0.143 164.978);
     --color-sem-negative: oklch(71.2% 0.194 13.428);
+    --color-skeleton: #272727;
   }
 }
 
@@ -52,4 +54,12 @@ code {
 
 .animate-rainbow {
   animation: rainbow 30s linear infinite;
+}
+
+.grid-layout {
+  @apply grid gap-4 grid-cols-2 md:grid-cols-4 lg:grid-cols-6 2xl:grid-cols-12;
+}
+
+.section-base {
+  @apply transition-all self-start w-full h-full bg-(--color-bg) flex p-4 rounded-lg border border-(--color-section-border) @container;
 }

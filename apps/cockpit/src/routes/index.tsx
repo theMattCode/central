@@ -1,19 +1,25 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { WeatherWidget } from '@/domain/weather/WeatherWidget.tsx';
-import { LOCATION_MOESSINGEN, LOCATION_OBERNHEIM } from '@/domain/weather/model/model.ts';
+import { LOCATION_MOESSINGEN, LOCATION_OBERNHEIM, LOCATION_TUEBINGEN } from '@/domain/weather/model/model.ts';
+import { GridLayout } from '@/components/ContentLayout/GridLayout.tsx';
+import { Section } from '@/components/Section/Section.tsx';
 
 export const Route = createFileRoute('/')({
-  component: App,
+  component: Overview,
 });
 
-function App() {
+function Overview() {
   return (
-    <>
-      <WeatherWidget location={LOCATION_MOESSINGEN} />
-      <WeatherWidget location={LOCATION_OBERNHEIM} />
-      {/*
-      <VoiceWidget />
-      */}
-    </>
+    <GridLayout>
+      <Section className="col-span-2 md:col-span-2 lg:col-span-2 2xl:col-span-2">
+        <WeatherWidget location={LOCATION_MOESSINGEN} />
+      </Section>
+      <Section className="col-span-2 md:col-span-2 lg:col-span-2 2xl:col-span-2">
+        <WeatherWidget location={LOCATION_OBERNHEIM} />
+      </Section>
+      <Section className="col-span-2 md:col-span-2 lg:col-span-2 2xl:col-span-2">
+        <WeatherWidget location={LOCATION_TUEBINGEN} />
+      </Section>
+    </GridLayout>
   );
 }
