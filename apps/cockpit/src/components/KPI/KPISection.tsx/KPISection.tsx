@@ -9,7 +9,7 @@ interface Props {
 
 export function KPISection({ label, value, tone }: Props) {
   return (
-    <Section>
+    <Section className="col-span-1">
       <div className="w-full h-full flex flex-col gap-1 text-center">
         <div className="text-xs text-(--color-txt-sec) uppercase">{label}</div>
         <div
