@@ -22,6 +22,14 @@ export const LOCATION_OBERNHEIM: WeatherLocation = {
   timezone: 'Europe/Berlin',
 };
 
+export const LOCATION_TUEBINGEN: WeatherLocation = {
+  id: 'tuebingen',
+  label: 'Tübingen',
+  latitude: 48.31,
+  longitude: 9.3,
+  timezone: 'Europe/Berlin',
+};
+
 export interface HourlyTemperaturePoint {
   timeIso: string;
   temperatureC: number;

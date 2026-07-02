@@ -11,6 +11,7 @@
   --color-section-border: #d6dde6;
   --color-sem-positive: oklch(59.6% 0.145 163.225);
   --color-sem-negative: oklch(58.6% 0.253 17.585);
+  --color-skeleton: #e6e6e6;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -25,14 +26,14 @@
     --color-section-border: #272727;
     --color-sem-positive: oklch(84.5% 0.143 164.978);
     --color-sem-negative: oklch(71.2% 0.194 13.428);
+    --color-skeleton: #272727;
   }
 }
 
 body {
   @apply m-0 bg-(--color-bg) text-(--color-txt) min-h-screen w-full overflow-hidden;
-  font-family:
-    -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans',
-    'Helvetica Neue', sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans',
+  'Helvetica Neue', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }

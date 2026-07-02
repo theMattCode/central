@@ -1,8 +1,18 @@
 import type { PropsWithChildren } from 'react';
+import { cx } from '@/utils/styles.ts';
 
-export function Section({ children }: PropsWithChildren) {
+interface Props {
+  className?: string;
+}
+
+export function Section({ children, className }: PropsWithChildren<Props>) {
   return (
-    <div className="self-start w-full bg-(--color-bg) flex p-4 rounded-lg border border-(--color-section-border)">
+    <div
+      className={cx(
+        'self-start w-full h-full bg-(--color-bg) flex p-4 rounded-lg border border-(--color-section-border) @container',
+        className,
+      )}
+    >
       {children}
     </div>
   );

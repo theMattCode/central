@@ -16,7 +16,7 @@ export function Breadcrumb() {
   const matches = useMatches().filter((m) => m.staticData?.crumb);
 
   return (
-    <div className="w-full flex flex-row flex-nowrap gap-2 items-center">
+    <div className="w-full h-8 flex flex-row flex-nowrap gap-2 items-center">
       {matches.map((item, index) => {
         if (!item.staticData?.crumb) return null;
         return (
