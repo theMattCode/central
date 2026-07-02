@@ -11,13 +11,13 @@ export const Route = createFileRoute('/')({
 function Overview() {
   return (
     <GridLayout>
-      <Section className="col-span-1 md:col-span-2 lg:col-span-2 2xl:col-span-2">
+      <Section className="col-span-2 md:col-span-2 lg:col-span-2 2xl:col-span-2">
         <WeatherWidget location={LOCATION_MOESSINGEN} />
       </Section>
-      <Section className="col-span-1 md:col-span-2 lg:col-span-2 2xl:col-span-2">
+      <Section className="col-span-2 md:col-span-2 lg:col-span-2 2xl:col-span-2">
         <WeatherWidget location={LOCATION_OBERNHEIM} />
       </Section>
-      <Section className="col-span-1 md:col-span-2 lg:col-span-2 2xl:col-span-2">
+      <Section className="col-span-2 md:col-span-2 lg:col-span-2 2xl:col-span-2">
         <WeatherWidget location={LOCATION_TUEBINGEN} />
       </Section>
     </GridLayout>

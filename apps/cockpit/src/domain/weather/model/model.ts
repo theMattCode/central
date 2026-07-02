@@ -25,8 +25,8 @@ export const LOCATION_OBERNHEIM: WeatherLocation = {
 export const LOCATION_TUEBINGEN: WeatherLocation = {
   id: 'tuebingen',
   label: 'Tübingen',
-  latitude: 48.31,
-  longitude: 9.3,
+  latitude: 48.52,
+  longitude: 9.06,
   timezone: 'Europe/Berlin',
 };
 

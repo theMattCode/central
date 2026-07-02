@@ -54,3 +54,11 @@ code {
 .animate-rainbow {
   animation: rainbow 30s linear infinite;
 }
+
+.grid-layout {
+  @apply grid gap-4 grid-cols-2 md:grid-cols-4 lg:grid-cols-6 2xl:grid-cols-12;
+}
+
+.section-base {
+  @apply transition-all self-start w-full h-full bg-(--color-bg) flex p-4 rounded-lg border border-(--color-section-border) @container
+}

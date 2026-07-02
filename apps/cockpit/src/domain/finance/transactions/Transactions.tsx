@@ -4,7 +4,7 @@ import {
   MdClose as CancelIcon,
   MdDeleteOutline as DeleteIcon,
   MdEdit as EditIcon,
-  MdSave as SaveIcon
+  MdSave as SaveIcon,
 } from 'react-icons/md';
 import { GiPayMoney, GiReceiveMoney } from 'react-icons/gi';
 import { Button } from '@/components/Button/Button.tsx';
@@ -14,14 +14,14 @@ import { cx } from '@/utils/styles.ts';
 import {
   createCashTransaction,
   deleteCashTransaction,
-  updateCashTransaction
+  updateCashTransaction,
 } from 'src/domain/finance/transactions/api.ts';
 import {
   createEmptyTransactionFormState,
   toCashTransactionInput,
   type Transaction,
   type TransactionDirection,
-  type TransactionFormState
+  type TransactionFormState,
 } from 'src/domain/finance/transactions/model.ts';
 import { useTransactions } from '@/domain/finance/transactions/data.ts';
 import { useDateRange } from '@/utils/useDateRange.ts';
@@ -101,10 +101,11 @@ export function Transactions() {
     <>
       {data?.summary && <SummaryStrip summary={data.summary} />}
       {error && (
-        <div className="col-span-12 rounded-md border border-red-500/40 bg-red-500/10 px-3 py-2 text-sm text-red-400 dark:text-red-300">
+        <div className="col-span-full rounded-md border border-red-500/40 bg-red-500/10 px-3 py-2 text-sm text-red-400 dark:text-red-300">
           {error.message}
         </div>
       )}
+
       <TransactionForm
         categories={data?.categories ?? []}
         editing={Boolean(editingTransactionId)}
@@ -115,7 +116,7 @@ export function Transactions() {
         onChange={setForm}
         onSubmit={submitForm}
       />
-      {loading && <p className="text-sm text-(--color-txt-sec)">Loading transactions...</p>}
+      {loading && <p className="col-span-full text-sm text-(--color-txt-sec)">Loading transactions...</p>}
       {/* Transaction list should have kind of toolbar
           <input type="month" value={month} className="rounded-md border border-(--color-section-border) bg-(--color-bg) px-3 py-2 text-(--color-txt)" onChange={(event) => setDateRangeMonth(event.target.value)} />
           <label className="flex flex-col gap-1 text-sm text-(--color-txt-sec)"></label>
@@ -166,7 +167,7 @@ function TransactionForm({
 }: TransactionFormProps) {
   const updateForm = (patch: Partial<TransactionFormState>) => onChange({ ...form, ...patch });
   return (
-    <Section className="col-span-12">
+    <Section>
       <form
         className="w-full flex flex-col gap-4"
         onSubmit={(event) => {
@@ -265,7 +266,7 @@ function TransactionList({
   }
 
   return (
-    <Section className="col-span-12">
+    <Section>
       <div className="w-full hidden overflow-x-auto sm:block">
         <table className="w-full border-separate border-spacing-0 text-sm">
           <thead className="text-left text-(--color-txt-sec)">
@@ -347,7 +348,7 @@ function TransactionCard({
   onEdit: (transaction: Transaction) => void;
 }) {
   return (
-    <Section className="col-span-12">
+    <Section>
       <div className="w-full flex flex-col">
         <div className="w-full flex items-start justify-between gap-3">
           <div>

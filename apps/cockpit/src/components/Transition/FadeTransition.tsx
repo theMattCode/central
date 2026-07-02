@@ -48,7 +48,7 @@ export function FadeTransition({ children, transitionKey, durationMs = 300, clas
   return (
     <div
       className={cx(
-        'w-full, h-full',
+        'w-full h-full',
         'transition-opacity',
         phase === 'entered' ? 'opacity-100' : 'opacity-0',
         className,

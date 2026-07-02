@@ -2,7 +2,6 @@ import { WeatherCurrentSummary } from '@/domain/weather/WeatherCurrentSummary.ts
 import type { WeatherDataLoaded, WeatherLocation } from '@/domain/weather/model/model.ts';
 import { Header } from '@/domain/weather/Header.tsx';
 import { useWeatherSnapshot } from '@/domain/weather/model/useWeatherSnapshot.ts';
-import { FadeTransition } from '@/components/Transition/FadeTransition.tsx';
 
 type WeatherWidgetProps = {
   location: WeatherLocation;
@@ -11,13 +10,11 @@ type WeatherWidgetProps = {
 export function WeatherWidget({ location }: WeatherWidgetProps) {
   const weather = useWeatherSnapshot(location);
 
-  return (
-    <FadeTransition transitionKey={weather.status}>
-      {weather.status === 'loading' && <Skeleton />}
-      {weather.status === 'error' && weather.errorMessage}
-      {weather.status === 'loaded' && <WeatherWidgetContent location={location} weather={weather} />}
-    </FadeTransition>
-  );
+  if (weather.status === 'loading') return <Skeleton />;
+
+  if (weather.status === 'error') return weather.errorMessage;
+
+  return <WeatherWidgetContent location={location} weather={weather} />;
 }
 
 type WeatherWidgetContentProps = {
@@ -38,12 +35,12 @@ function Skeleton() {
   return (
     <div className="w-full flex flex-col gap-2">
       <div className="flex flex-row gap-2 items-center justify-between">
-        <div className="h-4 w-1/3 rounded bg-(--color-skeleton) animate-pulse" />
+        <div className="h-4 w-2/5 rounded bg-(--color-skeleton) animate-pulse" />
         <div className="h-4 w-1/10 rounded bg-(--color-skeleton) animate-pulse" />
       </div>
       <div className="flex flex-row gap-2 items-center justify-between">
-        <div className="h-20 w-1/3 rounded bg-(--color-skeleton) animate-pulse" />
-        <div className="w-1/3 flex flex-col gap-2">
+        <div className="h-20 w-2/5 rounded bg-(--color-skeleton) animate-pulse" />
+        <div className="w-2/5 flex flex-col gap-2">
           <div className="h-4 rounded bg-(--color-skeleton) animate-pulse" />
           <div className="h-4 rounded bg-(--color-skeleton) animate-pulse" />
           <div className="h-4 rounded bg-(--color-skeleton) animate-pulse" />
