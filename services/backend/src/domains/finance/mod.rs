@@ -1,7 +1,14 @@
+pub mod accounts;
+pub mod balances;
+pub mod budgets;
+pub mod categories;
 pub mod contracts;
+pub mod dashboard;
 pub mod http;
+pub mod ledger;
 pub mod model;
 pub mod repository;
+pub mod recurring;
 pub mod service;
 
 #[cfg(test)]

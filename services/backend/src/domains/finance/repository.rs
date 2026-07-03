@@ -16,72 +16,152 @@ const DB_CONNECT_RETRY_DELAY: Duration = Duration::from_secs(1);
 
 const SELECT_TRANSACTIONS_SQL: &str = r#"
 SELECT
-  id::text,
-  direction,
-  transaction_date,
-  description,
-  category,
-  note,
-  amount_minor_units,
-  currency_code,
-  created_at,
-  updated_at
-FROM service_finance.transactions
-WHERE transaction_date >= $1
-  AND transaction_date < $2
+  ledger_entries.id::text,
+  ledger_entries.entry_kind AS direction,
+  ledger_entries.transaction_date,
+  ledger_entries.description,
+  categories.name AS category,
+  ledger_entries.note,
+  ledger_entries.amount_minor_units,
+  ledger_entries.currency_code,
+  ledger_entries.created_at,
+  ledger_entries.updated_at
+FROM service_finance.ledger_entries
+LEFT JOIN service_finance.categories
+  ON categories.id = ledger_entries.category_id
+WHERE ledger_entries.transaction_date >= $1
+  AND ledger_entries.transaction_date < $2
+  AND ledger_entries.entry_kind IN ('income', 'expense')
+  AND ledger_entries.entry_status = 'confirmed'
 ORDER BY transaction_date DESC, created_at DESC, id DESC
 "#;
 
-const INSERT_TRANSACTION_SQL: &str = r#"
-INSERT INTO service_finance.transactions (
-  direction,
-  transaction_date,
-  description,
-  category,
-  note,
-  amount_minor_units
+const INSERT_CATEGORY_SQL: &str = r#"
+INSERT INTO service_finance.categories (name)
+VALUES ($1)
+ON CONFLICT (
+  (COALESCE(parent_category_id, '00000000-0000-0000-0000-000000000000'::uuid)),
+  lower(name)
 )
-VALUES ($1, $2, $3, $4, $5, $6)
-RETURNING
-  id::text,
-  direction,
-  transaction_date,
-  description,
-  category,
-  note,
-  amount_minor_units,
-  currency_code,
-  created_at,
-  updated_at
+DO UPDATE SET name = EXCLUDED.name, updated_at = now()
+"#;
+
+const INSERT_TRANSACTION_SQL: &str = r#"
+WITH inserted_entry AS (
+  INSERT INTO service_finance.ledger_entries (
+    entry_kind,
+    entry_status,
+    source_type,
+    category_id,
+    transaction_date,
+    description,
+    note,
+    amount_minor_units,
+    currency_code
+  )
+  SELECT
+    $1,
+    'confirmed',
+    'manual',
+    categories.id,
+    $2,
+    $3,
+    $4,
+    $5,
+    'EUR'
+  FROM service_finance.categories
+  WHERE $6::text IS NOT NULL
+    AND categories.parent_category_id IS NULL
+    AND lower(categories.name) = lower($6::text)
+  UNION ALL
+  SELECT $1, 'confirmed', 'manual', NULL, $2, $3, $4, $5, 'EUR'
+  WHERE $6::text IS NULL
+  RETURNING *
+)
+SELECT
+  inserted_entry.id::text,
+  inserted_entry.entry_kind AS direction,
+  inserted_entry.transaction_date,
+  inserted_entry.description,
+  categories.name AS category,
+  inserted_entry.note,
+  inserted_entry.amount_minor_units,
+  inserted_entry.currency_code,
+  inserted_entry.created_at,
+  inserted_entry.updated_at
+FROM inserted_entry
+LEFT JOIN service_finance.categories
+  ON categories.id = inserted_entry.category_id
 "#;
 
 const UPDATE_TRANSACTION_SQL: &str = r#"
-UPDATE service_finance.transactions
-SET
-  direction = $2,
-  transaction_date = $3,
-  description = $4,
-  category = $5,
-  note = $6,
-  amount_minor_units = $7,
-  updated_at = now()
-WHERE id = $1::uuid
-RETURNING
-  id::text,
-  direction,
-  transaction_date,
-  description,
-  category,
-  note,
-  amount_minor_units,
-  currency_code,
-  created_at,
-  updated_at
+WITH updated_entry AS (
+  UPDATE service_finance.ledger_entries
+  SET
+    entry_kind = $2,
+    entry_status = 'confirmed',
+    source_type = 'manual',
+    category_id = categories.id,
+    transaction_date = $3,
+    description = $4,
+    note = $5,
+    amount_minor_units = $6,
+    currency_code = 'EUR',
+    updated_at = now()
+  FROM service_finance.categories
+  WHERE ledger_entries.id = $1::uuid
+    AND ledger_entries.entry_kind IN ('income', 'expense')
+    AND ledger_entries.entry_status = 'confirmed'
+    AND $7::text IS NOT NULL
+    AND categories.parent_category_id IS NULL
+    AND lower(categories.name) = lower($7::text)
+  RETURNING *
+),
+updated_uncategorized_entry AS (
+  UPDATE service_finance.ledger_entries
+  SET
+    entry_kind = $2,
+    entry_status = 'confirmed',
+    source_type = 'manual',
+    category_id = NULL,
+    transaction_date = $3,
+    description = $4,
+    note = $5,
+    amount_minor_units = $6,
+    currency_code = 'EUR',
+    updated_at = now()
+  WHERE ledger_entries.id = $1::uuid
+    AND entry_kind IN ('income', 'expense')
+    AND entry_status = 'confirmed'
+    AND $7::text IS NULL
+  RETURNING *
+),
+selected_entry AS (
+  SELECT * FROM updated_entry
+  UNION ALL
+  SELECT * FROM updated_uncategorized_entry
+)
+SELECT
+  selected_entry.id::text,
+  selected_entry.entry_kind AS direction,
+  selected_entry.transaction_date,
+  selected_entry.description,
+  categories.name AS category,
+  selected_entry.note,
+  selected_entry.amount_minor_units,
+  selected_entry.currency_code,
+  selected_entry.created_at,
+  selected_entry.updated_at
+FROM selected_entry
+LEFT JOIN service_finance.categories
+  ON categories.id = selected_entry.category_id
 "#;
 
 const DELETE_TRANSACTION_SQL: &str = r#"
-DELETE FROM service_finance.transactions
+DELETE FROM service_finance.ledger_entries
 WHERE id = $1::uuid
+  AND entry_kind IN ('income', 'expense')
+  AND entry_status = 'confirmed'
 "#;
 
 #[derive(Clone)]
@@ -164,6 +244,8 @@ impl FinanceRepository {
     &self,
     draft: &TransactionDraft,
   ) -> Result<TransactionResponse, ApiError> {
+    self.ensure_category(&draft.category).await?;
+
     let row = self
       .client
       .query_one(
@@ -172,9 +254,9 @@ impl FinanceRepository {
           &draft.direction.as_str(),
           &draft.transaction_date,
           &draft.description,
-          &draft.category,
           &draft.note,
           &draft.amount_minor_units,
+          &draft.category,
         ],
       )
       .await
@@ -190,6 +272,8 @@ impl FinanceRepository {
     id: &str,
     draft: &TransactionDraft,
   ) -> Result<TransactionResponse, ApiError> {
+    self.ensure_category(&draft.category).await?;
+
     let row = self
       .client
       .query_opt(
@@ -199,9 +283,9 @@ impl FinanceRepository {
           &draft.direction.as_str(),
           &draft.transaction_date,
           &draft.description,
-          &draft.category,
           &draft.note,
           &draft.amount_minor_units,
+          &draft.category,
         ],
       )
       .await
@@ -236,6 +320,20 @@ impl FinanceRepository {
         "Finance transaction {id} was not found"
       )));
     }
+
+    Ok(())
+  }
+
+  async fn ensure_category(&self, category: &Option<String>) -> Result<(), ApiError> {
+    let Some(category) = category else {
+      return Ok(());
+    };
+
+    self
+      .client
+      .execute(INSERT_CATEGORY_SQL, &[category])
+      .await
+      .map_err(|error| ApiError::Internal(format!("Failed to prepare finance category: {error}")))?;
 
     Ok(())
   }
