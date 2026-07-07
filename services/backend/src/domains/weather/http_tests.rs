@@ -9,9 +9,6 @@ use std::{
 use chrono::{DateTime, Utc};
 use reqwest::StatusCode;
 
-use crate::domains::finance::contracts::FinanceDataStore;
-use crate::domains::finance::model::{TransactionDraft, TransactionListResponse, TransactionResponse, TransactionsQuery};
-use crate::domains::finance::service::FinanceService;
 use crate::domains::weather::contracts::{WeatherDataFetcher, WeatherDataStore};
 use crate::domains::weather::model::{
   CurrentWeatherPayload, HourlyWeatherPayload, WeatherForecastMetaPayload,
@@ -20,9 +17,9 @@ use crate::domains::weather::model::{
 };
 use crate::domains::weather::service::WeatherService;
 use crate::{
-  config::Config,
   context::Context,
   error::ApiError,
+  test_support::TestContextBuilder,
 };
 
 #[derive(Clone)]
@@ -108,45 +105,6 @@ impl WeatherDataStore for FakeStore {
   }
 }
 
-struct FakeFinanceStore;
-
-#[async_trait::async_trait]
-impl FinanceDataStore for FakeFinanceStore {
-  async fn list_transactions(
-    &self,
-    _month: &TransactionsQuery,
-  ) -> Result<TransactionListResponse, ApiError> {
-    Err(ApiError::Internal(
-      "finance store should not be called by weather tests".to_string(),
-    ))
-  }
-
-  async fn create_transaction(
-    &self,
-    _draft: &TransactionDraft,
-  ) -> Result<TransactionResponse, ApiError> {
-    Err(ApiError::Internal(
-      "finance store should not be called by weather tests".to_string(),
-    ))
-  }
-
-  async fn update_transaction(
-    &self,
-    _id: &str,
-    _draft: &TransactionDraft,
-  ) -> Result<TransactionResponse, ApiError> {
-    Err(ApiError::Internal(
-      "finance store should not be called by weather tests".to_string(),
-    ))
-  }
-
-  async fn delete_transaction(&self, _id: &str) -> Result<(), ApiError> {
-    Err(ApiError::Internal(
-      "finance store should not be called by weather tests".to_string(),
-    ))
-  }
-}
-
 fn test_snapshot() -> WeatherSnapshotResponse {
   WeatherSnapshotResponse {
     location: WeatherLocationPayload {
@@ -226,23 +184,6 @@ async fn spawn_http_server(context: Context) -> String {
   format!("http://{address}")
 }
 
-fn test_config() -> Arc<Config> {
-  Arc::new(Config {
-    port: 0,
-    database_url: "postgres://example".to_string(),
-    cors_allow_origin: "*".to_string(),
-    weather_config: Option::from(crate::config::WeatherConfig {
-      open_meteo_base_url: "http://example.test".to_string(),
-      refresh_interval: Duration::from_secs(900),
-      request_timeout: Duration::from_secs(5),
-    }),
-  })
-}
-
-fn test_finance_service() -> FinanceService {
-  FinanceService::new(Arc::new(FakeFinanceStore))
-}
-
 #[tokio::test]
 async fn current_weather_returns_snapshot_and_persists() {
   let snapshot_calls = Arc::new(AtomicUsize::new(0));
@@ -264,11 +205,9 @@ async fn current_weather_returns_snapshot_and_persists() {
       loaded_hourly: Arc::new(vec![test_hourly_payload("2026-03-09T12:00:00Z", 2)]),
     }),
   );
-  let context = Context {
-    config: test_config(),
-    finance_service: test_finance_service(),
-    weather_service: service,
-  };
+  let context = TestContextBuilder::new("weather")
+    .with_weather_service(service)
+    .build();
 
   let base_url = spawn_http_server(context).await;
   let response = reqwest::get(format!(
@@ -309,11 +248,9 @@ async fn current_weather_manual_refresh_persists_each_call() {
       loaded_hourly: Arc::new(vec![test_hourly_payload("2026-03-09T12:00:00Z", 2)]),
     }),
   );
-  let context = Context {
-    config: test_config(),
-    finance_service: test_finance_service(),
-    weather_service: service,
-  };
+  let context = TestContextBuilder::new("weather")
+    .with_weather_service(service)
+    .build();
 
   let base_url = spawn_http_server(context).await;
   let url = format!("{base_url}/api/v1/weather/current?lat=48.4057&lon=9.0542");
@@ -359,11 +296,9 @@ async fn forecast_weather_returns_hourly_forecast_and_persists() {
       loaded_hourly: Arc::new(loaded_hourly),
     }),
   );
-  let context = Context {
-    config: test_config(),
-    finance_service: test_finance_service(),
-    weather_service: service,
-  };
+  let context = TestContextBuilder::new("weather")
+    .with_weather_service(service)
+    .build();
 
   let base_url = spawn_http_server(context).await;
   let response = reqwest::get(format!(

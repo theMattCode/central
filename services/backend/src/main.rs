@@ -3,6 +3,8 @@ mod context;
 mod domains;
 mod error;
 mod http;
+#[cfg(test)]
+mod test_support;
 
 use config::Config;
 use context::Context;
