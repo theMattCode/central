@@ -1,6 +1,11 @@
 use chrono::{DateTime, NaiveDate, Utc};
 use serde::{Deserialize, Serialize};
 
+pub use crate::domains::finance::accounts::{
+  FinancialAccountDraft, FinancialAccountInput, FinancialAccountListResponse, FinancialAccountResponse,
+  FinancialAccountStatus, FinancialAccountType,
+};
+use crate::domains::finance::validation::{clean_optional_text, clean_required_text, required_iso_date};
 use crate::error::ApiError;
 
 const CURRENCY_CODE: &str = "EUR";
@@ -121,9 +126,9 @@ impl TransactionsQueryInput {
       ));
     }
 
-    let end_exclusive = to.succ_opt().ok_or_else(|| {
-      ApiError::BadRequest("Query parameter to is out of supported range".to_string())
-    })?;
+    let end_exclusive = to
+      .succ_opt()
+      .ok_or_else(|| ApiError::BadRequest("Query parameter to is out of supported range".to_string()))?;
 
     Ok(TransactionsQuery {
       from: from.to_string(),
@@ -139,9 +144,9 @@ impl TransactionInput {
     let direction = self
       .direction
       .ok_or_else(|| ApiError::BadRequest("Missing required field: direction".to_string()))?;
-    let transaction_date = self.transaction_date.ok_or_else(|| {
-      ApiError::BadRequest("Missing required field: transactionDate".to_string())
-    })?;
+    let transaction_date = self
+      .transaction_date
+      .ok_or_else(|| ApiError::BadRequest("Missing required field: transactionDate".to_string()))?;
     let amount = self
       .amount
       .ok_or_else(|| ApiError::BadRequest("Missing required field: amount".to_string()))?;
@@ -173,37 +178,6 @@ pub fn money(amount_minor_units: i64) -> MoneyAmount {
   }
 }
 
-fn required_iso_date(input: Option<String>, field: &str) -> Result<NaiveDate, ApiError> {
-  let value = input
-    .map(|value| value.trim().to_string())
-    .filter(|value| !value.is_empty())
-    .ok_or_else(|| ApiError::BadRequest(format!("Missing required query parameter: {field}")))?;
-
-  NaiveDate::parse_from_str(&value, "%Y-%m-%d").map_err(|_| {
-    ApiError::BadRequest(format!(
-      "Query parameter {field} must be formatted as YYYY-MM-DD"
-    ))
-  })
-}
-
-fn clean_required_text(input: Option<String>, field: &str) -> Result<String, ApiError> {
-  let value = input
-    .map(|value| value.trim().to_string())
-    .filter(|value| !value.is_empty())
-    .ok_or_else(|| ApiError::BadRequest(format!("Missing required field: {field}")))?;
-  Ok(value)
-}
-
-fn clean_optional_text(input: Option<String>, field: &str) -> Result<Option<String>, ApiError> {
-  match input.map(|value| value.trim().to_string()) {
-    Some(value) if value.is_empty() => Err(ApiError::BadRequest(format!(
-      "Field {field} must not be blank when provided"
-    ))),
-    Some(value) => Ok(Some(value)),
-    None => Ok(None),
-  }
-}
-
 fn parse_amount_minor_units(input: &str) -> Result<i64, ApiError> {
   let value = input.trim();
   if value.is_empty() || value.starts_with('-') || value.starts_with('+') {
@@ -211,19 +185,14 @@ fn parse_amount_minor_units(input: &str) -> Result<i64, ApiError> {
   }
 
   let parts = value.split('.').collect::<Vec<_>>();
-  if parts.len() > 2
-    || parts[0].is_empty()
-    || !parts[0].chars().all(|value| value.is_ascii_digit())
-  {
+  if parts.len() > 2 || parts[0].is_empty() || !parts[0].chars().all(|value| value.is_ascii_digit()) {
     return Err(invalid_amount());
   }
 
   let major = parts[0].parse::<i64>().map_err(|_| invalid_amount())?;
   let minor = match parts.get(1) {
     Some(fraction) if fraction.is_empty() || fraction.len() > 2 => return Err(invalid_amount()),
-    Some(fraction) if !fraction.chars().all(|value| value.is_ascii_digit()) => {
-      return Err(invalid_amount())
-    }
+    Some(fraction) if !fraction.chars().all(|value| value.is_ascii_digit()) => return Err(invalid_amount()),
     Some(fraction) => {
       let padded = format!("{fraction:0<2}");
       padded.parse::<i64>().map_err(|_| invalid_amount())?
@@ -244,16 +213,10 @@ fn parse_amount_minor_units(input: &str) -> Result<i64, ApiError> {
 }
 
 fn invalid_amount() -> ApiError {
-  ApiError::BadRequest(
-    "Field amount must be between 0.01 and 999999999.99 with up to 2 decimal places"
-      .to_string(),
-  )
+  ApiError::BadRequest("Field amount must be between 0.01 and 999999999.99 with up to 2 decimal places".to_string())
 }
 
-pub fn summarize(
-  query: &TransactionsQuery,
-  transactions: Vec<TransactionResponse>,
-) -> TransactionListResponse {
+pub fn summarize(query: &TransactionsQuery, transactions: Vec<TransactionResponse>) -> TransactionListResponse {
   let income_minor_units = transactions
     .iter()
     .filter(|transaction| transaction.direction == TransactionDirection::Income)

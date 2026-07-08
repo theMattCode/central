@@ -11,15 +11,13 @@ use reqwest::StatusCode;
 
 use crate::domains::weather::contracts::{WeatherDataFetcher, WeatherDataStore};
 use crate::domains::weather::model::{
-  CurrentWeatherPayload, HourlyWeatherPayload, WeatherForecastMetaPayload,
-  WeatherForecastResponse, WeatherLocationPayload, WeatherLocationQuery,
-  WeatherMetaPayload, WeatherSnapshotResponse,
+  CurrentWeatherPayload, HourlyWeatherPayload, WeatherForecastMetaPayload, WeatherForecastResponse,
+  WeatherLocationPayload, WeatherLocationQuery, WeatherMetaPayload, WeatherSnapshotResponse,
 };
 use crate::domains::weather::service::WeatherService;
 use crate::{
-  context::Context,
   error::ApiError,
-  test_support::TestContextBuilder,
+  test_support::{spawn_http_server, TestContextBuilder},
 };
 
 #[derive(Clone)]
@@ -61,18 +59,12 @@ struct FakeStore {
 
 #[async_trait::async_trait]
 impl WeatherDataStore for FakeStore {
-  async fn upsert_current_snapshot(
-    &self,
-    _snapshot: &WeatherSnapshotResponse,
-  ) -> Result<(), ApiError> {
+  async fn upsert_current_snapshot(&self, _snapshot: &WeatherSnapshotResponse) -> Result<(), ApiError> {
     self.current_calls.fetch_add(1, Ordering::SeqCst);
     Ok(())
   }
 
-  async fn upsert_hourly_forecast(
-    &self,
-    _forecast: &WeatherForecastResponse,
-  ) -> Result<(), ApiError> {
+  async fn upsert_hourly_forecast(&self, _forecast: &WeatherForecastResponse) -> Result<(), ApiError> {
     self.forecast_calls.fetch_add(1, Ordering::SeqCst);
     Ok(())
   }
@@ -170,20 +162,6 @@ fn test_forecast(hourly: Vec<HourlyWeatherPayload>) -> WeatherForecastResponse {
   }
 }
 
-async fn spawn_http_server(context: Context) -> String {
-  let app = crate::http::build_router(context);
-  let listener = tokio::net::TcpListener::bind("127.0.0.1:0")
-    .await
-    .expect("bind test listener");
-  let address = listener.local_addr().expect("listener local addr");
-
-  tokio::spawn(async move {
-    axum::serve(listener, app).await.expect("run test server");
-  });
-
-  format!("http://{address}")
-}
-
 #[tokio::test]
 async fn current_weather_returns_snapshot_and_persists() {
   let snapshot_calls = Arc::new(AtomicUsize::new(0));
@@ -205,16 +183,14 @@ async fn current_weather_returns_snapshot_and_persists() {
       loaded_hourly: Arc::new(vec![test_hourly_payload("2026-03-09T12:00:00Z", 2)]),
     }),
   );
-  let context = TestContextBuilder::new("weather")
-    .with_weather_service(service)
-    .build();
+  let context = TestContextBuilder::new("weather").with_weather_service(service).build();
 
   let base_url = spawn_http_server(context).await;
   let response = reqwest::get(format!(
     "{base_url}/api/v1/weather/current?lat=48.4057&lon=9.0542&timezone=Europe/Berlin"
   ))
-    .await
-    .expect("request current weather");
+  .await
+  .expect("request current weather");
 
   assert_eq!(response.status(), StatusCode::OK);
   let payload: serde_json::Value = response.json().await.expect("json payload");
@@ -248,19 +224,13 @@ async fn current_weather_manual_refresh_persists_each_call() {
       loaded_hourly: Arc::new(vec![test_hourly_payload("2026-03-09T12:00:00Z", 2)]),
     }),
   );
-  let context = TestContextBuilder::new("weather")
-    .with_weather_service(service)
-    .build();
+  let context = TestContextBuilder::new("weather").with_weather_service(service).build();
 
   let base_url = spawn_http_server(context).await;
   let url = format!("{base_url}/api/v1/weather/current?lat=48.4057&lon=9.0542");
 
-  reqwest::get(&url)
-    .await
-    .expect("first manual refresh request");
-  reqwest::get(&url)
-    .await
-    .expect("second manual refresh request");
+  reqwest::get(&url).await.expect("first manual refresh request");
+  reqwest::get(&url).await.expect("second manual refresh request");
   tokio::time::sleep(Duration::from_millis(20)).await;
 
   assert_eq!(snapshot_calls.load(Ordering::SeqCst), 2);
@@ -296,24 +266,19 @@ async fn forecast_weather_returns_hourly_forecast_and_persists() {
       loaded_hourly: Arc::new(loaded_hourly),
     }),
   );
-  let context = TestContextBuilder::new("weather")
-    .with_weather_service(service)
-    .build();
+  let context = TestContextBuilder::new("weather").with_weather_service(service).build();
 
   let base_url = spawn_http_server(context).await;
   let response = reqwest::get(format!(
     "{base_url}/api/v1/weather/forecast?lat=48.4057&lon=9.0542&timezone=Europe/Berlin&hoursPast=24&hoursFuture=48"
   ))
-    .await
-    .expect("request hourly forecast");
+  .await
+  .expect("request hourly forecast");
 
   assert_eq!(response.status(), StatusCode::OK);
   let payload: serde_json::Value = response.json().await.expect("json payload");
   tokio::time::sleep(Duration::from_millis(20)).await;
-  assert_eq!(
-    payload["hourly"].as_array().map(|value| value.len()),
-    Some(2)
-  );
+  assert_eq!(payload["hourly"].as_array().map(|value| value.len()), Some(2));
   assert_eq!(payload["hourly"][0]["weatherCode"], 2);
   assert_eq!(payload["hourly"][1]["weatherCode"], 61);
   assert_eq!(snapshot_calls.load(Ordering::SeqCst), 0);

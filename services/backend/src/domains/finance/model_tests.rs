@@ -1,7 +1,8 @@
 use chrono::NaiveDate;
 
 use super::{
-  format_amount_minor_units, money, TransactionDirection, TransactionInput, TransactionsQueryInput,
+  format_amount_minor_units, money, FinancialAccountInput, FinancialAccountType, TransactionDirection,
+  TransactionInput, TransactionsQueryInput,
 };
 
 #[test]
@@ -10,19 +11,13 @@ fn date_range_query_parses_iso_dates() {
     from: Some("2026-05-01".to_string()),
     to: Some("2026-05-31".to_string()),
   }
-    .into_transactions_query()
-    .expect("valid range");
+  .into_transactions_query()
+  .expect("valid range");
 
   assert_eq!(query.from, "2026-05-01");
   assert_eq!(query.to, "2026-05-31");
-  assert_eq!(
-    query.start_inclusive,
-    NaiveDate::from_ymd_opt(2026, 5, 1).unwrap()
-  );
-  assert_eq!(
-    query.end_exclusive,
-    NaiveDate::from_ymd_opt(2026, 6, 1).unwrap()
-  );
+  assert_eq!(query.start_inclusive, NaiveDate::from_ymd_opt(2026, 5, 1).unwrap());
+  assert_eq!(query.end_exclusive, NaiveDate::from_ymd_opt(2026, 6, 1).unwrap());
 }
 
 #[test]
@@ -31,8 +26,8 @@ fn date_range_query_rejects_missing_from() {
     from: None,
     to: Some("2026-05-31".to_string()),
   }
-    .into_transactions_query()
-    .expect_err("missing from rejected");
+  .into_transactions_query()
+  .expect_err("missing from rejected");
 
   assert_eq!(error.code(), "bad_request");
 }
@@ -43,8 +38,8 @@ fn date_range_query_rejects_inverted_range() {
     from: Some("2026-05-31".to_string()),
     to: Some("2026-05-01".to_string()),
   }
-    .into_transactions_query()
-    .expect_err("inverted range rejected");
+  .into_transactions_query()
+  .expect_err("inverted range rejected");
 
   assert_eq!(error.code(), "bad_request");
 }
@@ -55,8 +50,8 @@ fn date_range_query_rejects_invalid_format() {
     from: Some("2026-05".to_string()),
     to: Some("2026-05-31".to_string()),
   }
-    .into_transactions_query()
-    .expect_err("invalid format rejected");
+  .into_transactions_query()
+  .expect_err("invalid format rejected");
 
   assert_eq!(error.code(), "bad_request");
 }
@@ -71,12 +66,43 @@ fn transaction_input_parses_amount_to_minor_units() {
     category: Some(" Food ".to_string()),
     note: None,
   }
-    .into_draft()
-    .expect("valid transaction");
+  .into_draft()
+  .expect("valid transaction");
 
   assert_eq!(draft.amount_minor_units, 1230);
   assert_eq!(draft.description, "Groceries");
   assert_eq!(draft.category.as_deref(), Some("Food"));
+}
+
+#[test]
+fn financial_account_input_normalizes_currency_code() {
+  let draft = FinancialAccountInput {
+    name: Some(" Wallet ".to_string()),
+    account_type: Some(FinancialAccountType::Cash),
+    primary_currency_code: Some("eur".to_string()),
+    display_order: None,
+  }
+  .into_draft()
+  .expect("valid account");
+
+  assert_eq!(draft.name, "Wallet");
+  assert_eq!(draft.account_type, FinancialAccountType::Cash);
+  assert_eq!(draft.primary_currency_code, "EUR");
+  assert_eq!(draft.display_order, 0);
+}
+
+#[test]
+fn financial_account_input_rejects_invalid_currency_code() {
+  let error = FinancialAccountInput {
+    name: Some("Wallet".to_string()),
+    account_type: Some(FinancialAccountType::Cash),
+    primary_currency_code: Some("EURO".to_string()),
+    display_order: None,
+  }
+  .into_draft()
+  .expect_err("invalid currency rejected");
+
+  assert_eq!(error.code(), "bad_request");
 }
 
 #[test]
@@ -89,8 +115,8 @@ fn transaction_input_rejects_float_like_precision() {
     category: None,
     note: None,
   }
-    .into_draft()
-    .expect_err("amount precision rejected");
+  .into_draft()
+  .expect_err("amount precision rejected");
 
   assert_eq!(error.code(), "bad_request");
 }

@@ -29,8 +29,5 @@ pub struct ReconciliationDifference {
 
 #[async_trait::async_trait]
 pub trait BalanceRepository: Send + Sync {
-  async fn list_balance_snapshots(
-    &self,
-    financial_account_id: &str,
-  ) -> Result<Vec<BalanceSnapshot>, ApiError>;
+  async fn list_balance_snapshots(&self, financial_account_id: &str) -> Result<Vec<BalanceSnapshot>, ApiError>;
 }
