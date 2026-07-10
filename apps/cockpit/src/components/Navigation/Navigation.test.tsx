@@ -54,6 +54,7 @@ describe('Navigation', () => {
     expect(linkLabels).toEqual([
       { href: '/', label: 'Overview' },
       { href: '/jarvis', label: 'Jarvis' },
+      { href: '/finance/accounts', label: 'Accounts' },
       { href: '/finance/transactions', label: 'Transactions' },
     ]);
   });

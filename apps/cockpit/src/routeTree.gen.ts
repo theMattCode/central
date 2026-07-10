@@ -13,6 +13,7 @@ import { Route as JarvisRouteImport } from './routes/jarvis'
 import { Route as ComponentsRouteImport } from './routes/components'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as FinanceTransactionsRouteImport } from './routes/finance/transactions'
+import { Route as FinanceAccountsRouteImport } from './routes/finance/accounts'
 
 const JarvisRoute = JarvisRouteImport.update({
   id: '/jarvis',
@@ -34,17 +35,24 @@ const FinanceTransactionsRoute = FinanceTransactionsRouteImport.update({
   path: '/finance/transactions',
   getParentRoute: () => rootRouteImport,
 } as any)
+const FinanceAccountsRoute = FinanceAccountsRouteImport.update({
+  id: '/finance/accounts',
+  path: '/finance/accounts',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/components': typeof ComponentsRoute
   '/jarvis': typeof JarvisRoute
+  '/finance/accounts': typeof FinanceAccountsRoute
   '/finance/transactions': typeof FinanceTransactionsRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/components': typeof ComponentsRoute
   '/jarvis': typeof JarvisRoute
+  '/finance/accounts': typeof FinanceAccountsRoute
   '/finance/transactions': typeof FinanceTransactionsRoute
 }
 export interface FileRoutesById {
@@ -52,20 +60,38 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/components': typeof ComponentsRoute
   '/jarvis': typeof JarvisRoute
+  '/finance/accounts': typeof FinanceAccountsRoute
   '/finance/transactions': typeof FinanceTransactionsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/components' | '/jarvis' | '/finance/transactions'
+  fullPaths:
+    | '/'
+    | '/components'
+    | '/jarvis'
+    | '/finance/accounts'
+    | '/finance/transactions'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/components' | '/jarvis' | '/finance/transactions'
-  id: '__root__' | '/' | '/components' | '/jarvis' | '/finance/transactions'
+  to:
+    | '/'
+    | '/components'
+    | '/jarvis'
+    | '/finance/accounts'
+    | '/finance/transactions'
+  id:
+    | '__root__'
+    | '/'
+    | '/components'
+    | '/jarvis'
+    | '/finance/accounts'
+    | '/finance/transactions'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   ComponentsRoute: typeof ComponentsRoute
   JarvisRoute: typeof JarvisRoute
+  FinanceAccountsRoute: typeof FinanceAccountsRoute
   FinanceTransactionsRoute: typeof FinanceTransactionsRoute
 }
 
@@ -99,6 +125,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof FinanceTransactionsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/finance/accounts': {
+      id: '/finance/accounts'
+      path: '/finance/accounts'
+      fullPath: '/finance/accounts'
+      preLoaderRoute: typeof FinanceAccountsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -106,6 +139,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ComponentsRoute: ComponentsRoute,
   JarvisRoute: JarvisRoute,
+  FinanceAccountsRoute: FinanceAccountsRoute,
   FinanceTransactionsRoute: FinanceTransactionsRoute,
 }
 export const routeTree = rootRouteImport

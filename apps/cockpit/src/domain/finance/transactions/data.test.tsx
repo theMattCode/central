@@ -4,7 +4,11 @@ import { act, renderHook, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Summary, Transaction } from '@/domain/finance/transactions/model.ts';
 import { useTransactions } from '@/domain/finance/transactions/data.ts';
-import { type FinanceClient, type TransactionsResponse } from '@/domain/finance/financeClient.ts';
+import {
+  type AccountsResponse,
+  type FinanceClient,
+  type TransactionsResponse,
+} from '@/domain/finance/financeClient.ts';
 import { FinanceClientProvider } from '@/domain/finance/FinanceClientContext.tsx';
 import type { IsoDateRange } from '@/utils/datetime.ts';
 
@@ -22,6 +26,18 @@ describe('useTransactions', () => {
   });
 
   const financeClientMock: FinanceClient = {
+    getAccounts(_options?: { signal?: AbortSignal }): Promise<AccountsResponse> {
+      throw new Error('accounts should not be called by transaction tests');
+    },
+    createAccount() {
+      throw new Error('create account should not be called by transaction tests');
+    },
+    updateAccount() {
+      throw new Error('update account should not be called by transaction tests');
+    },
+    archiveAccount() {
+      throw new Error('archive account should not be called by transaction tests');
+    },
     getTransactions(input: IsoDateRange, options?: { signal?: AbortSignal }): Promise<TransactionsResponse> {
       return getTransactionsMock(input, options);
     },

@@ -5,6 +5,7 @@ import {
   MdMenu as MenuIcon,
   MdOutlineHome as HomeIcon,
   MdOutlineMail as MailIcon,
+  MdAccountBalance as AccountsIcon,
   MdOutlineMonitorWeight as MonitorModeIcon,
   MdOutlineTask as TaskIcon,
   MdSettings as SettingsIcon,
@@ -109,6 +110,9 @@ function DrawerContent({ onNavigate }: { onNavigate?: () => void }) {
           <NavigationItem Icon={MailIcon}>E-Mail</NavigationItem>
         </NavigationGroup>
         <NavigationGroup title="Finance">
+          <NavigationItem Icon={AccountsIcon} href="/finance/accounts" onClick={onNavigate}>
+            Accounts
+          </NavigationItem>
           <NavigationItem Icon={IncomeAndExpenseIcon} href="/finance/transactions" onClick={onNavigate}>
             Transactions
           </NavigationItem>

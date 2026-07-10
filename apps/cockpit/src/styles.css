@@ -57,9 +57,33 @@ code {
 }
 
 .grid-layout {
-  @apply grid gap-4 grid-cols-2 md:grid-cols-4 lg:grid-cols-6 2xl:grid-cols-12;
+  @apply transition-all grid w-full content-start items-start gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-8 2xl:grid-cols-12;
+}
+
+.grid-section-xs,
+.grid-section-md,
+.grid-section-lg,
+.grid-section-xl,
+.grid-section-full {
+  @apply col-span-full min-w-0;
+}
+
+.grid-section-xs {
+  @apply md:col-span-1 lg:col-span-1 xl:col-span-2 2xl:col-span-2;
+}
+
+.grid-section-md {
+  @apply md:col-span-1 lg:col-span-1 xl:col-span-2 2xl:col-span-3;
+}
+
+.grid-section-lg {
+  @apply md:col-span-2 lg:col-span-2 xl:col-span-3 2xl:col-span-4;
+}
+
+.grid-section-xl {
+  @apply md:col-span-2 lg:col-span-4 xl:col-span-4 2xl:col-span-6;
 }
 
 .section-base {
-  @apply transition-all self-start w-full h-full bg-(--color-bg) flex p-4 rounded-lg border border-(--color-section-border) @container;
+  @apply transition-all self-start w-full bg-(--color-bg) flex p-4 rounded-lg border border-(--color-section-border) @container;
 }

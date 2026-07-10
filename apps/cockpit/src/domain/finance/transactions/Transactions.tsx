@@ -101,7 +101,7 @@ export function Transactions() {
     <>
       {data?.summary && <SummaryStrip summary={data.summary} />}
       {error && (
-        <div className="col-span-full rounded-md border border-red-500/40 bg-red-500/10 px-3 py-2 text-sm text-red-400 dark:text-red-300">
+        <div className="grid-section-full rounded-md border border-red-500/40 bg-red-500/10 px-3 py-2 text-sm text-red-400 dark:text-red-300">
           {error.message}
         </div>
       )}
@@ -116,7 +116,7 @@ export function Transactions() {
         onChange={setForm}
         onSubmit={submitForm}
       />
-      {loading && <p className="col-span-full text-sm text-(--color-txt-sec)">Loading transactions...</p>}
+      {loading && <p className="grid-section-full text-sm text-(--color-txt-sec)">Loading transactions...</p>}
       {/* Transaction list should have kind of toolbar
           <input type="month" value={month} className="rounded-md border border-(--color-section-border) bg-(--color-bg) px-3 py-2 text-(--color-txt)" onChange={(event) => setDateRangeMonth(event.target.value)} />
           <label className="flex flex-col gap-1 text-sm text-(--color-txt-sec)"></label>
@@ -167,7 +167,7 @@ function TransactionForm({
 }: TransactionFormProps) {
   const updateForm = (patch: Partial<TransactionFormState>) => onChange({ ...form, ...patch });
   return (
-    <Section>
+    <Section className="grid-section-full">
       <form
         className="w-full flex flex-col gap-4"
         onSubmit={(event) => {
@@ -262,11 +262,11 @@ function TransactionList({
   onEdit: (transaction: Transaction) => void;
 }) {
   if (transactions.length === 0) {
-    return <p className="text-sm text-(--color-txt-sec)">No transactions for this month.</p>;
+    return <p className="grid-section-full text-sm text-(--color-txt-sec)">No transactions for this month.</p>;
   }
 
   return (
-    <Section>
+    <Section className="grid-section-full">
       <div className="w-full hidden overflow-x-auto sm:block">
         <table className="w-full border-separate border-spacing-0 text-sm">
           <thead className="text-left text-(--color-txt-sec)">
