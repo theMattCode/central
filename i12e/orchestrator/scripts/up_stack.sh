@@ -3,6 +3,7 @@ set -eu
 
 COMPOSE_FILE="i12e/orchestrator/docker-compose.yml"
 DEV_COMPOSE_FILE="i12e/orchestrator/docker-compose.dev.yml"
+LOCAL_COMPOSE_FILE="i12e/orchestrator/docker-compose.local.yml"
 
 usage() {
   cat <<'USAGE' >&2
@@ -65,7 +66,11 @@ compose() {
 }
 
 compose_hot() {
-  docker compose --env-file "$env_file" --file "$COMPOSE_FILE" --file "$DEV_COMPOSE_FILE" "$@"
+  if [ -f "$LOCAL_COMPOSE_FILE" ]; then
+    docker compose --env-file "$env_file" --file "$COMPOSE_FILE" --file "$DEV_COMPOSE_FILE" --file "$LOCAL_COMPOSE_FILE" "$@"
+  else
+    docker compose --env-file "$env_file" --file "$COMPOSE_FILE" --file "$DEV_COMPOSE_FILE" "$@"
+  fi
 }
 
 start_postgres_and_migrate() {

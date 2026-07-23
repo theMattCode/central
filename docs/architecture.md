@@ -89,13 +89,21 @@ The repository is organized as a multi-project Nx workspace:
 6. Fresh responses are returned immediately; persistence writes happen asynchronously.
 7. Cockpit serializes widget data to the client and can refresh through server functions without exposing backend directly to the browser.
 
-### Finance Cash
+### Finance
 
-1. Browser opens `/finance/transactions`.
+1. Browser opens the Finance Dashboard in Cockpit.
 2. Cockpit server functions call backend finance APIs.
-3. Backend persists manual income and expense transactions in PostgreSQL.
-4. Summaries are computed from transactions filtered by transaction date.
-5. Cockpit currently lists and creates transactions end to end; edit and delete UI controls still need route-id wiring in the server function helpers.
+3. Backend persists finance data in PostgreSQL through forward-only migrations under `i12e/postgres/migrations`.
+4. Finance stays one backend domain with focused subareas for accounts, ledger, budgets, reminders, and dashboard reporting. Investment tracking is deferred to a later feature slice.
+5. Dashboard summaries combine account balances, month-to-date cashflow, budget progress, and upcoming reminders.
+6. The existing manual transaction MVP is not production-used and can be replaced by the new finance model instead of maintained as a parallel compatibility path.
+7. Finance implementation should start with a shared foundation migration and backend model/API skeleton for accounts, ledger entries, balance snapshots, categories, budgets, and reminders before building feature-specific UI.
+8. The foundation should support manual entry first while leaving room for later imported or bank-synced ledger entries through explicit source/import metadata.
+9. Investment valuation is deferred; a later slice can add investment accounts, securities, positions, investment transactions, price snapshots, and quote-provider adapters.
+10. Tax tracking is outside the first full finance management phase.
+11. The Finance Dashboard should be a mobile-first, dense, calm operational view with strong first-glance hierarchy, account balance groups, month-to-date cashflow, budget progress, and upcoming-reminder actions; desktop layouts should use the additional space for a richer but still work-focused presentation.
+12. Finance keeps a lightweight privacy baseline: backend APIs remain private behind Cockpit, the first phase does not add auth or multi-user hardening, sensitive finance details should not be logged, and finance data should not be sent to third parties without an explicit future integration.
+13. Finance dashboard summaries should be computed live from the finance tables first; cached summary tables should wait for a measured performance need.
 
 ### Voice
 

@@ -4,15 +4,16 @@ import type { Summary, Transaction } from '@/domain/finance/transactions/model.t
 import { isIsoDateRange, type IsoDateRange } from '@/utils/datetime.ts';
 import type { FinancialAccount, FinancialAccountType } from '@/domain/finance/accounts/model.ts';
 
-export type FinancialAccountInput = {
+export type FinancialAccountCreateInput = {
   name: string;
   accountType: FinancialAccountType;
   primaryCurrencyCode: string;
-  displayOrder: number;
 };
 
-export type UpdateFinancialAccountInput = FinancialAccountInput & {
+export type FinancialAccountUpdateInput = {
   id: string;
+  name: string;
+  displayOrder: number;
 };
 
 export type ArchiveFinancialAccountInput = {
@@ -30,8 +31,8 @@ export interface TransactionsResponse extends IsoDateRange {
 
 export interface FinanceClient {
   getAccounts(options?: { signal?: AbortSignal }): Promise<AccountsResponse>;
-  createAccount(input: FinancialAccountInput): Promise<FinancialAccount>;
-  updateAccount(input: UpdateFinancialAccountInput): Promise<FinancialAccount>;
+  createAccount(input: FinancialAccountCreateInput): Promise<FinancialAccount>;
+  updateAccount(input: FinancialAccountUpdateInput): Promise<FinancialAccount>;
   archiveAccount(input: ArchiveFinancialAccountInput): Promise<FinancialAccount>;
 
   getTransactions(input: IsoDateRange, options?: { signal?: AbortSignal }): Promise<TransactionsResponse>;
@@ -47,16 +48,15 @@ const fetchAccounts = createServerFn({ method: 'GET' }).handler(() =>
 
 const ACCOUNT_TYPES = ['cash', 'bank', 'credit', 'loan'];
 
-function validateFinancialAccountInput(input: unknown): FinancialAccountInput {
+function validateFinancialAccountCreateInput(input: unknown): FinancialAccountCreateInput {
   if (!input || typeof input !== 'object') throw new Error('Invalid financial account payload.');
 
-  const value = input as Partial<FinancialAccountInput>;
+  const value = input as Partial<FinancialAccountCreateInput>;
   if (
     typeof value.name !== 'string' ||
     !value.accountType ||
     !ACCOUNT_TYPES.includes(value.accountType) ||
-    typeof value.primaryCurrencyCode !== 'string' ||
-    typeof value.displayOrder !== 'number'
+    typeof value.primaryCurrencyCode !== 'string'
   ) {
     throw new Error('Invalid financial account payload.');
   }
@@ -65,30 +65,37 @@ function validateFinancialAccountInput(input: unknown): FinancialAccountInput {
     name: value.name,
     accountType: value.accountType,
     primaryCurrencyCode: value.primaryCurrencyCode,
-    displayOrder: value.displayOrder,
   };
 }
 
 const createFinancialAccount = createServerFn({ method: 'POST' })
-  .inputValidator(validateFinancialAccountInput)
+  .inputValidator(validateFinancialAccountCreateInput)
   .handler(async ({ data }) =>
     fetchJson<FinancialAccount>(getFinanceURL('accounts'), { method: 'POST', body: JSON.stringify(data) }),
   );
 
-function validateUpdateFinancialAccountInput(input: unknown): UpdateFinancialAccountInput {
+function validateFinancialAccountUpdateInput(input: unknown): FinancialAccountUpdateInput {
   if (!input || typeof input !== 'object') throw new Error('Invalid financial account payload.');
 
-  const value = input as Partial<UpdateFinancialAccountInput>;
-  if (typeof value.id !== 'string' || !value.id) throw new Error('Invalid financial account payload.');
+  const value = input as Partial<FinancialAccountUpdateInput>;
+  if (
+    typeof value.id !== 'string' ||
+    !value.id ||
+    typeof value.name !== 'string' ||
+    typeof value.displayOrder !== 'number'
+  ) {
+    throw new Error('Invalid financial account payload.');
+  }
 
   return {
     id: value.id,
-    ...validateFinancialAccountInput(input),
+    name: value.name,
+    displayOrder: value.displayOrder,
   };
 }
 
 const updateFinancialAccount = createServerFn({ method: 'POST' })
-  .inputValidator(validateUpdateFinancialAccountInput)
+  .inputValidator(validateFinancialAccountUpdateInput)
   .handler(async ({ data }) => {
     const { id, ...account } = data;
     return fetchJson<FinancialAccount>(getFinanceURL(`accounts/${id}`), {

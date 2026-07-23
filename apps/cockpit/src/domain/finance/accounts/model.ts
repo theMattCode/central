@@ -1,4 +1,4 @@
-import type { FinancialAccountInput } from '@/domain/finance/financeClient.ts';
+import type { FinancialAccountCreateInput, FinancialAccountUpdateInput } from '@/domain/finance/financeClient.ts';
 
 export type FinancialAccountType = 'cash' | 'bank' | 'credit' | 'loan';
 export type FinancialAccountStatus = 'active' | 'archived';
@@ -19,7 +19,6 @@ export type FinancialAccountFormState = {
   name: string;
   accountType: FinancialAccountType;
   primaryCurrencyCode: string;
-  displayOrder: string;
 };
 
 export const FINANCIAL_ACCOUNT_TYPES: ReadonlyArray<{
@@ -37,7 +36,6 @@ export function createEmptyFinancialAccountFormState(): FinancialAccountFormStat
     name: '',
     accountType: 'bank',
     primaryCurrencyCode: 'EUR',
-    displayOrder: '0',
   };
 }
 
@@ -46,15 +44,24 @@ export function toFinancialAccountFormState(account: FinancialAccount): Financia
     name: account.name,
     accountType: account.accountType,
     primaryCurrencyCode: account.primaryCurrencyCode,
-    displayOrder: account.displayOrder.toString(),
   };
 }
 
-export function toFinancialAccountInput(form: FinancialAccountFormState): FinancialAccountInput {
+export function toFinancialAccountCreateInput(form: FinancialAccountFormState): FinancialAccountCreateInput {
   return {
     name: form.name.trim(),
     accountType: form.accountType,
     primaryCurrencyCode: form.primaryCurrencyCode.trim().toUpperCase(),
-    displayOrder: Number.parseInt(form.displayOrder, 10) || 0,
+  };
+}
+
+export function toFinancialAccountUpdateInput(
+  account: FinancialAccount,
+  form: FinancialAccountFormState,
+): FinancialAccountUpdateInput {
+  return {
+    id: account.id,
+    name: form.name.trim(),
+    displayOrder: account.displayOrder,
   };
 }

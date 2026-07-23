@@ -2,8 +2,8 @@ use chrono::{DateTime, NaiveDate, Utc};
 use serde::{Deserialize, Serialize};
 
 pub use crate::domains::finance::accounts::{
-  FinancialAccountDraft, FinancialAccountInput, FinancialAccountListResponse, FinancialAccountResponse,
-  FinancialAccountStatus, FinancialAccountType,
+  FinancialAccountCreateDraft, FinancialAccountCreateInput, FinancialAccountListResponse, FinancialAccountResponse,
+  FinancialAccountStatus, FinancialAccountType, FinancialAccountUpdateDraft, FinancialAccountUpdateInput,
 };
 use crate::domains::finance::validation::{clean_optional_text, clean_required_text, required_iso_date};
 use crate::error::ApiError;

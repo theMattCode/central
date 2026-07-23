@@ -86,35 +86,56 @@ pub struct FinancialAccountListResponse {
 }
 
 #[derive(Debug, Deserialize, Clone)]
-#[serde(rename_all = "camelCase")]
-pub struct FinancialAccountInput {
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct FinancialAccountCreateInput {
   pub name: Option<String>,
   pub account_type: Option<FinancialAccountType>,
   pub primary_currency_code: Option<String>,
-  pub display_order: Option<i32>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct FinancialAccountDraft {
+pub struct FinancialAccountCreateDraft {
   pub name: String,
   pub account_type: FinancialAccountType,
   pub primary_currency_code: String,
-  pub display_order: i32,
 }
 
-impl FinancialAccountInput {
-  pub fn into_draft(self) -> Result<FinancialAccountDraft, ApiError> {
+impl FinancialAccountCreateInput {
+  pub fn into_draft(self) -> Result<FinancialAccountCreateDraft, ApiError> {
     let name = clean_required_text(self.name, "name")?;
     let account_type = self
       .account_type
       .ok_or_else(|| ApiError::BadRequest("Missing required field: accountType".to_string()))?;
     let primary_currency_code = clean_currency_code(self.primary_currency_code, "primaryCurrencyCode")?;
 
-    Ok(FinancialAccountDraft {
+    Ok(FinancialAccountCreateDraft {
       name,
       account_type,
       primary_currency_code,
-      display_order: self.display_order.unwrap_or(0),
+    })
+  }
+}
+
+#[derive(Debug, Deserialize, Clone)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct FinancialAccountUpdateInput {
+  pub name: Option<String>,
+  pub display_order: Option<i32>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct FinancialAccountUpdateDraft {
+  pub name: String,
+  pub display_order: i32,
+}
+
+impl FinancialAccountUpdateInput {
+  pub fn into_draft(self) -> Result<FinancialAccountUpdateDraft, ApiError> {
+    Ok(FinancialAccountUpdateDraft {
+      name: clean_required_text(self.name, "name")?,
+      display_order: self
+        .display_order
+        .ok_or_else(|| ApiError::BadRequest("Missing required field: displayOrder".to_string()))?,
     })
   }
 }

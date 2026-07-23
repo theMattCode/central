@@ -2,7 +2,7 @@ use reqwest::StatusCode;
 
 use crate::context::Context;
 use crate::domains::finance::in_memory_finance_service;
-use crate::test_support::{spawn_http_server, TestContextBuilder};
+use crate::test_support::{TestContextBuilder, spawn_http_server};
 
 fn test_context() -> Context {
   TestContextBuilder::new("finance")
@@ -20,8 +20,7 @@ async fn create_update_archive_and_list_financial_accounts() {
     .json(&serde_json::json!({
       "name": "Wallet",
       "accountType": "cash",
-      "primaryCurrencyCode": "eur",
-      "displayOrder": 10
+      "primaryCurrencyCode": "eur"
     }))
     .send()
     .await
@@ -32,14 +31,13 @@ async fn create_update_archive_and_list_financial_accounts() {
   assert_eq!(created["name"], "Wallet");
   assert_eq!(created["accountType"], "cash");
   assert_eq!(created["primaryCurrencyCode"], "EUR");
+  assert_eq!(created["displayOrder"], 10);
 
   let account_id = created["id"].as_str().expect("account id");
   let update_response = client
     .put(format!("{base_url}/api/v1/finance/accounts/{account_id}"))
     .json(&serde_json::json!({
       "name": "Main Checking",
-      "accountType": "bank",
-      "primaryCurrencyCode": "EUR",
       "displayOrder": 1
     }))
     .send()
@@ -49,7 +47,8 @@ async fn create_update_archive_and_list_financial_accounts() {
   assert_eq!(update_response.status(), StatusCode::OK);
   let updated: serde_json::Value = update_response.json().await.expect("updated account json");
   assert_eq!(updated["name"], "Main Checking");
-  assert_eq!(updated["accountType"], "bank");
+  assert_eq!(updated["accountType"], "cash");
+  assert_eq!(updated["primaryCurrencyCode"], "EUR");
   assert_eq!(updated["displayOrder"], 1);
 
   let archive_response = client
@@ -92,6 +91,38 @@ async fn invalid_financial_account_currency_returns_bad_request() {
     .expect("create invalid financial account");
 
   assert_eq!(response.status(), StatusCode::BAD_REQUEST);
+}
+
+#[tokio::test]
+async fn account_update_rejects_immutable_fields() {
+  let base_url = spawn_http_server(test_context()).await;
+  let client = reqwest::Client::new();
+
+  let create_response = client
+    .post(format!("{base_url}/api/v1/finance/accounts"))
+    .json(&serde_json::json!({
+      "name": "Wallet",
+      "accountType": "cash",
+      "primaryCurrencyCode": "EUR"
+    }))
+    .send()
+    .await
+    .expect("create financial account");
+  let created: serde_json::Value = create_response.json().await.expect("created account json");
+  let account_id = created["id"].as_str().expect("account id");
+
+  let response = client
+    .put(format!("{base_url}/api/v1/finance/accounts/{account_id}"))
+    .json(&serde_json::json!({
+      "name": "Renamed wallet",
+      "displayOrder": 10,
+      "accountType": "bank"
+    }))
+    .send()
+    .await
+    .expect("update account with immutable field");
+
+  assert_eq!(response.status(), StatusCode::UNPROCESSABLE_ENTITY);
 }
 
 #[tokio::test]

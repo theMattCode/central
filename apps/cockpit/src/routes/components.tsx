@@ -2,6 +2,7 @@ import { createFileRoute } from '@tanstack/react-router';
 import { Button } from '@/components/Button/Button.tsx';
 import { ButtonGroup } from '@/components/ButtonGroup/ButtonGroup.tsx';
 import { LuAlarmClockPlus, LuPencil } from 'react-icons/lu';
+import { EditableText } from '@/components/EditableText/EditableText.tsx';
 
 export const Route = createFileRoute('/components')({
   component: Components,
@@ -10,12 +11,45 @@ export const Route = createFileRoute('/components')({
   }),
 });
 
+function ShowcaseEditableText() {
+  return (
+    <>
+      <div className="flex flex-col gap-2 container">
+        <EditableText
+          value={'Hello World'}
+          initialEditing={false}
+          onChange={(value) => console.log('new value:', value)}
+        />
+        <EditableText
+          value={'Hello World'}
+          initialEditing={true}
+          onChange={(value) => console.log('new value:', value)}
+        />
+      </div>
+      <div className="flex flex-col gap-2 container w-52">
+        <EditableText
+          value={'Hello World'}
+          initialEditing={false}
+          onChange={(value) => console.log('new value:', value)}
+        />
+        <EditableText
+          value={'Hello World'}
+          initialEditing={true}
+          onChange={(value) => console.log('new value:', value)}
+        />
+      </div>
+    </>
+  );
+}
+
 function Components() {
   return (
     <div className="w-full h-full flex flex-col gap-6 p-6">
       <ShowcaseButtons />
 
       <ShowcaseButtonGroup />
+
+      <ShowcaseEditableText />
     </div>
   );
 }

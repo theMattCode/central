@@ -11,7 +11,7 @@ The service is intentionally modular: shared process concerns live at the servic
 - `src/http`: integrated HTTP API router, health endpoint, CORS, and tracing middleware.
 - `src/context.rs`: request state shared by domain routers.
 - `src/error.rs`: shared application errors and HTTP mapping.
-- `src/domains/finance`: cash transaction domain model, use case, PostgreSQL repository, and HTTP routes.
+- `src/domains/finance`: finance account and cash transaction domain models, use cases, PostgreSQL repository, and HTTP routes.
 - `src/domains/weather`: weather domain model, use case, Open-Meteo adapter, PostgreSQL repository, and HTTP routes.
 
 ## API
@@ -22,12 +22,16 @@ The service is intentionally modular: shared process concerns live at the servic
 
 ### Finance Domain
 
+- `GET /api/v1/finance/accounts`
+- `POST /api/v1/finance/accounts`
+- `PUT /api/v1/finance/accounts/:id`
+- `POST /api/v1/finance/accounts/:id/archive`
 - `GET /api/v1/finance/transactions?from=2026-05-01&to=2026-05-31`
 - `POST /api/v1/finance/transactions`
 - `PUT /api/v1/finance/transactions/:id`
 - `DELETE /api/v1/finance/transactions/:id`
 
-Finance tracks manual cash income and expense transactions. Amounts are exposed as decimal strings and stored in PostgreSQL as positive minor units with fixed `EUR` currency.
+Finance tracks financial accounts and manual cash income and expense transactions. Account APIs support cash, bank, credit, and loan accounts. Amounts are exposed as decimal strings and stored in PostgreSQL as positive minor units with fixed `EUR` currency for current transaction flows.
 
 ### Weather Domain
 

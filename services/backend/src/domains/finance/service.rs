@@ -1,8 +1,8 @@
 use std::sync::Arc;
 
 use crate::domains::finance::model::{
-  FinancialAccountDraft, FinancialAccountListResponse, FinancialAccountResponse, TransactionDraft,
-  TransactionListResponse, TransactionResponse, TransactionsQuery,
+  FinancialAccountCreateDraft, FinancialAccountListResponse, FinancialAccountResponse, FinancialAccountUpdateDraft,
+  TransactionDraft, TransactionListResponse, TransactionResponse, TransactionsQuery,
 };
 use crate::domains::finance::repository::FinanceRepository;
 use crate::error::ApiError;
@@ -23,7 +23,7 @@ impl FinanceService {
 
   pub async fn create_financial_account(
     &self,
-    draft: &FinancialAccountDraft,
+    draft: &FinancialAccountCreateDraft,
   ) -> Result<FinancialAccountResponse, ApiError> {
     self.repository.create_financial_account(draft).await
   }
@@ -31,7 +31,7 @@ impl FinanceService {
   pub async fn update_financial_account(
     &self,
     id: &str,
-    draft: &FinancialAccountDraft,
+    draft: &FinancialAccountUpdateDraft,
   ) -> Result<FinancialAccountResponse, ApiError> {
     self.repository.update_financial_account(id, draft).await
   }

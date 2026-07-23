@@ -1,13 +1,13 @@
 use std::{sync::Arc, time::Duration};
 
 use chrono::{DateTime, NaiveDate, Utc};
-use tokio_postgres::{config::Host, Client, NoTls, Row};
+use tokio_postgres::{Client, NoTls, Row, config::Host};
 use tracing::{error, info, warn};
 
 use crate::domains::finance::model::{
-  format_amount_minor_units, summarize, FinancialAccountDraft, FinancialAccountListResponse, FinancialAccountResponse,
-  FinancialAccountStatus, FinancialAccountType, TransactionDirection, TransactionDraft, TransactionListResponse,
-  TransactionResponse, TransactionsQuery,
+  FinancialAccountCreateDraft, FinancialAccountListResponse, FinancialAccountResponse, FinancialAccountStatus,
+  FinancialAccountType, FinancialAccountUpdateDraft, TransactionDirection, TransactionDraft, TransactionListResponse,
+  TransactionResponse, TransactionsQuery, format_amount_minor_units, summarize,
 };
 use crate::error::ApiError;
 
@@ -40,7 +40,12 @@ INSERT INTO service_finance.financial_accounts (
   primary_currency_code,
   display_order
 )
-VALUES ($1, $2, $3, $4)
+SELECT
+  $1,
+  $2,
+  $3,
+  COALESCE(MAX(display_order), 0) + 10
+FROM service_finance.financial_accounts
 RETURNING
   id::text,
   name,
@@ -57,9 +62,7 @@ const UPDATE_FINANCIAL_ACCOUNT_SQL: &str = r#"
 UPDATE service_finance.financial_accounts
 SET
   name = $2,
-  account_type = $3,
-  primary_currency_code = $4,
-  display_order = $5,
+  display_order = $3,
   updated_at = now()
 WHERE id = $1::uuid
 RETURNING
@@ -347,7 +350,7 @@ impl FinanceRepository {
 
   pub(crate) async fn create_financial_account(
     &self,
-    draft: &FinancialAccountDraft,
+    draft: &FinancialAccountCreateDraft,
   ) -> Result<FinancialAccountResponse, ApiError> {
     #[cfg(test)]
     match &self.backend {
@@ -360,12 +363,7 @@ impl FinanceRepository {
       .postgres_client()?
       .query_one(
         INSERT_FINANCIAL_ACCOUNT_SQL,
-        &[
-          &draft.name,
-          &draft.account_type.as_str(),
-          &draft.primary_currency_code,
-          &draft.display_order,
-        ],
+        &[&draft.name, &draft.account_type.as_str(), &draft.primary_currency_code],
       )
       .await
       .map_err(|error| ApiError::Internal(format!("Failed to create financial account: {error}")))?;
@@ -376,7 +374,7 @@ impl FinanceRepository {
   pub(crate) async fn update_financial_account(
     &self,
     id: &str,
-    draft: &FinancialAccountDraft,
+    draft: &FinancialAccountUpdateDraft,
   ) -> Result<FinancialAccountResponse, ApiError> {
     #[cfg(test)]
     match &self.backend {
@@ -387,16 +385,7 @@ impl FinanceRepository {
 
     let row = self
       .postgres_client()?
-      .query_opt(
-        UPDATE_FINANCIAL_ACCOUNT_SQL,
-        &[
-          &id,
-          &draft.name,
-          &draft.account_type.as_str(),
-          &draft.primary_currency_code,
-          &draft.display_order,
-        ],
-      )
+      .query_opt(UPDATE_FINANCIAL_ACCOUNT_SQL, &[&id, &draft.name, &draft.display_order])
       .await
       .map_err(|error| ApiError::Internal(format!("Failed to update financial account {id}: {error}")))?;
 
@@ -573,23 +562,24 @@ impl InMemoryFinanceRepository {
     })
   }
 
-  fn create_financial_account(&self, draft: &FinancialAccountDraft) -> Result<FinancialAccountResponse, ApiError> {
+  fn create_financial_account(
+    &self,
+    draft: &FinancialAccountCreateDraft,
+  ) -> Result<FinancialAccountResponse, ApiError> {
+    let mut accounts = self.accounts.lock().expect("lock accounts");
     let now = Utc::now();
     let account = FinancialAccountResponse {
-      id: format!(
-        "00000000-0000-7000-9000-{:012}",
-        self.accounts.lock().expect("lock accounts").len() + 1
-      ),
+      id: format!("00000000-0000-7000-9000-{:012}", accounts.len() + 1),
       name: draft.name.clone(),
       account_type: draft.account_type.clone(),
       primary_currency_code: draft.primary_currency_code.clone(),
-      display_order: draft.display_order,
+      display_order: accounts.iter().map(|account| account.display_order).max().unwrap_or(0) + 10,
       status: FinancialAccountStatus::Active,
       archived_at: None,
       created_at: now,
       updated_at: now,
     };
-    self.accounts.lock().expect("lock accounts").push(account.clone());
+    accounts.push(account.clone());
 
     Ok(account)
   }
@@ -597,7 +587,7 @@ impl InMemoryFinanceRepository {
   fn update_financial_account(
     &self,
     id: &str,
-    draft: &FinancialAccountDraft,
+    draft: &FinancialAccountUpdateDraft,
   ) -> Result<FinancialAccountResponse, ApiError> {
     let mut accounts = self.accounts.lock().expect("lock accounts");
     let Some(account) = accounts.iter_mut().find(|account| account.id == id) else {
@@ -605,8 +595,6 @@ impl InMemoryFinanceRepository {
     };
 
     account.name = draft.name.clone();
-    account.account_type = draft.account_type.clone();
-    account.primary_currency_code = draft.primary_currency_code.clone();
     account.display_order = draft.display_order;
     account.updated_at = Utc::now();
 

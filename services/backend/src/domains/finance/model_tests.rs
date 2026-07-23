@@ -1,8 +1,8 @@
 use chrono::NaiveDate;
 
 use super::{
-  format_amount_minor_units, money, FinancialAccountInput, FinancialAccountType, TransactionDirection,
-  TransactionInput, TransactionsQueryInput,
+  FinancialAccountCreateInput, FinancialAccountType, FinancialAccountUpdateInput, TransactionDirection,
+  TransactionInput, TransactionsQueryInput, format_amount_minor_units, money,
 };
 
 #[test]
@@ -75,12 +75,11 @@ fn transaction_input_parses_amount_to_minor_units() {
 }
 
 #[test]
-fn financial_account_input_normalizes_currency_code() {
-  let draft = FinancialAccountInput {
+fn financial_account_create_input_normalizes_currency_code() {
+  let draft = FinancialAccountCreateInput {
     name: Some(" Wallet ".to_string()),
     account_type: Some(FinancialAccountType::Cash),
     primary_currency_code: Some("eur".to_string()),
-    display_order: None,
   }
   .into_draft()
   .expect("valid account");
@@ -88,21 +87,32 @@ fn financial_account_input_normalizes_currency_code() {
   assert_eq!(draft.name, "Wallet");
   assert_eq!(draft.account_type, FinancialAccountType::Cash);
   assert_eq!(draft.primary_currency_code, "EUR");
-  assert_eq!(draft.display_order, 0);
 }
 
 #[test]
-fn financial_account_input_rejects_invalid_currency_code() {
-  let error = FinancialAccountInput {
+fn financial_account_create_input_rejects_invalid_currency_code() {
+  let error = FinancialAccountCreateInput {
     name: Some("Wallet".to_string()),
     account_type: Some(FinancialAccountType::Cash),
     primary_currency_code: Some("EURO".to_string()),
-    display_order: None,
   }
   .into_draft()
   .expect_err("invalid currency rejected");
 
   assert_eq!(error.code(), "bad_request");
+}
+
+#[test]
+fn financial_account_update_input_requires_name_and_display_order() {
+  let draft = FinancialAccountUpdateInput {
+    name: Some(" Main Checking ".to_string()),
+    display_order: Some(20),
+  }
+  .into_draft()
+  .expect("valid account update");
+
+  assert_eq!(draft.name, "Main Checking");
+  assert_eq!(draft.display_order, 20);
 }
 
 #[test]

@@ -1,12 +1,12 @@
 use axum::{
+  Json,
   extract::{Path, Query, State},
   http::StatusCode,
-  Json,
 };
 
 use crate::domains::finance::model::{
-  FinancialAccountInput, FinancialAccountListResponse, FinancialAccountResponse, TransactionInput,
-  TransactionListResponse, TransactionResponse, TransactionsQueryInput,
+  FinancialAccountCreateInput, FinancialAccountListResponse, FinancialAccountResponse, FinancialAccountUpdateInput,
+  TransactionInput, TransactionListResponse, TransactionResponse, TransactionsQueryInput,
 };
 use crate::{context::Context, error::ApiError};
 
@@ -19,7 +19,7 @@ pub(in crate::domains::finance) async fn list_financial_accounts(
 
 pub(in crate::domains::finance) async fn create_financial_account(
   State(context): State<Context>,
-  Json(input): Json<FinancialAccountInput>,
+  Json(input): Json<FinancialAccountCreateInput>,
 ) -> Result<(StatusCode, Json<FinancialAccountResponse>), ApiError> {
   let draft = input.into_draft()?;
   let response = context.finance_service.create_financial_account(&draft).await?;
@@ -29,7 +29,7 @@ pub(in crate::domains::finance) async fn create_financial_account(
 pub(in crate::domains::finance) async fn update_financial_account(
   State(context): State<Context>,
   Path(id): Path<String>,
-  Json(input): Json<FinancialAccountInput>,
+  Json(input): Json<FinancialAccountUpdateInput>,
 ) -> Result<Json<FinancialAccountResponse>, ApiError> {
   let draft = input.into_draft()?;
   let response = context.finance_service.update_financial_account(&id, &draft).await?;

@@ -1,3 +1,5 @@
+# syntax=docker/dockerfile:1
+
 FROM node:24-alpine AS base
 ENV PNPM_HOME='/pnpm'
 ENV PATH="$PNPM_HOME:$PATH"
@@ -11,15 +13,20 @@ ENV VITE_BACKEND_API_BASE_URL=$VITE_BACKEND_API_BASE_URL
 ENV ASSISTANT_SERVICE_BASE_URL=$ASSISTANT_SERVICE_BASE_URL
 ENV VITE_ASSISTANT_API_BASE_URL=$VITE_ASSISTANT_API_BASE_URL
 
-RUN corepack enable
-
 WORKDIR /workspace
 
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY apps/cockpit/package.json apps/cockpit/package.json
 COPY libs/ts-log/package.json libs/ts-log/package.json
 
-RUN pnpm install --frozen-lockfile
+RUN --mount=type=secret,id=npmrc,required=false \
+    if [ -f /run/secrets/npmrc ]; then \
+      NPM_CONFIG_USERCONFIG=/run/secrets/npmrc npm install --global pnpm@10.15.0; \
+      NPM_CONFIG_USERCONFIG=/run/secrets/npmrc pnpm install --frozen-lockfile; \
+    else \
+      corepack enable; \
+      pnpm install --frozen-lockfile; \
+    fi
 
 FROM base AS dev
 COPY . .
