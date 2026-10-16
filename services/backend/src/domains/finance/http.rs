@@ -1,59 +1,56 @@
 use axum::{
-  extract::{Path, Query, State},
-  http::StatusCode,
-  Json,
+    extract::{Path, Query, State},
+    http::StatusCode,
+    Json,
 };
 
 use crate::domains::finance::model::{
-  TransactionInput, TransactionListResponse, TransactionResponse, TransactionsQueryInput,
+    TransactionInput, TransactionListResponse, TransactionResponse, TransactionsQueryInput,
 };
-use crate::{
-  context::Context,
-  error::ApiError,
-};
+use crate::{context::Context, error::ApiError};
 
 pub(in crate::domains::finance) async fn list_transactions(
-  State(context): State<Context>,
-  Query(query): Query<TransactionsQueryInput>,
+    State(context): State<Context>,
+    Query(query): Query<TransactionsQueryInput>,
 ) -> Result<Json<TransactionListResponse>, ApiError> {
-  let transactions_query = query.into_transactions_query()?;
-  let response = context
-    .finance_service
-    .list_transactions(&transactions_query)
-    .await?;
+    let transactions_query = query.into_transactions_query()?;
+    let response = context
+        .finance_service
+        .list_transactions(&transactions_query)
+        .await?;
 
-  Ok(Json(response))
+    Ok(Json(response))
 }
 
 pub(in crate::domains::finance) async fn create_transaction(
-  State(context): State<Context>,
-  Json(input): Json<TransactionInput>,
+    State(context): State<Context>,
+    Json(input): Json<TransactionInput>,
 ) -> Result<(StatusCode, Json<TransactionResponse>), ApiError> {
-  let draft = input.into_draft()?;
-  let response = context.finance_service.create_transaction(&draft).await?;
+    let draft = input.into_draft()?;
+    let response = context.finance_service.create_transaction(&draft).await?;
 
-  Ok((StatusCode::CREATED, Json(response)))
+    Ok((StatusCode::CREATED, Json(response)))
 }
 
 pub(in crate::domains::finance) async fn update_transaction(
-  State(context): State<Context>,
-  Path(id): Path<String>,
-  Json(input): Json<TransactionInput>,
+    State(context): State<Context>,
+    Path(id): Path<String>,
+    Json(input): Json<TransactionInput>,
 ) -> Result<Json<TransactionResponse>, ApiError> {
-  let draft = input.into_draft()?;
-  let response = context
-    .finance_service
-    .update_transaction(&id, &draft)
-    .await?;
+    let draft = input.into_draft()?;
+    let response = context
+        .finance_service
+        .update_transaction(&id, &draft)
+        .await?;
 
-  Ok(Json(response))
+    Ok(Json(response))
 }
 
 pub(in crate::domains::finance) async fn delete_transaction(
-  State(context): State<Context>,
-  Path(id): Path<String>,
+    State(context): State<Context>,
+    Path(id): Path<String>,
 ) -> Result<StatusCode, ApiError> {
-  context.finance_service.delete_transaction(&id).await?;
+    context.finance_service.delete_transaction(&id).await?;
 
-  Ok(StatusCode::NO_CONTENT)
+    Ok(StatusCode::NO_CONTENT)
 }

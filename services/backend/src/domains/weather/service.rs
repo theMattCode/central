@@ -3,9 +3,11 @@ use std::sync::Arc;
 use chrono::{DateTime, Duration as ChronoDuration, Timelike, Utc};
 use tracing::{info, warn};
 
-use crate::error::ApiError;
 use crate::domains::weather::contracts::{WeatherDataFetcher, WeatherDataStore};
-use crate::domains::weather::model::{WeatherForecastResponse, WeatherLocationQuery, WeatherSnapshotResponse};
+use crate::domains::weather::model::{
+    WeatherForecastResponse, WeatherLocationQuery, WeatherSnapshotResponse,
+};
+use crate::error::ApiError;
 
 const STALE_AFTER_MINUTES: i64 = 15;
 

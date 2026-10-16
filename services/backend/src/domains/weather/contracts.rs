@@ -1,9 +1,9 @@
 use async_trait::async_trait;
 
-use crate::error::ApiError;
 use crate::domains::weather::model::{
-  WeatherForecastResponse, WeatherLocationQuery, WeatherSnapshotResponse,
+    WeatherForecastResponse, WeatherLocationQuery, WeatherSnapshotResponse,
 };
+use crate::error::ApiError;
 
 #[async_trait]
 pub trait WeatherDataFetcher: Send + Sync {

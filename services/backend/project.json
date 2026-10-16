@@ -5,6 +5,20 @@
   "root": "services/backend",
   "sourceRoot": "services/backend/src",
   "targets": {
+    "format": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "services/backend",
+        "command": "cargo fmt"
+      }
+    },
+    "format-check": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "services/backend",
+        "command": "cargo fmt --check"
+      }
+    },
     "lint": {
       "executor": "nx:run-commands",
       "options": {

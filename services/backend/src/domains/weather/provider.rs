@@ -6,13 +6,13 @@ use reqwest::Client;
 use serde::Deserialize;
 use tracing::{info, warn};
 
-use crate::error::ApiError;
 use crate::domains::weather::contracts::WeatherDataFetcher;
 use crate::domains::weather::model::{
-  CurrentWeatherPayload, HourlyWeatherPayload, WeatherForecastMetaPayload,
-  WeatherForecastResponse, WeatherLocationPayload, WeatherLocationQuery,
-  WeatherMetaPayload, WeatherSnapshotResponse,
+    CurrentWeatherPayload, HourlyWeatherPayload, WeatherForecastMetaPayload,
+    WeatherForecastResponse, WeatherLocationPayload, WeatherLocationQuery, WeatherMetaPayload,
+    WeatherSnapshotResponse,
 };
+use crate::error::ApiError;
 
 const OPEN_METEO_PROVIDER: &str = "open-meteo";
 const OPEN_METEO_MODEL: &str = "dwd-icon";
