@@ -46,15 +46,15 @@ Weather responses are cached in PostgreSQL. Current snapshots are served from ca
 - `WEATHER_REQUEST_TIMEOUT_SECONDS` (default: `10`)
 - `WEATHER_OPEN_METEO_BASE_URL` (default: `https://api.open-meteo.com`)
 
-If you run standalone PostgreSQL (`pnpm nx run i12e-postgres:run`), set `BACKEND_DATABASE_URL=postgres://central:central@localhost:5001/central`.
+These defaults apply to a native `cargo run`. In the dev stack (`pnpm dev`) the backend listens on `8080` inside the
+container and is published on host port `3010`; it reaches PostgreSQL at `i12e-postgres:5432`.
 
 ## Validate
 
 ```bash
-pnpm nx run backend:lint
-pnpm nx run backend:test
-pnpm nx run backend:typecheck
-pnpm nx run backend:build
-pnpm nx run backend:container-build
-pnpm nx run backend:container-run
+pnpm nx run service-backend:format-check
+pnpm nx run service-backend:lint
+pnpm nx run service-backend:typecheck
+pnpm nx run service-backend:test
+pnpm nx run service-backend:build
 ```

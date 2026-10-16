@@ -59,8 +59,9 @@ Models are pulled from Ollama lazily on the first request if they are not alread
 
 ## Nx targets
 
-- `pnpm nx run llm-service:lint`
-- `pnpm nx run llm-service:test`
-- `pnpm nx run llm-service:typecheck`
-- `pnpm nx run llm-service:build`
-- `pnpm nx run llm-service:container-run`
+```bash
+pnpm nx run service-llm:lint
+pnpm nx run service-llm:test
+```
+
+Run it in the dev stack with `COMPOSE_PROFILES=voice pnpm dev`.

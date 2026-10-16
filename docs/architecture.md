@@ -5,10 +5,14 @@
 The repository is organized as a multi-project Nx workspace:
 
 - `apps/*`: user-facing applications (currently `apps/cockpit`)
-- `services/*`: backend runtime services (`backend`, `assistant`, `stt`, `tts`, `llm`)
+- `services/*`: backend runtime services (`backend`, `assistant`, `stt`, `tts`, `llm`); the Rust services share one
+  Cargo workspace (`services/Cargo.toml`)
 - `i12e/*`: infrastructure and orchestration projects (`postgres`, `orchestrator`, `gateway`)
 - `libs/*`: shared reusable libraries (currently `ts-log` for cross-cutting TypeScript logging)
-- `docs/*`: cross-cutting repository documentation
+- `docs/*`: cross-cutting repository documentation; domain language lives in `docs/domains/*`
+
+Project names, targets, and commands are listed in [toolchain](./toolchain.md); ports in the
+[service catalog](./service-catalog.md).
 
 ## Runtime Components
 
@@ -21,8 +25,7 @@ The repository is organized as a multi-project Nx workspace:
 - Configuration:
   - Runtime backend base URL is configured via `BACKEND_BASE_URL` with `VITE_BACKEND_API_BASE_URL` as a browser/build-time fallback.
   - Runtime assistant service base URL is configured via `ASSISTANT_SERVICE_BASE_URL` with `VITE_ASSISTANT_API_BASE_URL` as a browser/build-time fallback.
-- If neither backend variable is set, cockpit defaults to `http://localhost:3010` for local orchestrator-driven development.
-- If neither assistant variable is set, cockpit defaults to `http://localhost:3020`, matching the standalone assistant container run target.
+  - Without either variable, cockpit falls back to the dev stack host ports (`http://localhost:3010` and `http://localhost:3020`).
 
 ### Backend Service (`services/backend`)
 
@@ -32,7 +35,7 @@ The repository is organized as a multi-project Nx workspace:
   - `http`: health endpoint, routing, CORS, and request tracing.
   - `context`/`main`: dependency wiring and process bootstrap.
 - Domain-specific code lives under `src/domains/*`.
-- Finance is implemented as `src/domains/finance`, with its cash transaction domain model, use case, PostgreSQL persistence adapter, and HTTP route module.
+- Finance is implemented as `src/domains/finance`, with its transaction use case, PostgreSQL persistence adapter, and HTTP route module on top of the finance foundation model (accounts, ledger, budgets, recurring plans); see [finance domain](./domains/finance.md).
 - Weather is implemented as `src/domains/weather`, with its own domain model, use case, Open-Meteo adapter, PostgreSQL persistence adapter, and HTTP route module.
 
 ### Assistant Service (`services/assistant`)
@@ -48,7 +51,7 @@ The repository is organized as a multi-project Nx workspace:
   - `llm-proxy` mode to call an external LLM while keeping mock STT / TTS boundaries.
   - `openai` mode to use OpenAI-native STT / LLM / TTS endpoints.
   - `proxy` mode to call external STT / LLM / TTS runtimes.
-- The standalone service supports `proxy` mode with faster-whisper STT, Qwen3-TTS voice cloning, and an Ollama-based LLM wrapper. The orchestrator compose definitions for those support services are currently commented out, so the active dev/prod stack does not start assistant services by default.
+- `proxy` mode uses faster-whisper STT, Qwen3-TTS voice cloning, and an Ollama-based LLM wrapper. The assistant and these support services run in the dev stack only when the `voice` compose profile is enabled; they are not part of production.
 
 ### Persistence (`i12e/postgres`)
 
@@ -57,10 +60,10 @@ The repository is organized as a multi-project Nx workspace:
 
 ### Orchestration (`i12e/orchestrator`)
 
-- Docker Compose project used to start the active local stack.
-- Separate environment files define dev and prod default port mappings. Assistant model settings remain in env templates for the commented assistant support services.
-- Production releases are code-free on the server: CI publishes a tested core image set to GHCR plus a deploy bundle with `docker-compose.prod.yml`, `central-update`, and `.env.prod.example`.
-- The production baseline runs PostgreSQL, a migration job, Backend, Cockpit, and an Nginx gateway on one Docker Compose host. Assistant, voice, STT, TTS, and LLM services are optional future production profiles, not part of the baseline.
+- `docker-compose.yml` is the hot-reload dev stack; voice services sit behind the `voice` profile.
+- `deploy/docker-compose.prod.yml` is the only production definition. Local `pnpm prod` runs it with an overlay that builds the images from the checkout.
+- Production releases are code-free on the server: CI publishes a tested core image set to GHCR plus a deploy bundle with `docker-compose.prod.yml`, `central-update`, and `.env.prod.example` (see [deployment](./deployment.md) and [ADR 0002](./adr/0002-single-host-compose-image-release.md)).
+- The production baseline runs PostgreSQL, a migration job, Backend, Cockpit, and an Nginx gateway on one Docker Compose host. Assistant, voice, STT, TTS, and LLM services are not part of the baseline.
 
 ### Gateway (`i12e/gateway`)
 
@@ -105,7 +108,7 @@ The repository is organized as a multi-project Nx workspace:
 4. Browser plays synthesized chunks as they arrive.
 5. Cockpit still exposes a non-streaming server function path for fallback flows.
 
-This flow exists in the Cockpit and assistant-service code, but the assistant service and support runtimes are not active in the default orchestrator compose stack while their service blocks remain commented out.
+This flow exists in the Cockpit and assistant-service code; the assistant service and support runtimes run only with `COMPOSE_PROFILES=voice`.
 
 ## Boundary Rules
 
@@ -119,5 +122,5 @@ This flow exists in the Cockpit and assistant-service code, but the assistant se
 ## Shared Library Packaging
 
 - Workspace libraries can be consumed directly as `workspace:*` packages when the caller's toolchain can compile TypeScript source from the linked package.
-- `@central/ts-log` is currently consumed this way by `apps/cockpit`: the package export points at source, and cockpit's Vite build bundles it without a separate library build step.
+- `@central/ts-log` is currently consumed this way by `apps/cockpit`: the package export points at source, and cockpit's Vite build bundles it without a separate library build step. Libraries use relative `.ts` imports internally so consumers need no path aliases.
 - If a shared library later needs to be consumed as a prebuilt artifact, switch its package exports to `dist/*`, add the relevant library build as a prerequisite for consumers, and keep Docker dependency-install layers aware of the workspace package manifest.

@@ -7,7 +7,7 @@ Current implemented slices:
 - Cockpit dashboard with weather widgets.
 - Manual finance transactions with income/expense summaries.
 - Backend finance and weather APIs backed by PostgreSQL.
-- Assistant, STT, TTS, and LLM service code exists, but voice capture and orchestrated model services are currently disabled by default.
+- Assistant, STT, TTS, and LLM services exist behind the opt-in `voice` dev profile; browser voice capture is currently disabled.
 
 The sections below describe product direction, not all currently shipped behavior.
 

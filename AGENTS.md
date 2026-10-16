@@ -17,8 +17,9 @@ Use the existing project layout and keep cross-cutting docs in `docs/`.
 - `i12e/`: infrastructure and orchestration projects.
 - `libs/`: shared libraries.
 - `docs/`: repository documentation
-  - `toolchain.md`: tech stack and toolchain commands
+  - `toolchain.md`: tech stack, projects, Nx targets, and toolchain commands
   - `style.md`: code style and conventions
+  - `domains/`: domain language per business domain (e.g. `domains/finance.md`)
 - `.github/workflows/`: CI definitions
 
 ## Core Working Agreement for Agents
@@ -58,7 +59,8 @@ Always use the basic design principles:
 ### Styling and Formatting
 
 - Follow `.editorconfig` settings.
-- Prettier is the formatter. Use the settings defined in `.prettierrc`.
+- Prettier is the formatter for TypeScript, JSON, and Markdown. Use the settings defined in `.prettierrc`.
+- rustfmt with default settings is the formatter for Rust.
 - Follow existing file naming and directory conventions inside each package/project.
 
 ### Testing
@@ -73,7 +75,7 @@ Before handing work back, agents should complete this checklist:
 
 1. Implementation matches request and edge cases were considered.
 2. Relevant tests were added/updated.
-3. `lint`, `test`, `build`, and `typecheck` were run for affected projects (or `run-many` when appropriate).
+3. `format-check`, `lint`, `typecheck`, `test`, and `build` were run for affected projects (or `run-many` when appropriate); projects only define the targets that apply to them.
 4. Documentation updated when behavior or developer workflow changed.
 5. No unrelated files were modified.
 
