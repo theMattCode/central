@@ -45,8 +45,8 @@ services:
       target: dev
     image: central/service-backend:dev
     depends_on:
-      i12e-postgres:
-        condition: service_healthy
+      i12e-postgres-migrate:
+        condition: service_completed_successfully
     environment:
       BACKEND_PORT: '8080'
       BACKEND_DATABASE_URL: ${BACKEND_DATABASE_URL:-postgres://central:central@i12e-postgres:5432/central}
@@ -299,8 +299,8 @@ services:
       dockerfile: services/llm/Dockerfile
     image: central/service-llm:dev
     depends_on:
-      service-llm-runtime:
-        condition: service_healthy
+      service-llm-pull:
+        condition: service_completed_successfully
     environment:
       LLM_PORT: '8083'
       LLM_OLLAMA_URL: http://service-llm-runtime:11434

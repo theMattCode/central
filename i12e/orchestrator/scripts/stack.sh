@@ -61,6 +61,7 @@ compose() {
   docker compose $compose_options "$@"
 }
 
+# Mirrors deploy/central-update: database first, then migrations, then services.
 start_postgres_and_migrate() {
   compose up --detach --build --wait i12e-postgres
   compose run --rm i12e-postgres-migrate
@@ -68,10 +69,11 @@ start_postgres_and_migrate() {
 
 case "$command" in
   up)
-    start_postgres_and_migrate
     if [ "$environment" = dev ]; then
+      # Dev services depend on the migration job, so compose orders startup.
       compose watch "$@"
     else
+      start_postgres_and_migrate
       compose up --detach --build --wait service-backend app-cockpit i12e-gateway "$@"
     fi
     ;;
@@ -80,7 +82,6 @@ case "$command" in
       echo "The start command is only supported for dev; use up for prod." >&2
       exit 2
     fi
-    start_postgres_and_migrate
     compose up --detach --build --wait "$@"
     ;;
   migrate)
