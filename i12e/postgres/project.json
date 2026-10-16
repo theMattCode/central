@@ -8,13 +8,18 @@
     "lint": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "sh -n i12e/postgres/scripts/apply-migrations.sh"
+        "commands": [
+          "sh -n i12e/postgres/scripts/apply-migrations.sh",
+          "sh -n i12e/postgres/scripts/create-migration.sh",
+          "sh i12e/postgres/scripts/check-migrations.sh"
+        ],
+        "parallel": false
       }
     },
     "create-migration": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "sh -c 'name=${MIGRATION_NAME:?Set MIGRATION_NAME=<description>}; slug=$(echo \"$name\" | tr \" -\" \"__\" | tr -cd \"[:alnum:]_\"); ts=$(date +%Y%m%d%H%M%S); file=i12e/postgres/migrations/${ts}_${slug}.sql; touch \"$file\"; echo \"Created $file\"'"
+        "command": "sh i12e/postgres/scripts/create-migration.sh"
       }
     }
   },
