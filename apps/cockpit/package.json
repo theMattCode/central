@@ -13,7 +13,6 @@
     "typecheck": "tsc --noEmit -p tsconfig.json"
   },
   "dependencies": {
-    "@central/ts-log": "workspace:*",
     "@meteocons/svg": "^0.1.0",
     "@tailwindcss/vite": "4.2.1",
     "@tanstack/react-router": "1.163.2",

@@ -25,7 +25,6 @@ Nx project names match the compose service and container image names.
 | Project             | Path                 | Kind                              |
 | ------------------- | -------------------- | --------------------------------- |
 | `app-cockpit`       | `apps/cockpit`       | TanStack Start web app            |
-| `lib-ts-log`        | `libs/ts-log`        | Shared TypeScript logger          |
 | `service-backend`   | `services/backend`   | Rust integrated HTTP API          |
 | `service-assistant` | `services/assistant` | Rust assistant turn orchestration |
 | `service-stt`       | `services/stt`       | Python faster-whisper adapter     |
@@ -111,7 +110,7 @@ pnpm nx g @nx/js:lib libs/<name> --publishable --importPath=@central/<name>
 ```
 
 Then rename the Nx project to `lib-<name>`, tag it `type:lib`, and add `format`, `format-check`, `typecheck`, `test`,
-and `build` targets like `libs/ts-log`. Consumption without a build step is described in
+and `build` targets. Consumption without a build step is described in
 [architecture](./architecture.md#shared-library-packaging).
 
 Nx keeps TypeScript project references in sync; trigger or verify it manually with:

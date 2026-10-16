@@ -108,13 +108,8 @@ services:
           ignore:
             - node_modules/
             - dist/
-        - action: sync
-          path: ../../libs/ts-log/src
-          target: /workspace/libs/ts-log/src
         - action: rebuild
           path: ../../apps/cockpit/package.json
-        - action: rebuild
-          path: ../../libs/ts-log/package.json
         - action: rebuild
           path: ../../package.json
         - action: rebuild

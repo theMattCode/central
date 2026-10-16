@@ -8,7 +8,7 @@ The repository is organized as a multi-project Nx workspace:
 - `services/*`: backend runtime services (`backend`, `assistant`, `stt`, `tts`, `llm`); the Rust services share one
   Cargo workspace (`services/Cargo.toml`)
 - `i12e/*`: infrastructure and orchestration projects (`postgres`, `orchestrator`, `gateway`)
-- `libs/*`: shared reusable libraries (currently `ts-log` for cross-cutting TypeScript logging)
+- `libs/*`: shared reusable libraries (none yet; code moves here once a second project needs it)
 - `docs/*`: cross-cutting repository documentation; domain language lives in `docs/domains/*`
 
 Project names, targets, and commands are listed in [toolchain](./toolchain.md); ports in the
@@ -122,5 +122,5 @@ This flow exists in the Cockpit and assistant-service code; the assistant servic
 ## Shared Library Packaging
 
 - Workspace libraries can be consumed directly as `workspace:*` packages when the caller's toolchain can compile TypeScript source from the linked package.
-- `@central/ts-log` is currently consumed this way by `apps/cockpit`: the package export points at source, and cockpit's Vite build bundles it without a separate library build step. Libraries resolve internal modules through the `#/*` package import, which consumers mirror in their `tsconfig.json` `paths`.
+- Point the package export at source so the consumer's Vite build bundles the library without a separate library build step.
 - If a shared library later needs to be consumed as a prebuilt artifact, switch its package exports to `dist/*`, add the relevant library build as a prerequisite for consumers, and keep Docker dependency-install layers aware of the workspace package manifest.

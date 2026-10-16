@@ -8,7 +8,6 @@ WORKDIR /workspace
 
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY apps/cockpit/package.json apps/cockpit/package.json
-COPY libs/ts-log/package.json libs/ts-log/package.json
 
 RUN pnpm install --frozen-lockfile
 

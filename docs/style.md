@@ -48,6 +48,11 @@ These rules are preferred for new or changed package scripts. Some root-level co
 
 - **Watch:** If a script watches the filesystem and responds to changes, add `:watch` to the script name.
 
+## TypeScript
+
+- Import modules inside a project through its absolute alias (`@/` maps to `apps/cockpit/src`) instead of
+  `../` chains; only same-directory `./` imports and generated files stay relative.
+
 ## Rust & Cargo
 
 - Follow the common Rust conventions and [RFCs](https://github.com/rust-lang/rfcs).
