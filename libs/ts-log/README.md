@@ -12,16 +12,16 @@ It currently provides a small structured logger API over `console`:
 
 Current guidance:
 
-- import `createLogger` from `@central/ts-log`
+- import `ConsoleLogger` from `@central/ts-log`
 - create a package or module scoped logger
 - log structured context objects instead of preformatted strings
 
 Example:
 
 ```ts
-import { createLogger } from '@central/ts-log';
+import { ConsoleLogger } from '@central/ts-log';
 
-const logger = createLogger({
+const logger = new ConsoleLogger({
   scope: 'cockpit.weather.fetch',
 });
 
