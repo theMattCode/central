@@ -2,15 +2,6 @@ FROM node:24-alpine AS base
 ENV PNPM_HOME='/pnpm'
 ENV PATH="$PNPM_HOME:$PATH"
 
-ARG BACKEND_BASE_URL=http://localhost:5010
-ARG ASSISTANT_SERVICE_BASE_URL=http://localhost:5020
-ARG VITE_BACKEND_API_BASE_URL=http://localhost:5010
-ARG VITE_ASSISTANT_API_BASE_URL=http://localhost:5020
-ENV BACKEND_BASE_URL=$BACKEND_BASE_URL
-ENV VITE_BACKEND_API_BASE_URL=$VITE_BACKEND_API_BASE_URL
-ENV ASSISTANT_SERVICE_BASE_URL=$ASSISTANT_SERVICE_BASE_URL
-ENV VITE_ASSISTANT_API_BASE_URL=$VITE_ASSISTANT_API_BASE_URL
-
 RUN corepack enable
 
 WORKDIR /workspace
@@ -28,21 +19,18 @@ EXPOSE 3000
 CMD ["pnpm", "exec", "vite", "dev", "--host", "0.0.0.0", "--port", "3000", "--strictPort"]
 
 FROM base AS build
+# Browser-side fallbacks baked into the bundle. Server-side URLs
+# (BACKEND_BASE_URL, ASSISTANT_SERVICE_BASE_URL) are read at runtime.
+ARG VITE_BACKEND_API_BASE_URL=http://localhost:3010
+ARG VITE_ASSISTANT_API_BASE_URL=http://localhost:3020
+ENV VITE_BACKEND_API_BASE_URL=$VITE_BACKEND_API_BASE_URL
+ENV VITE_ASSISTANT_API_BASE_URL=$VITE_ASSISTANT_API_BASE_URL
 COPY . .
 
 RUN pnpm --dir apps/cockpit run build \
     && pnpm --filter @central/cockpit deploy --prod --legacy /workspace/cockpit-deploy
 
 FROM node:24-alpine AS prod
-ARG BACKEND_BASE_URL=http://localhost:5010
-ARG ASSISTANT_SERVICE_BASE_URL=http://localhost:5020
-ARG VITE_BACKEND_API_BASE_URL=http://localhost:5010
-ARG VITE_ASSISTANT_API_BASE_URL=http://localhost:5020
-ENV BACKEND_BASE_URL=$BACKEND_BASE_URL
-ENV VITE_BACKEND_API_BASE_URL=$VITE_BACKEND_API_BASE_URL
-ENV ASSISTANT_SERVICE_BASE_URL=$ASSISTANT_SERVICE_BASE_URL
-ENV VITE_ASSISTANT_API_BASE_URL=$VITE_ASSISTANT_API_BASE_URL
-
 WORKDIR /workspace/apps/cockpit
 
 COPY --from=build /workspace/cockpit-deploy/node_modules ./node_modules

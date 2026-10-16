@@ -1,172 +1,65 @@
 # i12e-orchestrator
 
-Nx project for orchestrating local infrastructure and app containers.
+Docker Compose definitions and scripts that run Central locally and in production.
 
-## Validate
+## Files
 
-```bash
-pnpm nx run i12e-orchestrator:lint
-pnpm nx run i12e-orchestrator:test
-pnpm nx run i12e-orchestrator:typecheck
-pnpm nx run i12e-orchestrator:build
-```
+| File                                                                 | Purpose                                                                 |
+| -------------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| [`docker-compose.yml`](./docker-compose.yml)                         | Local hot-reload dev stack (`pnpm dev`), voice services behind `voice`. |
+| [`.env.dev`](./.env.dev)                                             | Tracked dev defaults.                                                   |
+| [`deploy/docker-compose.prod.yml`](./deploy/docker-compose.prod.yml) | Production stack; shipped in the deploy bundle.                         |
+| [`deploy/.env.prod.example`](./deploy/.env.prod.example)             | Production env template, for the server and for local `pnpm prod`.      |
+| [`deploy/central-update`](./deploy/central-update)                   | Server update script; shipped in the deploy bundle.                     |
+| [`docker-compose.prod.local.yml`](./docker-compose.prod.local.yml)   | Overlay that builds the production image set from the checkout.         |
+| [`scripts/stack.sh`](./scripts/stack.sh)                             | Single entrypoint behind the root `pnpm` scripts.                       |
+| [`scripts/smoke_voice.py`](./scripts/smoke_voice.py)                 | Spoken roundtrip smoke test through STT, LLM, and TTS.                  |
 
-## Daily Commands
+## Commands
 
-Start the hot development stack:
+| Command                                     | What it does                                                                |
+| ------------------------------------------- | --------------------------------------------------------------------------- |
+| `pnpm dev`                                  | Start PostgreSQL, run migrations, then `compose watch` the dev stack.       |
+| `COMPOSE_PROFILES=voice pnpm dev`           | Same, including assistant, STT, TTS, Ollama runtime, and LLM adapter.       |
+| `pnpm prod`                                 | Build the release image set locally and run it with the production compose. |
+| `pnpm dev:down` / `pnpm prod:down`          | Stop the stack (all profiles).                                              |
+| `pnpm logs:dev` / `pnpm logs:prod`          | Follow logs.                                                                |
+| `pnpm ps:dev` / `pnpm ps:prod`              | Show service status.                                                        |
+| `pnpm migrate:dev` / `pnpm migrate:prod`    | Re-run migrations against a running PostgreSQL.                             |
+| `pnpm nx run i12e-orchestrator:smoke-voice` | Start the dev stack with the voice profile detached and run the smoke test. |
+| `pnpm nx run i12e-orchestrator:lint`        | Syntax-check scripts and validate every compose configuration.              |
 
-```bash
-pnpm dev
-```
+Any other compose command can go through the script, for example
+`sh i12e/orchestrator/scripts/stack.sh dev exec service-backend sh`.
 
-This delegates to `pnpm nx run i12e-orchestrator:dev`, which starts the stack with [`docker-compose.dev.yml`](./docker-compose.dev.yml):
+## Local production stack
 
-- Cockpit runs Vite dev server HMR.
-- Backend runs under `cargo watch`.
-- Assistant, STT, TTS, and LLM adapter compose blocks are currently commented out, so they are not part of `pnpm dev`.
-
-Stop it with:
-
-```bash
-pnpm dev:down
-```
-
-Create the local production env file once:
-
-```bash
-cp i12e/orchestrator/.env.prod.example i12e/orchestrator/.env.prod
-```
-
-Edit `i12e/orchestrator/.env.prod` and set real secrets, especially:
-
-- `POSTGRES_PASSWORD`
-- `BACKEND_DATABASE_URL`
-- `BACKEND_CORS_ALLOW_ORIGIN`
-- `ASSISTANT_CORS_ALLOW_ORIGIN` if assistant services are re-enabled
-
-Prod startup refuses placeholder DB credentials or wildcard CORS.
-
-Start the release-style production stack:
+Create the ignored env file once and replace the placeholder values:
 
 ```bash
-pnpm prod
+cp i12e/orchestrator/deploy/.env.prod.example i12e/orchestrator/.env.prod
 ```
 
-Stop it with:
+`pnpm prod` refuses placeholder DB credentials or wildcard CORS. It tags locally built images as
+`ghcr.io/themattcode/central/<service>:local`, so they never collide with pulled release tags, and exposes only the
+gateway (`127.0.0.1:4000` by default), like the production server.
 
-```bash
-pnpm prod:down
-```
+## Voice profile
 
-Check status and logs:
-
-```bash
-pnpm ps:dev
-pnpm logs:dev
-pnpm ps:prod
-pnpm logs:prod
-```
-
-## Startup Behavior
-
-`pnpm prod` is the local release-style stack used from the repository checkout. The production-server path is the code-free deploy bundle in [`deploy/`](./deploy/): CI publishes tested images to GHCR, and the server runs `central-update` with `stable` or an exact release tag.
-
-The `up-*` Nx targets delegate startup sequencing to [`scripts/up_stack.sh`](./scripts/up_stack.sh).
-
-Startup order:
-
-1. Start PostgreSQL with Compose health waiting.
-2. Run migrations.
-3. Start application services.
-
-Long-running services use `SERVICE_RESTART_POLICY`; dev sets `no`, prod example sets `unless-stopped`.
-
-## Advanced Targets
-
-Release-style detached development stack:
-
-```bash
-pnpm nx run i12e-orchestrator:up-dev
-```
-
-Experimental dev with mock STT/TTS and direct Ollama:
-
-```bash
-pnpm nx run i12e-orchestrator:up-dev-llm-proxy-ollama
-```
-
-This target currently references assistant and Ollama compose services that are commented out in `docker-compose.yml`. If those services are re-enabled, it keeps `service-assistant` in `llm-proxy` mode and points it at:
-
-- `http://service-llm-runtime:11434/v1/chat/completions`
-
-This is the thinnest LLM integration path in the repo because `service-assistant` talks to Ollama directly and keeps STT/TTS mocked. The commented Ollama runtime definition requests `gpus: all`.
-
-## Default assistant stack
-
-The default assistant stack is implemented in service code but disabled in the active orchestrator compose files. The commented configuration keeps `service-assistant` in `proxy` mode and points it at:
+STT, TTS, and the Ollama runtime request `gpus: all` and need Docker GPU support on the host (typically NVIDIA Container
+Toolkit on Linux). The assistant defaults to `proxy` mode and calls:
 
 - `http://service-stt:8081/transcribe`
 - `http://service-tts:8082/synthesize`
 - `http://service-llm:8083/chat/completions`
 
-This path keeps the `llm-service` wrapper in front of Ollama, which is useful when you want lazy model pulls and a repo-owned adapter boundary. It reuses `LLM_MODEL` from `i12e/orchestrator/.env.dev`.
-The STT, TTS, and Ollama runtime service definitions request `gpus: all`. Re-enabling them requires Docker GPU support on the host, typically NVIDIA Container Toolkit on Linux.
-
-## Experimental voice stack smoke test
+For the thinnest LLM path, keep STT/TTS mocked and let the assistant talk to Ollama directly:
 
 ```bash
-pnpm nx run i12e-orchestrator:smoke-dev-voice
+COMPOSE_PROFILES=voice ASSISTANT_BACKEND_MODE=llm-proxy LLM_BASE_URL=http://service-llm-runtime:11434/v1 pnpm dev
 ```
 
-This target depends on the currently commented assistant support services. Once those are re-enabled, it starts the voice stack if needed, then runs one spoken roundtrip through STT, Qwen via Ollama, and TTS.
+The smoke test reads `SMOKE_VOICE_TEXT` and `SMOKE_VOICE_LANGUAGE`.
 
-Override these environment variables when needed:
-
-- `SMOKE_VOICE_TEXT`
-- `SMOKE_VOICE_LANGUAGE`
-
-`pnpm dev`, `pnpm prod`, and `up-dev` bring up:
-
-- Cockpit app (`app-cockpit` service)
-- PostgreSQL (`i12e-postgres` service)
-- Migration runner (`i12e-postgres-migrate`) as a one-off container (`--rm`)
-- Backend (`service-backend` service, serving finance and weather domains)
-
-Assistant backend, Faster-whisper STT, Qwen3-TTS, Ollama runtime, and LLM wrapper code exists in `services/*`, but the orchestrator service blocks are commented out.
-
-Environment files:
-
-- `i12e/orchestrator/.env.dev`: tracked local dev defaults.
-- `i12e/orchestrator/.env.prod.example`: tracked production template.
-- `i12e/orchestrator/.env.prod`: ignored local production config.
-
-When cockpit runs inside the compose network, its server-side runtime reaches backend through `http://service-backend:8080`.
-
-Cockpit's browser bundle is separate: in Compose it should use the published host port (`http://localhost:3010` in dev by default) for any direct browser fetches.
-
-Service and port mapping details (including dev/prod differences) are documented in [`docs/service-catalog.md`](../../docs/service-catalog.md).
-
-## Stop all services
-
-```bash
-pnpm dev:down
-pnpm prod:down
-```
-
-## Re-run migrations
-
-Requires `i12e-postgres` to already be running.
-
-```bash
-pnpm nx run i12e-orchestrator:migrate-dev
-pnpm nx run i12e-orchestrator:migrate-prod
-```
-
-## Service status and logs
-
-```bash
-pnpm ps:dev
-pnpm logs:dev
-pnpm ps:prod
-pnpm logs:prod
-```
+Ports and environment differences are listed in the [service catalog](../../docs/service-catalog.md); production
+releases are described in [deployment](../../docs/deployment.md).
