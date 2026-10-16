@@ -58,3 +58,5 @@ These rules are preferred for new or changed package scripts. Some root-level co
 - Follow the common Rust conventions and [RFCs](https://github.com/rust-lang/rfcs).
 - Format with rustfmt defaults (`pnpm nx run <project>:format`); `format-check` enforces it in CI.
 - Shared dependency versions belong in `[workspace.dependencies]` of `services/Cargo.toml`.
+- The Rust version is pinned in `services/rust-toolchain.toml`; keep the `rust:` base images in the service Dockerfiles
+  on the same version and bump them together.

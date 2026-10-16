@@ -1,4 +1,4 @@
-FROM rust:1.89-alpine AS base
+FROM rust:1.99-alpine AS base
 RUN apk add --no-cache build-base musl-dev
 WORKDIR /workspace/services
 

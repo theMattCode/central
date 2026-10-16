@@ -36,9 +36,9 @@ jobs:
           cache: pnpm
           cache-dependency-path: pnpm-lock.yaml
 
-      - uses: dtolnay/rust-toolchain@stable
-        with:
-          components: clippy, rustfmt
+      - name: Install pinned Rust toolchain
+        working-directory: services
+        run: rustup toolchain install
 
       - run: pnpm install --frozen-lockfile
 
