@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { ConsoleLogger } from './ConsoleLogger.ts';
+import { ConsoleLogger } from '#/logger/ConsoleLogger';
 
 function stripAnsi(value: string): string {
   return value.replace(/\u001B\[[0-9;]*m/g, '');

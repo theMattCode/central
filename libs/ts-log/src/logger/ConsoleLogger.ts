@@ -8,7 +8,7 @@ import type {
   LogWriter,
   SerializedError,
   SerializedLogContext,
-} from './api.ts';
+} from '#/logger/api';
 
 export class ConsoleLogger implements Logger {
   private readonly scope: string;

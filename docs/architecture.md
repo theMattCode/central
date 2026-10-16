@@ -122,5 +122,5 @@ This flow exists in the Cockpit and assistant-service code; the assistant servic
 ## Shared Library Packaging
 
 - Workspace libraries can be consumed directly as `workspace:*` packages when the caller's toolchain can compile TypeScript source from the linked package.
-- `@central/ts-log` is currently consumed this way by `apps/cockpit`: the package export points at source, and cockpit's Vite build bundles it without a separate library build step. Libraries use relative `.ts` imports internally so consumers need no path aliases.
+- `@central/ts-log` is currently consumed this way by `apps/cockpit`: the package export points at source, and cockpit's Vite build bundles it without a separate library build step. Libraries resolve internal modules through the `#/*` package import, which consumers mirror in their `tsconfig.json` `paths`.
 - If a shared library later needs to be consumed as a prebuilt artifact, switch its package exports to `dist/*`, add the relevant library build as a prerequisite for consumers, and keep Docker dependency-install layers aware of the workspace package manifest.

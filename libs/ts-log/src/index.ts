@@ -1,4 +1,4 @@
-export { ConsoleLogger } from './logger/ConsoleLogger.ts';
+export { ConsoleLogger } from '#/logger/ConsoleLogger';
 export type {
   LogContext,
   Logger,
@@ -9,4 +9,4 @@ export type {
   LogWriter,
   SerializedError,
   SerializedLogContext,
-} from './logger/api.ts';
+} from '#/logger/api';
