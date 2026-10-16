@@ -62,3 +62,24 @@ port `5000`.
 
 `BACKEND_BASE_URL` is `http://service-backend:8080` in both environments: Cockpit's server-side code reaches the
 backend over the compose network, while browser-side fallbacks use `VITE_*` variables.
+
+## Error monitoring
+
+Cockpit, Backend, and Assistant report errors and traces to Sentry (organization `elyverse-studio`, EU region), one
+project each: `central-cockpit`, `central-backend`, `central-assistant`. Each service reads its DSN from
+`SENTRY_DSN`; an empty DSN disables reporting. In the Rust services, `error`-level `tracing` events and every API response with a 5xx status become Sentry issues; `warn` and `info` become breadcrumbs. The orchestrator maps per-service variables onto it:
+
+| Variable               | Service             | Notes                                                             |
+| ---------------------- | ------------------- | ----------------------------------------------------------------- |
+| `COCKPIT_SENTRY_DSN`   | `app-cockpit`       | Also the browser DSN (`VITE_SENTRY_DSN`), baked in at image build |
+| `BACKEND_SENTRY_DSN`   | `service-backend`   |                                                                   |
+| `ASSISTANT_SENTRY_DSN` | `service-assistant` | Dev stack only                                                    |
+| `SENTRY_ENVIRONMENT`   | all                 | `development` in the dev stack, default `production` in prod      |
+
+The repository is public, so DSNs are not committed: export them in your shell for `pnpm dev`, set them in
+`.env.prod`, and set the `COCKPIT_SENTRY_DSN` GitHub Actions variable for CI image builds. Cockpit uploads source
+maps to Sentry during `vite build` when `SENTRY_AUTH_TOKEN` is set; image builds receive it as the BuildKit secret
+`sentry_auth_token`, which CI fills from the `SENTRY_AUTH_TOKEN` repository secret. Every image built in CI is tagged
+with the Sentry release `central@<commit SHA>`. On pushes to `main` and release tags, the `sentry-release` CI job
+creates that release for all three projects with its commits (read from the checkout, so no Sentry GitHub integration
+is needed), and `central-update` records each production deploy on it.

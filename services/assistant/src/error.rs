@@ -5,6 +5,7 @@ use axum::{
 };
 use serde::Serialize;
 use thiserror::Error;
+use tracing::error;
 
 #[derive(Debug, Error)]
 pub enum AppError {
@@ -36,6 +37,10 @@ impl AppError {
 impl IntoResponse for AppError {
     fn into_response(self) -> Response {
         let status = self.status_code();
+        if status.is_server_error() {
+            // Error-level events become Sentry issues; client errors stay out of Sentry.
+            error!("{self}");
+        }
         let payload = ErrorPayload {
             error: ErrorDetails {
                 message: self.to_string(),

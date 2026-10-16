@@ -67,6 +67,8 @@ Set production values in `.env.prod`:
 - `BACKEND_CORS_ALLOW_ORIGIN`
 - `CENTRAL_ORIGIN`
 - optional `CENTRAL_VERSION`
+- optional `BACKEND_SENTRY_DSN` and `COCKPIT_SENTRY_DSN` (see [error monitoring](./service-catalog.md#error-monitoring))
+- optional `SENTRY_AUTH_TOKEN` to record deploys in Sentry
 
 If GHCR packages are private, log in on the host:
 
@@ -111,7 +113,8 @@ The update script:
 5. runs migrations,
 6. starts `service-backend`, `app-cockpit`, and `i12e-gateway`,
 7. checks gateway and backend health,
-8. prints Compose status.
+8. records the deploy on the image set's Sentry release when `SENTRY_AUTH_TOKEN` is set,
+9. prints Compose status.
 
 Backups are written to `backups/` next to the deploy bundle unless `BACKUP_DIR` overrides it. Use `--skip-backup` only when an external backup already exists.
 

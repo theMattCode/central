@@ -38,7 +38,9 @@ COPY --from=builder /usr/lib/x86_64-linux-gnu/libgcc_s.so.1 /usr/lib/libgcc_s.so
 
 COPY --from=builder /workspace/services/target/release/central-backend /usr/local/bin/central-backend
 
+ARG SENTRY_RELEASE=
 ENV BACKEND_PORT=8080
+ENV SENTRY_RELEASE=$SENTRY_RELEASE
 
 EXPOSE 8080
 

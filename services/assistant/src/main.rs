@@ -20,23 +20,56 @@ use infrastructure::{
 };
 use reqwest::Client;
 use tracing::{error, info};
+use tracing_subscriber::prelude::*;
 
-#[tokio::main]
-async fn main() {
-    tracing_subscriber::fmt()
-        .with_env_filter(
+fn main() {
+    let sentry = sentry::init(
+        sentry::ClientOptions::new()
+            .maybe_release(
+                // CI bakes `SENTRY_RELEASE` into release images; local builds fall back to the crate version.
+                std::env::var("SENTRY_RELEASE")
+                    .ok()
+                    .filter(|release| !release.is_empty())
+                    .map(Into::into)
+                    .or(sentry::release_name!()),
+            )
+            .traces_sample_rate(1.0),
+    );
+
+    tracing_subscriber::registry()
+        .with(
             tracing_subscriber::EnvFilter::try_from_default_env()
                 .unwrap_or_else(|_| "assistant_service=info,axum=info,tower_http=info".into()),
         )
+        .with(tracing_subscriber::fmt::layer())
+        .with(
+            sentry::integrations::tracing::layer().event_filter(|metadata| {
+                // tower_http logs every 5xx as a generic "response failed"; the API error event is the issue.
+                if metadata.target().starts_with("tower_http") {
+                    sentry::integrations::tracing::EventFilter::Breadcrumb
+                } else {
+                    sentry::integrations::tracing::default_event_filter(metadata)
+                }
+            }),
+        )
         .init();
 
-    let config = match Config::from_env() {
-        Ok(config) => Arc::new(config),
-        Err(error) => {
-            eprintln!("{error}");
-            std::process::exit(1);
-        }
-    };
+    let result = tokio::runtime::Builder::new_multi_thread()
+        .enable_all()
+        .build()
+        .map_err(|error| format!("Failed to build Tokio runtime: {error}"))
+        .and_then(|runtime| runtime.block_on(run()));
+
+    if let Err(error) = result {
+        error!("{error}");
+        // Flush pending Sentry events; `process::exit` skips destructors.
+        drop(sentry);
+        std::process::exit(1);
+    }
+}
+
+async fn run() -> Result<(), String> {
+    let config = Arc::new(Config::from_env()?);
 
     info!(
         backend_mode = ?config.backend_mode,
@@ -53,10 +86,7 @@ async fn main() {
     let http_client = Client::builder()
         .timeout(config.request_timeout)
         .build()
-        .unwrap_or_else(|error| {
-            error!("Failed to build HTTP client: {error}");
-            std::process::exit(1);
-        });
+        .map_err(|error| format!("Failed to build HTTP client: {error}"))?;
 
     let speech_to_text: Arc<dyn SpeechToText> = match &config.backend_mode {
         BackendMode::Mock | BackendMode::LlmProxy => Arc::new(MockSpeechToText),
@@ -139,10 +169,7 @@ async fn main() {
         config.default_voice_instruction.clone(),
     );
 
-    if let Err(error) = run_http_server(config, assistant_turn_service).await {
-        error!("{error}");
-        std::process::exit(1);
-    }
+    run_http_server(config, assistant_turn_service).await
 }
 
 async fn run_http_server(

@@ -2,11 +2,12 @@ mod handlers;
 mod payload;
 
 use axum::{
-    extract::DefaultBodyLimit,
+    extract::{DefaultBodyLimit, Request},
     routing::{get, post},
     Router,
 };
 use http::{header, HeaderValue, Method};
+use sentry::integrations::tower::{NewSentryLayer, SentryHttpLayer};
 use tower_http::{cors::CorsLayer, trace::TraceLayer};
 
 use crate::context::Context;
@@ -24,6 +25,8 @@ pub fn build_router(context: Context) -> Router {
         )
         .layer(DefaultBodyLimit::max(4 * 1024 * 1024))
         .layer(TraceLayer::new_for_http())
+        .layer(SentryHttpLayer::new().enable_transaction())
+        .layer(NewSentryLayer::<Request>::new_from_top())
         .layer(
             CorsLayer::new()
                 .allow_origin(allow_origin)

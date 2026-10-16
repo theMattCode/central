@@ -7,13 +7,14 @@
   },
   "scripts": {
     "build": "vite build",
-    "start:dev": "vite dev --port 5000",
+    "start:dev": "node --import ./instrument.server.mjs node_modules/vite/bin/vite.js dev --port 5000",
     "start:preview": "vite preview",
     "test": "vitest run",
     "typecheck": "tsc --noEmit -p tsconfig.json"
   },
   "dependencies": {
     "@meteocons/svg": "^0.1.0",
+    "@sentry/tanstackstart-react": "11.8.0",
     "@tailwindcss/vite": "4.2.1",
     "@tanstack/react-router": "1.163.2",
     "@tanstack/react-router-ssr-query": "1.163.2",

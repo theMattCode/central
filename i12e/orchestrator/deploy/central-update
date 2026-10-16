@@ -148,6 +148,33 @@ curl --fail --silent --show-error "$gateway_url/healthz" >/dev/null
 curl --fail --silent --show-error "$gateway_url/" >/dev/null
 compose exec -T service-backend wget -qO- http://127.0.0.1:8080/healthz >/dev/null
 
+record_sentry_deploy() {
+  # Optional: needs an auth token with release permissions (an organization token works).
+  if [ -z "${SENTRY_AUTH_TOKEN:-}" ]; then
+    return 0
+  fi
+
+  local release
+  release="$(compose exec -T service-backend printenv SENTRY_RELEASE 2>/dev/null || true)"
+  if [ -z "$release" ]; then
+    echo "Skipping Sentry deploy: the images carry no SENTRY_RELEASE." >&2
+    return 0
+  fi
+
+  if curl --fail --silent --show-error --output /dev/null \
+    --request POST \
+    --header "Authorization: Bearer $SENTRY_AUTH_TOKEN" \
+    --header 'Content-Type: application/json' \
+    --data "{\"environment\":\"${SENTRY_ENVIRONMENT:-production}\",\"name\":\"$target_version\",\"projects\":[\"central-cockpit\",\"central-backend\"]}" \
+    "${SENTRY_URL:-https://de.sentry.io}/api/0/organizations/${SENTRY_ORG:-elyverse-studio}/releases/$release/deploys/"; then
+    echo "Recorded Sentry deploy: $release"
+  else
+    echo "Failed to record Sentry deploy for $release; continuing." >&2
+  fi
+}
+
+record_sentry_deploy
+
 echo "Central deployed: $target_version"
 compose ps
 

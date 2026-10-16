@@ -45,6 +45,8 @@ Weather responses are cached in PostgreSQL. Current snapshots are served from ca
 - `WEATHER_REFRESH_INTERVAL_SECONDS` (default: `900`)
 - `WEATHER_REQUEST_TIMEOUT_SECONDS` (default: `10`)
 - `WEATHER_OPEN_METEO_BASE_URL` (default: `https://api.open-meteo.com`)
+- `SENTRY_DSN` (default: unset, which disables Sentry; see [error monitoring](../../docs/service-catalog.md#error-monitoring))
+- `SENTRY_ENVIRONMENT` (default: `development` for debug builds, `production` for release builds)
 
 These defaults apply to a native `cargo run`. In the dev stack (`pnpm dev`) the backend listens on `8080` inside the
 container and is published on host port `3010`; it reaches PostgreSQL at `i12e-postgres:5432`.

@@ -29,8 +29,10 @@ FROM alpine:3.22
 RUN apk add --no-cache ca-certificates
 RUN adduser -D assistant
 COPY --from=builder /workspace/services/target/release/assistant-service /usr/local/bin/assistant-service
+ARG SENTRY_RELEASE=
 ENV ASSISTANT_PORT=8080
 ENV ASSISTANT_BACKEND_MODE=mock
+ENV SENTRY_RELEASE=$SENTRY_RELEASE
 EXPOSE 8080
 USER assistant
 CMD ["/usr/local/bin/assistant-service"]

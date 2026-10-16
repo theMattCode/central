@@ -14,16 +14,55 @@ use domains::weather::service::WeatherService;
 
 use std::{net::SocketAddr, sync::Arc};
 use tracing::{error, info};
+use tracing_subscriber::prelude::*;
 
-#[tokio::main]
-async fn main() {
-    tracing_subscriber::fmt()
-        .with_env_filter(
+fn main() {
+    let sentry = sentry::init(
+        sentry::ClientOptions::new()
+            .maybe_release(
+                // CI bakes `SENTRY_RELEASE` into release images; local builds fall back to the crate version.
+                std::env::var("SENTRY_RELEASE")
+                    .ok()
+                    .filter(|release| !release.is_empty())
+                    .map(Into::into)
+                    .or(sentry::release_name!()),
+            )
+            .traces_sample_rate(1.0),
+    );
+
+    tracing_subscriber::registry()
+        .with(
             tracing_subscriber::EnvFilter::try_from_default_env()
-                .unwrap_or_else(|_| "backend=info,axum=info,tower_http=info".into()),
+                .unwrap_or_else(|_| "central_backend=info,axum=info,tower_http=info".into()),
+        )
+        .with(tracing_subscriber::fmt::layer())
+        .with(
+            sentry::integrations::tracing::layer().event_filter(|metadata| {
+                // tower_http logs every 5xx as a generic "response failed"; the API error event is the issue.
+                if metadata.target().starts_with("tower_http") {
+                    sentry::integrations::tracing::EventFilter::Breadcrumb
+                } else {
+                    sentry::integrations::tracing::default_event_filter(metadata)
+                }
+            }),
         )
         .init();
 
+    let result = tokio::runtime::Builder::new_multi_thread()
+        .enable_all()
+        .build()
+        .map_err(|error| format!("Failed to build Tokio runtime: {error}"))
+        .and_then(|runtime| runtime.block_on(run()));
+
+    if let Err(error) = result {
+        error!("{error}");
+        // Flush pending Sentry events; `process::exit` skips destructors.
+        drop(sentry);
+        std::process::exit(1);
+    }
+}
+
+async fn run() -> Result<(), String> {
     let config = Arc::new(Config::from_env());
     info!(
         port = config.port,
@@ -34,26 +73,10 @@ async fn main() {
         "Loaded backend configuration"
     );
 
-    let finance_service = match build_finance_service(&config).await {
-        Ok(service) => service,
-        Err(error) => {
-            error!("{error}");
-            std::process::exit(1);
-        }
-    };
+    let finance_service = build_finance_service(&config).await?;
+    let weather_service = build_weather_service(&config).await?;
 
-    let weather_service = match build_weather_service(&config).await {
-        Ok(service) => service,
-        Err(error) => {
-            error!("{error}");
-            std::process::exit(1);
-        }
-    };
-
-    if let Err(error) = run_http_server(config, finance_service, weather_service).await {
-        error!("{error}");
-        std::process::exit(1);
-    }
+    run_http_server(config, finance_service, weather_service).await
 }
 
 async fn build_finance_service(config: &Config) -> Result<FinanceService, String> {

@@ -19,6 +19,9 @@ permissions:
 env:
   REGISTRY: ghcr.io
   IMAGE_NAMESPACE: ${{ github.repository }}
+  # One Sentry release per commit, shared by all services.
+  SENTRY_RELEASE: central@${{ github.sha }}
+  SENTRY_ORG: elyverse-studio
 
 jobs:
   validate:
@@ -105,12 +108,53 @@ jobs:
         shell: bash
         env:
           IMAGE_TAG: ${{ needs.prepare.outputs.image-tag }}
+          COCKPIT_SENTRY_DSN: ${{ vars.COCKPIT_SENTRY_DSN }}
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
         run: |
           set -euo pipefail
 
+          build_args=()
+          case "${{ matrix.name }}" in
+            app-cockpit)
+              build_args+=(--build-arg "VITE_SENTRY_DSN=${COCKPIT_SENTRY_DSN}")
+              build_args+=(--build-arg "SENTRY_RELEASE=${SENTRY_RELEASE}")
+              build_args+=(--secret id=sentry_auth_token,env=SENTRY_AUTH_TOKEN)
+              ;;
+            service-backend)
+              build_args+=(--build-arg "SENTRY_RELEASE=${SENTRY_RELEASE}")
+              ;;
+          esac
+
           image="${REGISTRY}/${IMAGE_NAMESPACE,,}/${{ matrix.name }}:${IMAGE_TAG}"
-          docker build --file "${{ matrix.dockerfile }}" --tag "$image" "${{ matrix.context }}"
+          docker build "${build_args[@]}" --file "${{ matrix.dockerfile }}" --tag "$image" "${{ matrix.context }}"
           docker push "$image"
+
+  sentry-release:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push'
+    needs:
+      - build-images
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Create Sentry release with commits
+        shell: bash
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          sentry_cli() {
+            npx --yes @sentry/cli@3.8.0 "$@"
+          }
+
+          # `--local` reads commits from this checkout, so no Sentry GitHub integration is needed.
+          sentry_cli releases new "$SENTRY_RELEASE" \
+            --project central-cockpit --project central-backend --project central-assistant
+          sentry_cli releases set-commits "$SENTRY_RELEASE" --local --ignore-missing
+          sentry_cli releases finalize "$SENTRY_RELEASE"
 
   test-images-integration:
     runs-on: ubuntu-latest

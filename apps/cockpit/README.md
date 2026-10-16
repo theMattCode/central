@@ -55,6 +55,10 @@ The weather widget module owns its loading contract:
 
 If neither is set, cockpit uses `http://localhost:3010` as the local orchestrator default. Other runtimes should set `BACKEND_BASE_URL` explicitly instead of relying on endpoint probing.
 
+Errors and traces go to the Sentry project `central-cockpit`: the browser SDK is initialized in `src/router.tsx`
+(`VITE_SENTRY_DSN`, build time), the server SDK in `instrument.server.mjs` (`SENTRY_DSN`, runtime, loaded with
+`node --import`). See [error monitoring](../../docs/service-catalog.md#error-monitoring).
+
 Weather widget diagnostics are written by cockpit as structured logger records (`src/utils/logger`) with scope `cockpit.weather.*`, including invalid location payloads, outbound request attempts, and upstream request failures.
 
 ## Finance Transactions Page

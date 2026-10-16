@@ -215,6 +215,8 @@ Or keep the `service-llm` wrapper when you want lazy model pulls and a repo-owne
 - `TTS_MODEL` (required in `openai` mode)
 - `TTS_URL` (required in `proxy` mode)
 - `TTS_VOICE` (default: `alloy`)
+- `SENTRY_DSN` (default: unset, which disables Sentry; see [error monitoring](../../docs/service-catalog.md#error-monitoring))
+- `SENTRY_ENVIRONMENT` (default: `development` for debug builds, `production` for release builds)
 
 ## Logging
 
@@ -223,6 +225,7 @@ The service uses structured logs via `tracing`.
 - Startup logs include backend mode and upstream configuration presence.
 - Turn logs include transcript length and response length.
 - Upstream failures are surfaced as structured error responses.
+- `error`-level events are reported to Sentry as issues, lower levels become breadcrumbs.
 
 ## Nx targets
 

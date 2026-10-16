@@ -10,11 +10,16 @@ services:
     build:
       context: ../../..
       dockerfile: services/backend/Dockerfile
+      args:
+        SENTRY_RELEASE: ${SENTRY_RELEASE:-}
 
   app-cockpit:
     build:
       context: ../../..
       dockerfile: apps/cockpit/Dockerfile
+      args:
+        VITE_SENTRY_DSN: ${COCKPIT_SENTRY_DSN:-}
+        SENTRY_RELEASE: ${SENTRY_RELEASE:-}
 
   i12e-gateway:
     build:
