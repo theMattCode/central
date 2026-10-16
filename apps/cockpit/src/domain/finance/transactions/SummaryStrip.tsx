@@ -1,5 +1,5 @@
 import type { Summary } from '@/domain/finance/transactions/model.ts';
-import { KPISection } from '@/components/KPI/KPISection.tsx/KPISection.tsx';
+import { KPISection } from '@/components/KPI/KPISection.tsx';
 
 const formatter = new Intl.NumberFormat('de-DE', {
   style: 'currency',

@@ -17,7 +17,7 @@ const config = defineConfig(({ mode }) => ({
     setupFiles: ['./src/setupTests.ts'],
   },
   server: {
-    allowedHosts: ['localhost', '117.0.0.1', 'archy.smelt-toad.ts.net'],
+    allowedHosts: ['localhost', '127.0.0.1', 'archy.smelt-toad.ts.net'],
     hmr: {
       clientPort: 3000,
     },
