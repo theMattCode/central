@@ -1,6 +1,6 @@
 {
   "$schema": "../../node_modules/nx/schemas/project-schema.json",
-  "name": "backend",
+  "name": "service-backend",
   "projectType": "application",
   "root": "services/backend",
   "sourceRoot": "services/backend/src",
@@ -46,19 +46,7 @@
         "cwd": "services/backend",
         "command": "cargo check --all-targets"
       }
-    },
-    "container-build": {
-      "executor": "nx:run-commands",
-      "options": {
-        "command": "docker build --file services/backend/Dockerfile --tag central/services/backend:latest ."
-      }
-    },
-    "container-run": {
-      "executor": "nx:run-commands",
-      "options": {
-        "command": "docker run --rm -i --name central-backend -p 5010:8080 central/services/backend:latest"
-      }
     }
   },
-  "tags": ["scope:platform", "type:service"]
+  "tags": ["type:service"]
 }

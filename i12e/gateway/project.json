@@ -8,28 +8,9 @@
     "lint": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "test -f i12e/gateway/nginx.conf && test -f i12e/gateway/Dockerfile"
-      }
-    },
-    "test": {
-      "executor": "nx:run-commands",
-      "options": {
-        "command": "test -f i12e/gateway/nginx.conf"
-      }
-    },
-    "build": {
-      "executor": "nx:run-commands",
-      "options": {
-        "command": "docker build --file i12e/gateway/Dockerfile --tag central/i12e/gateway:latest ."
-      }
-    },
-    "typecheck": {
-      "executor": "nx:run-commands",
-      "options": {
-        "command": "test -f i12e/gateway/nginx.conf"
+        "command": "docker run --rm --volume \"$PWD/i12e/gateway/nginx.conf:/etc/nginx/conf.d/default.conf:ro\" nginx:1.29-alpine nginx -t -q"
       }
     }
   },
-  "tags": ["scope:platform", "type:infra"]
+  "tags": ["type:infra"]
 }
-

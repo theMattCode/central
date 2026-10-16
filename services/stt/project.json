@@ -1,6 +1,6 @@
 {
   "$schema": "../../node_modules/nx/schemas/project-schema.json",
-  "name": "stt-service",
+  "name": "service-stt",
   "projectType": "application",
   "root": "services/stt",
   "sourceRoot": "services/stt/src",
@@ -9,7 +9,7 @@
       "executor": "nx:run-commands",
       "options": {
         "cwd": "services/stt",
-        "command": "python3 -m py_compile src/service.py tests/test_service.py"
+        "command": "python3 -m compileall -q src tests"
       }
     },
     "test": {
@@ -18,26 +18,7 @@
         "cwd": "services/stt",
         "command": "python3 -m unittest discover -s tests -p 'test_*.py'"
       }
-    },
-    "typecheck": {
-      "executor": "nx:run-commands",
-      "options": {
-        "cwd": "services/stt",
-        "command": "python3 -m py_compile src/service.py tests/test_service.py"
-      }
-    },
-    "build": {
-      "executor": "nx:run-commands",
-      "options": {
-        "command": "docker build --file services/stt/Dockerfile --tag central/services/stt:latest ."
-      }
-    },
-    "container-run": {
-      "executor": "nx:run-commands",
-      "options": {
-        "command": "docker run --rm -i --name central-stt -p 5030:8081 central/services/stt:latest"
-      }
     }
   },
-  "tags": ["scope:platform", "type:service"]
+  "tags": ["type:service"]
 }

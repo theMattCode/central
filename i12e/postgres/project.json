@@ -11,42 +11,12 @@
         "command": "sh -n i12e/postgres/scripts/apply-migrations.sh"
       }
     },
-    "test": {
-      "executor": "nx:run-commands",
-      "options": {
-        "command": "sh -c 'set -eu; set -- i12e/postgres/migrations/*.sql; [ \"$1\" != \"i12e/postgres/migrations/*.sql\" ]; test -f i12e/postgres/init/001_extensions.sql'"
-      }
-    },
-    "build": {
-      "executor": "nx:run-commands",
-      "options": {
-        "command": "docker build --file i12e/postgres/Dockerfile --tag central/i12e/postgres:18.3 i12e/postgres"
-      }
-    },
-    "run": {
-      "executor": "nx:run-commands",
-      "options": {
-        "command": "docker run --rm --name ${POSTGRES_CONTAINER_NAME:-central-i12e-postgres} -p ${POSTGRES_PORT:-5001}:5432 -e POSTGRES_USER=central -e POSTGRES_PASSWORD=central -e POSTGRES_DB=central -v central_postgres_data:/var/lib/postgresql central/i12e/postgres:18.3"
-      }
-    },
-    "migrate": {
-      "executor": "nx:run-commands",
-      "options": {
-        "command": "docker exec ${POSTGRES_CONTAINER_NAME:-central-i12e-postgres} apply-migrations.sh"
-      }
-    },
     "create-migration": {
       "executor": "nx:run-commands",
       "options": {
         "command": "sh -c 'name=${MIGRATION_NAME:?Set MIGRATION_NAME=<description>}; slug=$(echo \"$name\" | tr \" -\" \"__\" | tr -cd \"[:alnum:]_\"); ts=$(date +%Y%m%d%H%M%S); file=i12e/postgres/migrations/${ts}_${slug}.sql; touch \"$file\"; echo \"Created $file\"'"
       }
-    },
-    "typecheck": {
-      "executor": "nx:run-commands",
-      "options": {
-        "command": "sh -n i12e/postgres/scripts/apply-migrations.sh"
-      }
     }
   },
-  "tags": ["scope:persistence", "type:infra"]
+  "tags": ["type:infra"]
 }
