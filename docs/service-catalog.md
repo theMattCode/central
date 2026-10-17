@@ -67,7 +67,7 @@ backend over the compose network, while browser-side fallbacks use `VITE_*` vari
 
 Cockpit, Backend, and Assistant report errors and traces to Sentry (organization `elyverse-studio`, EU region), one
 project each: `central-cockpit`, `central-backend`, `central-assistant`. Each service reads its DSN from
-`SENTRY_DSN`; an empty DSN disables reporting. In the Rust services, `error`-level `tracing` events and every API response with a 5xx status become Sentry issues; `warn` and `info` become breadcrumbs. The orchestrator maps per-service variables onto it:
+`SENTRY_DSN`; an empty DSN disables reporting. In the Rust services, `error`-level `tracing` events and every API response with a 5xx status become Sentry issues, except Backend `502` responses for third-party outages (Open-Meteo), which are logged as warnings; `warn` and `info` become breadcrumbs. The orchestrator maps per-service variables onto it:
 
 | Variable               | Service             | Notes                                                              |
 | ---------------------- | ------------------- | ------------------------------------------------------------------ |

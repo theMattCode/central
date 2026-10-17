@@ -6,7 +6,7 @@ use axum::{
 use chrono::{DateTime, Utc};
 use serde::Serialize;
 use thiserror::Error;
-use tracing::error;
+use tracing::{error, warn};
 
 #[derive(Debug, Error)]
 pub enum ApiError {
@@ -57,9 +57,12 @@ struct ErrorPayload {
 impl IntoResponse for ApiError {
     fn into_response(self) -> Response {
         let status = self.status_code();
-        if status.is_server_error() {
-            // Error-level events become Sentry issues; client errors stay out of Sentry.
-            error!(code = self.code(), "{self}");
+        // Error-level events become Sentry issues, warnings only breadcrumbs. Third-party outages
+        // (Open-Meteo) are expected and would flood Sentry; client errors stay out of it entirely.
+        match self {
+            Self::Internal(_) => error!(code = self.code(), "{self}"),
+            Self::Upstream(_) => warn!(code = self.code(), "{self}"),
+            Self::BadRequest(_) | Self::NotFound(_) => {}
         }
         let payload = ErrorResponse {
             error: ErrorPayload {
