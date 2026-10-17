@@ -59,6 +59,7 @@ pub struct TransactionInput {
     pub description: Option<String>,
     pub category: Option<String>,
     pub note: Option<String>,
+    pub financial_account_id: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -69,6 +70,7 @@ pub struct TransactionDraft {
     pub description: String,
     pub category: Option<String>,
     pub note: Option<String>,
+    pub financial_account_id: String,
 }
 
 #[derive(Debug, Serialize, Clone, PartialEq, Eq)]
@@ -89,6 +91,8 @@ pub struct TransactionResponse {
     pub description: String,
     pub category: Option<String>,
     pub note: Option<String>,
+    pub financial_account_id: String,
+    pub financial_account_name: String,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
 }
@@ -148,6 +152,8 @@ impl TransactionInput {
         let description = clean_required_text(self.description, "description")?;
         let category = clean_optional_text(self.category, "category")?;
         let note = clean_optional_text(self.note, "note")?;
+        let financial_account_id =
+            clean_required_text(self.financial_account_id, "financialAccountId")?;
 
         Ok(TransactionDraft {
             direction,
@@ -156,6 +162,7 @@ impl TransactionInput {
             description,
             category,
             note,
+            financial_account_id,
         })
     }
 }

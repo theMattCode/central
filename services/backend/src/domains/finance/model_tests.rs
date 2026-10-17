@@ -71,6 +71,7 @@ fn transaction_input_parses_amount_to_minor_units() {
         description: Some(" Groceries ".to_string()),
         category: Some(" Food ".to_string()),
         note: None,
+        financial_account_id: Some(" 0193-account ".to_string()),
     }
     .into_draft()
     .expect("valid transaction");
@@ -89,6 +90,7 @@ fn transaction_input_rejects_float_like_precision() {
         description: Some("Groceries".to_string()),
         category: None,
         note: None,
+        financial_account_id: Some("0193-account".to_string()),
     }
     .into_draft()
     .expect_err("amount precision rejected");
@@ -101,4 +103,41 @@ fn amount_formatting_keeps_two_decimal_places() {
     assert_eq!(format_amount_minor_units(1200), "12.00");
     assert_eq!(format_amount_minor_units(1234), "12.34");
     assert_eq!(money(-1234).amount, "-12.34");
+}
+
+#[test]
+fn transaction_input_keeps_trimmed_financial_account_id() {
+    let draft = TransactionInput {
+        direction: Some(TransactionDirection::Income),
+        transaction_date: Some(NaiveDate::from_ymd_opt(2026, 5, 5).unwrap()),
+        amount: Some("10".to_string()),
+        description: Some("Salary".to_string()),
+        category: None,
+        note: None,
+        financial_account_id: Some(" 0193-account ".to_string()),
+    }
+    .into_draft()
+    .expect("valid transaction");
+
+    assert_eq!(draft.financial_account_id, "0193-account");
+}
+
+#[test]
+fn transaction_input_requires_financial_account_id() {
+    let error = TransactionInput {
+        direction: Some(TransactionDirection::Income),
+        transaction_date: Some(NaiveDate::from_ymd_opt(2026, 5, 5).unwrap()),
+        amount: Some("10".to_string()),
+        description: Some("Salary".to_string()),
+        category: None,
+        note: None,
+        financial_account_id: None,
+    }
+    .into_draft()
+    .expect_err("missing account");
+
+    assert_eq!(
+        error.to_string(),
+        "Missing required field: financialAccountId"
+    );
 }

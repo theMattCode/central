@@ -155,6 +155,8 @@ impl FinanceDataStore for FakeFinanceStore {
             description: draft.description.clone(),
             category: draft.category.clone(),
             note: draft.note.clone(),
+            financial_account_id: draft.financial_account_id.clone(),
+            financial_account_name: "Test account".to_string(),
             created_at: now,
             updated_at: now,
         };
@@ -187,6 +189,7 @@ impl FinanceDataStore for FakeFinanceStore {
         transaction.description = draft.description.clone();
         transaction.category = draft.category.clone();
         transaction.note = draft.note.clone();
+        transaction.financial_account_id = draft.financial_account_id.clone();
         transaction.updated_at = Utc::now();
 
         Ok(transaction.clone())
@@ -319,7 +322,8 @@ async fn create_and_list_transactions_returns_summary() {
             "transactionDate": "2026-05-05",
             "amount": "123.45",
             "description": "Salary",
-            "category": "Work"
+            "category": "Work",
+            "financialAccountId": "00000000-0000-7000-9000-000000000001"
         }))
         .send()
         .await
@@ -354,7 +358,8 @@ async fn invalid_amount_returns_bad_request() {
             "direction": "expense",
             "transactionDate": "2026-05-05",
             "amount": "12.345",
-            "description": "Groceries"
+            "description": "Groceries",
+            "financialAccountId": "00000000-0000-7000-9000-000000000001"
         }))
         .send()
         .await
@@ -628,4 +633,28 @@ async fn reorder_financial_accounts_with_duplicates_returns_bad_request() {
         .expect("reorder accounts");
 
     assert_eq!(response.status(), StatusCode::BAD_REQUEST);
+}
+
+#[tokio::test]
+async fn create_transaction_without_financial_account_returns_bad_request() {
+    let base_url = spawn_http_server(test_context()).await;
+
+    let response = reqwest::Client::new()
+        .post(format!("{base_url}/api/v1/finance/transactions"))
+        .json(&serde_json::json!({
+            "direction": "expense",
+            "transactionDate": "2026-05-05",
+            "amount": "12.30",
+            "description": "Groceries"
+        }))
+        .send()
+        .await
+        .expect("create transaction");
+
+    assert_eq!(response.status(), StatusCode::BAD_REQUEST);
+    let payload: serde_json::Value = response.json().await.expect("json payload");
+    assert_eq!(
+        payload["error"]["message"],
+        "Missing required field: financialAccountId"
+    );
 }

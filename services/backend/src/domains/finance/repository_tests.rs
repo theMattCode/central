@@ -6,7 +6,7 @@ use crate::domains::finance::accounts::{
     FinancialAccountDraft, FinancialAccountStatus, FinancialAccountStore, FinancialAccountType,
 };
 use crate::domains::finance::contracts::FinanceDataStore;
-use crate::domains::finance::model::TransactionsQuery;
+use crate::domains::finance::model::{TransactionDirection, TransactionDraft, TransactionsQuery};
 use crate::domains::finance::repository::FinanceRepository;
 use crate::error::ApiError;
 use crate::test_support::postgres::TestDatabase;
@@ -509,4 +509,250 @@ async fn reorder_financial_accounts_without_accounts_accepts_empty_list() {
         .expect("empty reorder");
 
     assert!(accounts.is_empty());
+}
+
+fn transaction_draft(financial_account_id: &str) -> TransactionDraft {
+    TransactionDraft {
+        direction: TransactionDirection::Expense,
+        transaction_date: NaiveDate::from_ymd_opt(2026, 10, 3).expect("valid date"),
+        amount_minor_units: 1250,
+        description: "Groceries".to_string(),
+        category: Some("Food".to_string()),
+        note: None,
+        financial_account_id: financial_account_id.to_string(),
+    }
+}
+
+fn october() -> TransactionsQuery {
+    TransactionsQuery {
+        from: "2026-10-01".to_string(),
+        to: "2026-10-31".to_string(),
+        start_inclusive: NaiveDate::from_ymd_opt(2026, 10, 1).expect("valid date"),
+        end_exclusive: NaiveDate::from_ymd_opt(2026, 11, 1).expect("valid date"),
+    }
+}
+
+#[tokio::test]
+async fn create_transaction_books_it_on_the_financial_account() {
+    let database = TestDatabase::start().await;
+    let repository = connect_repository(&database).await;
+    let account = repository
+        .create_financial_account(&account_draft("Girokonto", FinancialAccountType::Bank))
+        .await
+        .expect("create account");
+
+    let created = repository
+        .create_transaction(&transaction_draft(&account.id))
+        .await
+        .expect("create transaction");
+
+    assert_eq!(created.financial_account_id, account.id);
+    assert_eq!(created.financial_account_name, "Girokonto");
+    assert_eq!(created.amount, "12.50");
+    assert_eq!(created.currency_code, "EUR");
+    assert_eq!(created.category.as_deref(), Some("Food"));
+    let listed = repository
+        .list_transactions(&october())
+        .await
+        .expect("list transactions");
+    assert_eq!(listed.transactions, [created]);
+}
+
+#[tokio::test]
+async fn create_transaction_rejects_accounts_that_are_not_active_eur_accounts() {
+    let database = TestDatabase::start().await;
+    let repository = connect_repository(&database).await;
+    let archived = repository
+        .create_financial_account(&account_draft("Old", FinancialAccountType::Bank))
+        .await
+        .expect("create account");
+    repository
+        .archive_financial_account(&archived.id)
+        .await
+        .expect("archive account");
+    let dollars = repository
+        .create_financial_account(&FinancialAccountDraft {
+            primary_currency_code: "USD".to_string(),
+            ..account_draft("Dollars", FinancialAccountType::Bank)
+        })
+        .await
+        .expect("create USD account");
+
+    for (label, account_id) in [
+        ("archived", archived.id.as_str()),
+        ("non-EUR", dollars.id.as_str()),
+        ("unknown", "00000000-0000-7000-9000-000000000404"),
+        ("malformed", "not-a-uuid"),
+    ] {
+        let error = repository
+            .create_transaction(&transaction_draft(account_id))
+            .await
+            .expect_err(label);
+
+        assert!(
+            matches!(error, ApiError::BadRequest(_)),
+            "{label}: {error:?}"
+        );
+    }
+}
+
+#[tokio::test]
+async fn update_transaction_changes_it() {
+    let database = TestDatabase::start().await;
+    let repository = connect_repository(&database).await;
+    let giro = repository
+        .create_financial_account(&account_draft("Girokonto", FinancialAccountType::Bank))
+        .await
+        .expect("create account");
+    let cash = repository
+        .create_financial_account(&account_draft("Wallet", FinancialAccountType::Cash))
+        .await
+        .expect("create account");
+    let created = repository
+        .create_transaction(&transaction_draft(&giro.id))
+        .await
+        .expect("create transaction");
+
+    let updated = repository
+        .update_transaction(
+            &created.id,
+            &TransactionDraft {
+                direction: TransactionDirection::Income,
+                description: "Refund".to_string(),
+                category: None,
+                ..transaction_draft(&cash.id)
+            },
+        )
+        .await
+        .expect("update transaction");
+
+    assert_eq!(updated.id, created.id);
+    assert_eq!(updated.direction, TransactionDirection::Income);
+    assert_eq!(updated.description, "Refund");
+    assert_eq!(updated.category, None);
+    assert_eq!(updated.financial_account_id, cash.id);
+    assert_eq!(updated.financial_account_name, "Wallet");
+}
+
+#[tokio::test]
+async fn update_transaction_keeps_its_archived_account_but_rejects_switching_to_one() {
+    let database = TestDatabase::start().await;
+    let repository = connect_repository(&database).await;
+    let giro = repository
+        .create_financial_account(&account_draft("Girokonto", FinancialAccountType::Bank))
+        .await
+        .expect("create account");
+    let other = repository
+        .create_financial_account(&account_draft("Other", FinancialAccountType::Bank))
+        .await
+        .expect("create account");
+    let created = repository
+        .create_transaction(&transaction_draft(&giro.id))
+        .await
+        .expect("create transaction");
+    for id in [&giro.id, &other.id] {
+        repository
+            .archive_financial_account(id)
+            .await
+            .expect("archive account");
+    }
+
+    let kept = repository
+        .update_transaction(
+            &created.id,
+            &TransactionDraft {
+                description: "Groceries and snacks".to_string(),
+                ..transaction_draft(&giro.id)
+            },
+        )
+        .await
+        .expect("keep archived account");
+    let error = repository
+        .update_transaction(&created.id, &transaction_draft(&other.id))
+        .await
+        .expect_err("switch to archived account");
+
+    assert_eq!(kept.description, "Groceries and snacks");
+    assert_eq!(kept.financial_account_id, giro.id);
+    assert!(matches!(error, ApiError::BadRequest(_)), "{error:?}");
+}
+
+#[tokio::test]
+async fn update_unknown_transaction_is_not_found() {
+    let database = TestDatabase::start().await;
+    let repository = connect_repository(&database).await;
+    let account = repository
+        .create_financial_account(&account_draft("Girokonto", FinancialAccountType::Bank))
+        .await
+        .expect("create account");
+
+    for id in ["00000000-0000-7000-8000-000000000404", "not-a-uuid"] {
+        let error = repository
+            .update_transaction(id, &transaction_draft(&account.id))
+            .await
+            .expect_err("unknown transaction");
+
+        assert!(matches!(error, ApiError::NotFound(_)), "{id}: {error:?}");
+    }
+}
+
+#[tokio::test]
+async fn delete_transaction_removes_it() {
+    let database = TestDatabase::start().await;
+    let repository = connect_repository(&database).await;
+    let account = repository
+        .create_financial_account(&account_draft("Girokonto", FinancialAccountType::Bank))
+        .await
+        .expect("create account");
+    let created = repository
+        .create_transaction(&transaction_draft(&account.id))
+        .await
+        .expect("create transaction");
+
+    repository
+        .delete_transaction(&created.id)
+        .await
+        .expect("delete transaction");
+
+    let listed = repository
+        .list_transactions(&october())
+        .await
+        .expect("list transactions");
+    assert!(listed.transactions.is_empty());
+}
+
+#[tokio::test]
+async fn delete_unknown_transaction_is_not_found() {
+    let database = TestDatabase::start().await;
+    let repository = connect_repository(&database).await;
+
+    for id in ["00000000-0000-7000-8000-000000000404", "not-a-uuid"] {
+        let error = repository
+            .delete_transaction(id)
+            .await
+            .expect_err("unknown transaction");
+
+        assert!(matches!(error, ApiError::NotFound(_)), "{id}: {error:?}");
+    }
+}
+
+#[tokio::test]
+async fn update_transaction_with_malformed_account_id_is_a_bad_request() {
+    let database = TestDatabase::start().await;
+    let repository = connect_repository(&database).await;
+    let account = repository
+        .create_financial_account(&account_draft("Girokonto", FinancialAccountType::Bank))
+        .await
+        .expect("create account");
+    let created = repository
+        .create_transaction(&transaction_draft(&account.id))
+        .await
+        .expect("create transaction");
+
+    let error = repository
+        .update_transaction(&created.id, &transaction_draft("not-a-uuid"))
+        .await
+        .expect_err("malformed account id");
+
+    assert!(matches!(error, ApiError::BadRequest(_)), "{error:?}");
 }

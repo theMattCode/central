@@ -30,26 +30,38 @@ const FINANCIAL_ACCOUNT_COLUMNS: &str = r#"
   updated_at
 "#;
 
-const SELECT_TRANSACTIONS_SQL: &str = r#"
-SELECT
-  ledger_entries.id::text,
-  ledger_entries.entry_kind AS direction,
-  ledger_entries.transaction_date,
-  ledger_entries.description,
+/// Final select of every transaction query; the queried entry is always aliased `entry`.
+const TRANSACTION_COLUMNS: &str = r#"
+  entry.id::text AS id,
+  entry.entry_kind AS direction,
+  entry.transaction_date,
+  entry.description,
   categories.name AS category,
-  ledger_entries.note,
-  ledger_entries.amount_minor_units,
-  ledger_entries.currency_code,
-  ledger_entries.created_at,
-  ledger_entries.updated_at
-FROM service_finance.ledger_entries
+  entry.note,
+  entry.amount_minor_units,
+  entry.currency_code,
+  entry.financial_account_id::text AS financial_account_id,
+  accounts.name AS financial_account_name,
+  entry.created_at,
+  entry.updated_at
+"#;
+
+const TRANSACTION_JOINS: &str = r#"
 LEFT JOIN service_finance.categories
-  ON categories.id = ledger_entries.category_id
-WHERE ledger_entries.transaction_date >= $1
-  AND ledger_entries.transaction_date < $2
-  AND ledger_entries.entry_kind IN ('income', 'expense')
-  AND ledger_entries.entry_status = 'confirmed'
-ORDER BY transaction_date DESC, created_at DESC, id DESC
+  ON categories.id = entry.category_id
+LEFT JOIN service_finance.financial_accounts AS accounts
+  ON accounts.id = entry.financial_account_id
+"#;
+
+const SELECT_TRANSACTIONS_SQL: &str = r#"
+SELECT {columns}
+FROM service_finance.ledger_entries AS entry
+{joins}
+WHERE entry.transaction_date >= $1
+  AND entry.transaction_date < $2
+  AND entry.entry_kind IN ('income', 'expense')
+  AND entry.entry_status = 'confirmed'
+ORDER BY entry.transaction_date DESC, entry.created_at DESC, entry.id DESC
 "#;
 
 const INSERT_CATEGORY_SQL: &str = r#"
@@ -62,12 +74,26 @@ ON CONFLICT (
 DO UPDATE SET name = EXCLUDED.name, updated_at = now()
 "#;
 
+/// New transactions only go to active EUR accounts; no row comes back otherwise.
 const INSERT_TRANSACTION_SQL: &str = r#"
-WITH inserted_entry AS (
+WITH account AS (
+  SELECT id, primary_currency_code
+  FROM service_finance.financial_accounts
+  WHERE id = $7::text::uuid AND status = 'active' AND primary_currency_code = 'EUR'
+),
+category AS (
+  SELECT id
+  FROM service_finance.categories
+  WHERE $6::text IS NOT NULL
+    AND parent_category_id IS NULL
+    AND lower(name) = lower($6::text)
+),
+inserted_entry AS (
   INSERT INTO service_finance.ledger_entries (
     entry_kind,
     entry_status,
     source_type,
+    financial_account_id,
     category_id,
     transaction_date,
     description,
@@ -75,107 +101,65 @@ WITH inserted_entry AS (
     amount_minor_units,
     currency_code
   )
-  SELECT
-    $1,
-    'confirmed',
-    'manual',
-    categories.id,
-    $2,
-    $3,
-    $4,
-    $5,
-    'EUR'
-  FROM service_finance.categories
-  WHERE $6::text IS NOT NULL
-    AND categories.parent_category_id IS NULL
-    AND lower(categories.name) = lower($6::text)
-  UNION ALL
-  SELECT $1, 'confirmed', 'manual', NULL, $2, $3, $4, $5, 'EUR'
-  WHERE $6::text IS NULL
+  SELECT $1, 'confirmed', 'manual', account.id, (SELECT id FROM category), $2, $3, $4, $5,
+    account.primary_currency_code
+  FROM account
   RETURNING *
 )
-SELECT
-  inserted_entry.id::text,
-  inserted_entry.entry_kind AS direction,
-  inserted_entry.transaction_date,
-  inserted_entry.description,
-  categories.name AS category,
-  inserted_entry.note,
-  inserted_entry.amount_minor_units,
-  inserted_entry.currency_code,
-  inserted_entry.created_at,
-  inserted_entry.updated_at
-FROM inserted_entry
-LEFT JOIN service_finance.categories
-  ON categories.id = inserted_entry.category_id
+SELECT {columns}
+FROM inserted_entry AS entry
+{joins}
 "#;
 
+/// Like inserting, but an entry may keep the account it already has even if that account has
+/// been archived since. `found` tells an unknown entry apart from a rejected account.
 const UPDATE_TRANSACTION_SQL: &str = r#"
-WITH updated_entry AS (
-  UPDATE service_finance.ledger_entries
-  SET
-    entry_kind = $2,
-    entry_status = 'confirmed',
-    source_type = 'manual',
-    category_id = categories.id,
-    transaction_date = $3,
-    description = $4,
-    note = $5,
-    amount_minor_units = $6,
-    currency_code = 'EUR',
-    updated_at = now()
-  FROM service_finance.categories
-  WHERE ledger_entries.id = $1::uuid
-    AND ledger_entries.entry_kind IN ('income', 'expense')
-    AND ledger_entries.entry_status = 'confirmed'
-    AND $7::text IS NOT NULL
-    AND categories.parent_category_id IS NULL
-    AND lower(categories.name) = lower($7::text)
-  RETURNING *
-),
-updated_uncategorized_entry AS (
-  UPDATE service_finance.ledger_entries
-  SET
-    entry_kind = $2,
-    entry_status = 'confirmed',
-    source_type = 'manual',
-    category_id = NULL,
-    transaction_date = $3,
-    description = $4,
-    note = $5,
-    amount_minor_units = $6,
-    currency_code = 'EUR',
-    updated_at = now()
-  WHERE ledger_entries.id = $1::uuid
+WITH target AS (
+  SELECT id, financial_account_id
+  FROM service_finance.ledger_entries
+  WHERE id = $1::text::uuid
     AND entry_kind IN ('income', 'expense')
     AND entry_status = 'confirmed'
-    AND $7::text IS NULL
-  RETURNING *
 ),
-selected_entry AS (
-  SELECT * FROM updated_entry
-  UNION ALL
-  SELECT * FROM updated_uncategorized_entry
+account AS (
+  SELECT accounts.id, accounts.primary_currency_code
+  FROM service_finance.financial_accounts AS accounts, target
+  WHERE accounts.id = $8::text::uuid
+    AND accounts.primary_currency_code = 'EUR'
+    AND (accounts.status = 'active' OR accounts.id = target.financial_account_id)
+),
+category AS (
+  SELECT id
+  FROM service_finance.categories
+  WHERE $7::text IS NOT NULL
+    AND parent_category_id IS NULL
+    AND lower(name) = lower($7::text)
+),
+updated_entry AS (
+  UPDATE service_finance.ledger_entries AS entries
+  SET
+    entry_kind = $2,
+    transaction_date = $3,
+    description = $4,
+    note = $5,
+    amount_minor_units = $6,
+    category_id = (SELECT id FROM category),
+    financial_account_id = account.id,
+    currency_code = account.primary_currency_code,
+    updated_at = now()
+  FROM target, account
+  WHERE entries.id = target.id
+  RETURNING entries.*
 )
-SELECT
-  selected_entry.id::text,
-  selected_entry.entry_kind AS direction,
-  selected_entry.transaction_date,
-  selected_entry.description,
-  categories.name AS category,
-  selected_entry.note,
-  selected_entry.amount_minor_units,
-  selected_entry.currency_code,
-  selected_entry.created_at,
-  selected_entry.updated_at
-FROM selected_entry
-LEFT JOIN service_finance.categories
-  ON categories.id = selected_entry.category_id
+SELECT EXISTS (SELECT 1 FROM target) AS found, {columns}
+FROM (SELECT 1) AS anchor
+LEFT JOIN updated_entry AS entry ON true
+{joins}
 "#;
 
 const DELETE_TRANSACTION_SQL: &str = r#"
 DELETE FROM service_finance.ledger_entries
-WHERE id = $1::uuid
+WHERE id = $1::text::uuid
   AND entry_kind IN ('income', 'expense')
   AND entry_status = 'confirmed'
 "#;
@@ -237,7 +221,7 @@ impl FinanceRepository {
         let rows = self
             .client
             .query(
-                SELECT_TRANSACTIONS_SQL,
+                &transaction_sql(SELECT_TRANSACTIONS_SQL),
                 &[&query.start_inclusive, &query.end_exclusive],
             )
             .await
@@ -264,8 +248,8 @@ impl FinanceRepository {
 
         let row = self
             .client
-            .query_one(
-                INSERT_TRANSACTION_SQL,
+            .query_opt(
+                &transaction_sql(INSERT_TRANSACTION_SQL),
                 &[
                     &draft.direction.as_str(),
                     &draft.transaction_date,
@@ -273,12 +257,15 @@ impl FinanceRepository {
                     &draft.note,
                     &draft.amount_minor_units,
                     &draft.category,
+                    &draft.financial_account_id,
                 ],
             )
             .await
-            .map_err(|error| {
-                ApiError::Internal(format!("Failed to create finance transaction: {error}"))
-            })?;
+            .map_err(|error| match error.code() {
+                Some(&SqlState::INVALID_TEXT_REPRESENTATION) => invalid_transaction_account(),
+                _ => ApiError::Internal(format!("Failed to create finance transaction: {error}")),
+            })?
+            .ok_or_else(invalid_transaction_account)?;
 
         row_to_transaction(&row)
     }
@@ -292,8 +279,8 @@ impl FinanceRepository {
 
         let row = self
             .client
-            .query_opt(
-                UPDATE_TRANSACTION_SQL,
+            .query_one(
+                &transaction_sql(UPDATE_TRANSACTION_SQL),
                 &[
                     &id,
                     &draft.direction.as_str(),
@@ -302,20 +289,27 @@ impl FinanceRepository {
                     &draft.note,
                     &draft.amount_minor_units,
                     &draft.category,
+                    &draft.financial_account_id,
                 ],
             )
             .await
-            .map_err(|error| {
-                ApiError::Internal(format!(
+            .map_err(|error| match error.code() {
+                // Either id may be malformed; a malformed entry id can't match any entry either.
+                Some(&SqlState::INVALID_TEXT_REPRESENTATION) if !is_uuid_like(id) => {
+                    transaction_not_found(id)
+                }
+                Some(&SqlState::INVALID_TEXT_REPRESENTATION) => invalid_transaction_account(),
+                _ => ApiError::Internal(format!(
                     "Failed to update finance transaction {id}: {error}"
-                ))
+                )),
             })?;
 
-        let Some(row) = row else {
-            return Err(ApiError::NotFound(format!(
-                "Finance transaction {id} was not found"
-            )));
-        };
+        if !row.get::<_, bool>("found") {
+            return Err(transaction_not_found(id));
+        }
+        if row.get::<_, Option<String>>("id").is_none() {
+            return Err(invalid_transaction_account());
+        }
 
         row_to_transaction(&row)
     }
@@ -325,16 +319,15 @@ impl FinanceRepository {
             .client
             .execute(DELETE_TRANSACTION_SQL, &[&id])
             .await
-            .map_err(|error| {
-                ApiError::Internal(format!(
+            .map_err(|error| match error.code() {
+                Some(&SqlState::INVALID_TEXT_REPRESENTATION) => transaction_not_found(id),
+                _ => ApiError::Internal(format!(
                     "Failed to delete finance transaction {id}: {error}"
-                ))
+                )),
             })?;
 
         if affected_rows == 0 {
-            return Err(ApiError::NotFound(format!(
-                "Finance transaction {id} was not found"
-            )));
+            return Err(transaction_not_found(id));
         }
 
         Ok(())
@@ -356,6 +349,31 @@ impl FinanceRepository {
     }
 }
 
+fn transaction_sql(template: &str) -> String {
+    template
+        .replace("{columns}", TRANSACTION_COLUMNS)
+        .replace("{joins}", TRANSACTION_JOINS)
+}
+
+fn transaction_not_found(id: &str) -> ApiError {
+    ApiError::NotFound(format!("Finance transaction {id} was not found"))
+}
+
+fn invalid_transaction_account() -> ApiError {
+    ApiError::BadRequest(
+        "Field financialAccountId must reference an active EUR financial account".to_string(),
+    )
+}
+
+/// Cheap shape check to tell which of two id parameters PostgreSQL could not parse.
+fn is_uuid_like(value: &str) -> bool {
+    value.len() == 36
+        && value.chars().enumerate().all(|(index, char)| match index {
+            8 | 13 | 18 | 23 => char == '-',
+            _ => char.is_ascii_hexdigit(),
+        })
+}
+
 fn row_to_transaction(row: &Row) -> Result<TransactionResponse, ApiError> {
     let direction: String = row.get("direction");
     let amount_minor_units: i64 = row.get("amount_minor_units");
@@ -370,6 +388,12 @@ fn row_to_transaction(row: &Row) -> Result<TransactionResponse, ApiError> {
         description: row.get("description"),
         category: row.get("category"),
         note: row.get("note"),
+        financial_account_id: row.get("financial_account_id"),
+        financial_account_name: row
+            .get::<_, Option<String>>("financial_account_name")
+            .ok_or_else(|| {
+                ApiError::Internal("Transaction has no financial account".to_string())
+            })?,
         created_at: row.get::<_, DateTime<Utc>>("created_at"),
         updated_at: row.get::<_, DateTime<Utc>>("updated_at"),
     })
