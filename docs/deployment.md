@@ -113,7 +113,8 @@ The update script:
 5. runs migrations,
 6. starts `service-backend`, `app-cockpit`, and `i12e-gateway`,
 7. checks gateway and backend health,
-8. records the deploy on the image set's Sentry release when `SENTRY_AUTH_TOKEN` is set,
+8. records a Sentry deploy for `central-backend` and `central-cockpit` on each image's own release when
+   `SENTRY_AUTH_TOKEN` is set (named after the version only when it is a pinned `vX.Y.Z` tag),
 9. prints Compose status.
 
 Backups are written to `backups/` next to the deploy bundle unless `BACKUP_DIR` overrides it. Use `--skip-backup` only when an external backup already exists.

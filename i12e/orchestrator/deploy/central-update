@@ -154,23 +154,34 @@ record_sentry_deploy() {
     return 0
   fi
 
-  local release
-  release="$(compose exec -T service-backend printenv SENTRY_RELEASE 2>/dev/null || true)"
-  if [ -z "$release" ]; then
-    echo "Skipping Sentry deploy: the images carry no SENTRY_RELEASE." >&2
-    return 0
+  # Moving aliases like `stable` would make every deploy look the same; the release already names the commit.
+  local name_field=""
+  if [ -n "$(semver_major "$target_version")" ]; then
+    name_field=",\"name\":\"$target_version\""
   fi
 
-  if curl --fail --silent --show-error --output /dev/null \
-    --request POST \
-    --header "Authorization: Bearer $SENTRY_AUTH_TOKEN" \
-    --header 'Content-Type: application/json' \
-    --data "{\"environment\":\"${SENTRY_ENVIRONMENT:-production}\",\"name\":\"$target_version\",\"projects\":[\"central-cockpit\",\"central-backend\"]}" \
-    "${SENTRY_URL:-https://de.sentry.io}/api/0/organizations/${SENTRY_ORG:-elyverse-studio}/releases/$release/deploys/"; then
-    echo "Recorded Sentry deploy: $release"
-  else
-    echo "Failed to record Sentry deploy for $release; continuing." >&2
-  fi
+  # Each image carries its own release, so read it per service instead of assuming they match.
+  local service project release
+  for service in service-backend:central-backend app-cockpit:central-cockpit; do
+    project="${service#*:}"
+    service="${service%%:*}"
+    release="$(compose exec -T "$service" printenv SENTRY_RELEASE 2>/dev/null || true)"
+    if [ -z "$release" ]; then
+      echo "Skipping Sentry deploy for $project: the image carries no SENTRY_RELEASE." >&2
+      continue
+    fi
+
+    if curl --fail --silent --show-error --output /dev/null \
+      --request POST \
+      --header "Authorization: Bearer $SENTRY_AUTH_TOKEN" \
+      --header 'Content-Type: application/json' \
+      --data "{\"environment\":\"${SENTRY_ENVIRONMENT:-production}\",\"projects\":[\"$project\"]$name_field}" \
+      "${SENTRY_URL:-https://de.sentry.io}/api/0/organizations/${SENTRY_ORG:-elyverse-studio}/releases/$release/deploys/"; then
+      echo "Recorded Sentry deploy for $project: $release"
+    else
+      echo "Failed to record Sentry deploy for $project ($release); continuing." >&2
+    fi
+  done
 }
 
 record_sentry_deploy
