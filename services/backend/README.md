@@ -22,12 +22,20 @@ The service is intentionally modular: shared process concerns live at the servic
 
 ### Finance Domain
 
+- `GET /api/v1/finance/accounts`
+- `POST /api/v1/finance/accounts`
+- `PUT /api/v1/finance/accounts/:id` (`409` when the currency of an account with entries changes)
+- `PUT /api/v1/finance/accounts/order` (body `{ "accountIds": [...] }` with every active account exactly once)
+- `POST /api/v1/finance/accounts/:id/archive`
+- `POST /api/v1/finance/accounts/:id/restore`
 - `GET /api/v1/finance/transactions?from=2026-05-01&to=2026-05-31`
 - `POST /api/v1/finance/transactions`
 - `PUT /api/v1/finance/transactions/:id`
 - `DELETE /api/v1/finance/transactions/:id`
 
-Finance tracks manual cash income and expense transactions. Amounts are exposed as decimal strings and stored in PostgreSQL as positive minor units with fixed `EUR` currency.
+Finance manages financial accounts and the manual income and expense transactions booked on them. Every transaction
+needs a `financialAccountId`; new transactions only accept active `EUR` accounts. Amounts are exposed as decimal
+strings and stored in PostgreSQL as positive minor units. See the [finance domain](../../docs/domains/finance.md).
 
 ### Weather Domain
 

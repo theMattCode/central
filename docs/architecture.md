@@ -96,9 +96,9 @@ Project names, targets, and commands are listed in [toolchain](./toolchain.md); 
 
 1. Browser opens `/finance/transactions`.
 2. Cockpit server functions call backend finance APIs.
-3. Backend persists manual income and expense transactions in PostgreSQL.
+3. Backend persists manual income and expense transactions in PostgreSQL, each booked on a financial account.
 4. Summaries are computed from transactions filtered by transaction date.
-5. Cockpit currently lists and creates transactions end to end; edit and delete UI controls still need route-id wiring in the server function helpers.
+5. Financial accounts are managed on `/finance/accounts` through the same server-function path.
 
 ### Voice
 

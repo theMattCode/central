@@ -61,14 +61,23 @@ Errors and traces go to the Sentry project `central-cockpit`: the browser SDK is
 
 Weather widget diagnostics are written by cockpit as structured logger records (`src/utils/logger`) with scope `cockpit.weather.*`, including invalid location payloads, outbound request attempts, and upstream request failures.
 
-## Finance Transactions Page
+## Finance Pages
 
-The `/finance/transactions` route manages manual income and expense transactions (see
-[finance domain](../../docs/domains/finance.md)):
+Both finance routes call backend finance APIs through TanStack Start server functions (see
+[finance domain](../../docs/domains/finance.md)).
 
-- Cockpit calls backend finance APIs through TanStack Start server functions.
-- The page supports date-range filtering, listing and creating transactions, and an income/expense/net summary. Edit
-  and delete controls still need route-id wiring in the server function helpers.
+The `/finance/accounts` route manages financial accounts:
+
+- Create and edit accounts inline; archived accounts move to a collapsed "Archived" section and can be restored.
+- Active accounts are reordered by drag and drop through a handle (pointer, touch, and keyboard via
+  [dnd-kit](https://dndkit.com/)). The new order shows immediately and rolls back if saving fails.
+
+The `/finance/transactions` route manages manual income and expense transactions:
+
+- The page supports date-range filtering, creating, editing, and deleting transactions, and an income/expense/net
+  summary.
+- Every transaction is booked on a financial account. The account picker offers active `EUR` accounts and keeps an
+  already assigned archived account when editing.
 - Amounts are entered and displayed as decimal strings while backend persistence uses integer minor units.
 
 ## Voice Widget
