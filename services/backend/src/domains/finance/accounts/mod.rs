@@ -145,4 +145,10 @@ pub trait FinancialAccountStore: Send + Sync {
         &self,
         draft: &FinancialAccountDraft,
     ) -> Result<FinancialAccount, ApiError>;
+
+    async fn update_financial_account(
+        &self,
+        id: &str,
+        draft: &FinancialAccountDraft,
+    ) -> Result<FinancialAccount, ApiError>;
 }

@@ -1,7 +1,7 @@
 use std::{sync::Arc, time::Duration};
 
 use chrono::{DateTime, NaiveDate, Utc};
-use tokio_postgres::{config::Host, Client, NoTls, Row};
+use tokio_postgres::{config::Host, error::SqlState, Client, NoTls, Row};
 use tracing::{error, info, warn};
 
 use crate::domains::finance::accounts::{
@@ -468,6 +468,55 @@ impl FinancialAccountStore for FinanceRepository {
             })?;
 
         row_to_financial_account(&row)
+    }
+
+    async fn update_financial_account(
+        &self,
+        id: &str,
+        draft: &FinancialAccountDraft,
+    ) -> Result<FinancialAccount, ApiError> {
+        let sql = format!(
+            "UPDATE service_finance.financial_accounts
+             SET name = $2, account_type = $3, primary_currency_code = $4, updated_at = now()
+             WHERE id = $1::text::uuid
+             RETURNING {FINANCIAL_ACCOUNT_COLUMNS}"
+        );
+        let row = self
+            .client
+            .query_opt(
+                &sql,
+                &[
+                    &id,
+                    &draft.name,
+                    &draft.account_type.as_str(),
+                    &draft.primary_currency_code,
+                ],
+            )
+            .await
+            .map_err(|error| match error.code() {
+                // Ledger entries and balance snapshots reference (account id, currency).
+                Some(&SqlState::FOREIGN_KEY_VIOLATION) => ApiError::Conflict(
+                    "The currency of a financial account with entries can't be changed".to_string(),
+                ),
+                _ => financial_account_error(id, "update", error),
+            })?
+            .ok_or_else(|| financial_account_not_found(id))?;
+
+        row_to_financial_account(&row)
+    }
+}
+
+fn financial_account_not_found(id: &str) -> ApiError {
+    ApiError::NotFound(format!("Financial account {id} was not found"))
+}
+
+/// A malformed id can't match any account, so it is reported like an unknown one.
+fn financial_account_error(id: &str, action: &str, error: tokio_postgres::Error) -> ApiError {
+    match error.code() {
+        Some(&SqlState::INVALID_TEXT_REPRESENTATION) => financial_account_not_found(id),
+        _ => ApiError::Internal(format!(
+            "Failed to {action} financial account {id}: {error}"
+        )),
     }
 }
 

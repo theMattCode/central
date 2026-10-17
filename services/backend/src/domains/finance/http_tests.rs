@@ -52,6 +52,26 @@ impl FinancialAccountStore for FakeFinanceStore {
 
         Ok(account)
     }
+
+    async fn update_financial_account(
+        &self,
+        id: &str,
+        draft: &FinancialAccountDraft,
+    ) -> Result<FinancialAccount, ApiError> {
+        let mut accounts = self.accounts.lock().expect("lock accounts");
+        let Some(account) = accounts.iter_mut().find(|account| account.id == id) else {
+            return Err(ApiError::NotFound(format!(
+                "Financial account {id} was not found"
+            )));
+        };
+
+        account.name = draft.name.clone();
+        account.account_type = draft.account_type.clone();
+        account.primary_currency_code = draft.primary_currency_code.clone();
+        account.updated_at = Utc::now();
+
+        Ok(account.clone())
+    }
 }
 
 #[async_trait::async_trait]
@@ -386,4 +406,91 @@ async fn create_financial_account_with_invalid_input_returns_bad_request() {
         let payload: serde_json::Value = response.json().await.expect("json payload");
         assert_eq!(payload["error"]["code"], "bad_request", "{body}");
     }
+}
+
+async fn create_test_account(client: &reqwest::Client, base_url: &str) -> serde_json::Value {
+    client
+        .post(format!("{base_url}/api/v1/finance/accounts"))
+        .json(&serde_json::json!({
+            "name": "Wallet",
+            "accountType": "cash",
+            "primaryCurrencyCode": "EUR"
+        }))
+        .send()
+        .await
+        .expect("create account")
+        .json()
+        .await
+        .expect("json payload")
+}
+
+#[tokio::test]
+async fn update_financial_account_returns_updated_account() {
+    let base_url = spawn_http_server(test_context()).await;
+    let client = reqwest::Client::new();
+    let created = create_test_account(&client, &base_url).await;
+
+    let response = client
+        .put(format!(
+            "{base_url}/api/v1/finance/accounts/{}",
+            created["id"].as_str().expect("account id")
+        ))
+        .json(&serde_json::json!({
+            "name": "Travel wallet",
+            "accountType": "credit",
+            "primaryCurrencyCode": "USD"
+        }))
+        .send()
+        .await
+        .expect("update account");
+
+    assert_eq!(response.status(), StatusCode::OK);
+    let updated: serde_json::Value = response.json().await.expect("json payload");
+    assert_eq!(updated["id"], created["id"]);
+    assert_eq!(updated["name"], "Travel wallet");
+    assert_eq!(updated["accountType"], "credit");
+    assert_eq!(updated["primaryCurrencyCode"], "USD");
+}
+
+#[tokio::test]
+async fn update_financial_account_with_invalid_input_returns_bad_request() {
+    let base_url = spawn_http_server(test_context()).await;
+    let client = reqwest::Client::new();
+    let created = create_test_account(&client, &base_url).await;
+
+    let response = client
+        .put(format!(
+            "{base_url}/api/v1/finance/accounts/{}",
+            created["id"].as_str().expect("account id")
+        ))
+        .json(&serde_json::json!({ "name": "Wallet", "accountType": "cash", "primaryCurrencyCode": "euro" }))
+        .send()
+        .await
+        .expect("update account");
+
+    assert_eq!(response.status(), StatusCode::BAD_REQUEST);
+}
+
+#[tokio::test]
+async fn update_unknown_financial_account_returns_not_found() {
+    let base_url = spawn_http_server(test_context()).await;
+
+    let response = reqwest::Client::new()
+        .put(format!(
+            "{base_url}/api/v1/finance/accounts/00000000-0000-7000-9000-000000000404"
+        ))
+        .json(&serde_json::json!({ "name": "Wallet", "accountType": "cash", "primaryCurrencyCode": "EUR" }))
+        .send()
+        .await
+        .expect("update account");
+
+    assert_eq!(response.status(), StatusCode::NOT_FOUND);
+}
+
+#[test]
+fn conflict_maps_to_409() {
+    let error = ApiError::Conflict("conflict".to_string());
+
+    assert_eq!(error.status_code(), StatusCode::CONFLICT);
+    assert_eq!(error.code(), "conflict");
 }

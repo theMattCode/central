@@ -33,6 +33,14 @@ impl FinanceService {
         self.accounts.create_financial_account(draft).await
     }
 
+    pub async fn update_financial_account(
+        &self,
+        id: &str,
+        draft: &FinancialAccountDraft,
+    ) -> Result<FinancialAccount, ApiError> {
+        self.accounts.update_financial_account(id, draft).await
+    }
+
     pub async fn list_transactions(
         &self,
         month: &TransactionsQuery,

@@ -78,3 +78,17 @@ pub(in crate::domains::finance) async fn create_financial_account(
 
     Ok((StatusCode::CREATED, Json(response)))
 }
+
+pub(in crate::domains::finance) async fn update_financial_account(
+    State(context): State<Context>,
+    Path(id): Path<String>,
+    Json(input): Json<FinancialAccountInput>,
+) -> Result<Json<FinancialAccount>, ApiError> {
+    let draft = input.into_draft()?;
+    let response = context
+        .finance_service
+        .update_financial_account(&id, &draft)
+        .await?;
+
+    Ok(Json(response))
+}

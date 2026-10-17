@@ -8,6 +8,7 @@ use crate::domains::finance::accounts::{
 use crate::domains::finance::contracts::FinanceDataStore;
 use crate::domains::finance::model::TransactionsQuery;
 use crate::domains::finance::repository::FinanceRepository;
+use crate::error::ApiError;
 use crate::test_support::postgres::TestDatabase;
 
 #[tokio::test]
@@ -155,4 +156,114 @@ async fn list_financial_accounts_orders_active_first_then_by_display_order() {
     assert_eq!(names, ["C", "B", "A"]);
     assert_eq!(accounts[2].status, FinancialAccountStatus::Archived);
     assert!(accounts[2].archived_at.is_some());
+}
+
+async fn insert_expense(database: &TestDatabase, account_id: &str) {
+    let (client, connection) = tokio_postgres::connect(database.url(), NoTls)
+        .await
+        .expect("connect to test database");
+    tokio::spawn(connection);
+    client
+        .execute(
+            "INSERT INTO service_finance.ledger_entries
+               (entry_kind, financial_account_id, transaction_date, description, amount_minor_units, currency_code)
+             VALUES ('expense', $1::text::uuid, '2026-10-01', 'Coffee', 350, 'EUR')",
+            &[&account_id],
+        )
+        .await
+        .expect("insert expense");
+}
+
+#[tokio::test]
+async fn update_financial_account_changes_metadata() {
+    let database = TestDatabase::start().await;
+    let repository = connect_repository(&database).await;
+    let created = repository
+        .create_financial_account(&account_draft("Wallet", FinancialAccountType::Cash))
+        .await
+        .expect("create account");
+
+    let updated = repository
+        .update_financial_account(
+            &created.id,
+            &FinancialAccountDraft {
+                name: "Travel wallet".to_string(),
+                account_type: FinancialAccountType::Credit,
+                primary_currency_code: "USD".to_string(),
+            },
+        )
+        .await
+        .expect("update account");
+
+    assert_eq!(updated.id, created.id);
+    assert_eq!(updated.name, "Travel wallet");
+    assert_eq!(updated.account_type, FinancialAccountType::Credit);
+    assert_eq!(updated.primary_currency_code, "USD");
+    assert_eq!(updated.display_order, created.display_order);
+    assert_eq!(updated.created_at, created.created_at);
+    assert!(updated.updated_at > created.updated_at);
+}
+
+#[tokio::test]
+async fn update_financial_account_with_entries_keeps_working_for_same_currency() {
+    let database = TestDatabase::start().await;
+    let repository = connect_repository(&database).await;
+    let created = repository
+        .create_financial_account(&account_draft("Girokonto", FinancialAccountType::Bank))
+        .await
+        .expect("create account");
+    insert_expense(&database, &created.id).await;
+
+    let updated = repository
+        .update_financial_account(
+            &created.id,
+            &account_draft("Main account", FinancialAccountType::Bank),
+        )
+        .await
+        .expect("rename account with entries");
+
+    assert_eq!(updated.name, "Main account");
+}
+
+#[tokio::test]
+async fn update_financial_account_currency_with_entries_is_a_conflict() {
+    let database = TestDatabase::start().await;
+    let repository = connect_repository(&database).await;
+    let created = repository
+        .create_financial_account(&account_draft("Girokonto", FinancialAccountType::Bank))
+        .await
+        .expect("create account");
+    insert_expense(&database, &created.id).await;
+
+    let error = repository
+        .update_financial_account(
+            &created.id,
+            &FinancialAccountDraft {
+                primary_currency_code: "USD".to_string(),
+                ..account_draft("Girokonto", FinancialAccountType::Bank)
+            },
+        )
+        .await
+        .expect_err("currency change must be rejected");
+
+    assert!(matches!(error, ApiError::Conflict(_)), "{error:?}");
+    assert_eq!(
+        error.to_string(),
+        "The currency of a financial account with entries can't be changed"
+    );
+}
+
+#[tokio::test]
+async fn update_unknown_financial_account_is_not_found() {
+    let database = TestDatabase::start().await;
+    let repository = connect_repository(&database).await;
+
+    for id in ["00000000-0000-7000-9000-000000000404", "not-a-uuid"] {
+        let error = repository
+            .update_financial_account(id, &account_draft("Wallet", FinancialAccountType::Cash))
+            .await
+            .expect_err("unknown account");
+
+        assert!(matches!(error, ApiError::NotFound(_)), "{id}: {error:?}");
+    }
 }
