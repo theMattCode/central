@@ -19,7 +19,7 @@ use infrastructure::{
     tts::{JsonTextToSpeechClient, MockTextToSpeech, OpenAiTextToSpeechClient},
 };
 use reqwest::Client;
-use tracing::{error, info};
+use tracing::info;
 
 fn main() {
     central_observability::run_service(
@@ -152,17 +152,9 @@ async fn run_http_server(
         .map_err(|error| format!("Failed to bind assistant service socket: {error}"))?;
 
     axum::serve(listener, app)
-        .with_graceful_shutdown(shutdown_signal())
+        .with_graceful_shutdown(central_observability::shutdown_signal())
         .await
         .map_err(|error| format!("Assistant service HTTP server error: {error}"))?;
 
     Ok(())
-}
-
-async fn shutdown_signal() {
-    if let Err(error) = tokio::signal::ctrl_c().await {
-        error!("Failed to listen for shutdown signal: {error}");
-    }
-
-    info!("Shutdown signal received");
 }

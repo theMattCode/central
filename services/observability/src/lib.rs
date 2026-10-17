@@ -2,7 +2,7 @@
 
 use std::{borrow::Cow, future::Future};
 
-use tracing::error;
+use tracing::{error, info};
 use tracing_subscriber::prelude::*;
 
 /// Initializes Sentry and tracing, runs `run` on a multi-threaded Tokio runtime, and exits
@@ -58,6 +58,40 @@ pub fn run_service<F, Fut>(
         drop(sentry);
         std::process::exit(1);
     }
+}
+
+/// Resolves on SIGINT (Ctrl+C) or SIGTERM (`docker stop`), so servers shut down gracefully and
+/// `run_service` can flush Sentry before the process exits.
+pub async fn shutdown_signal() {
+    let ctrl_c = async {
+        if let Err(error) = tokio::signal::ctrl_c().await {
+            error!("Failed to listen for Ctrl+C: {error}");
+            std::future::pending::<()>().await;
+        }
+    };
+
+    #[cfg(unix)]
+    let terminate = async {
+        match tokio::signal::unix::signal(tokio::signal::unix::SignalKind::terminate()) {
+            Ok(mut signal) => {
+                signal.recv().await;
+            }
+            Err(error) => {
+                error!("Failed to listen for SIGTERM: {error}");
+                std::future::pending::<()>().await;
+            }
+        }
+    };
+
+    #[cfg(not(unix))]
+    let terminate = std::future::pending::<()>();
+
+    tokio::select! {
+        () = ctrl_c => {}
+        () = terminate => {}
+    }
+
+    info!("Shutdown signal received");
 }
 
 /// CI bakes `SENTRY_RELEASE` into release images; local builds fall back to the crate version.
