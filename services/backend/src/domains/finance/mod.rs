@@ -13,6 +13,8 @@ pub mod service;
 
 #[cfg(test)]
 mod http_tests;
+#[cfg(test)]
+mod repository_tests;
 
 use axum::{
     routing::{delete, get, post, put},

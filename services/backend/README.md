@@ -60,3 +60,8 @@ pnpm nx run service-backend:typecheck
 pnpm nx run service-backend:test
 pnpm nx run service-backend:build
 ```
+
+`test` needs a running Docker daemon: repository tests (`*/repository_tests.rs`) start a throwaway
+`postgres:18.3-alpine` container through [testcontainers](https://rust.testcontainers.org/) and apply
+`i12e/postgres/init` and `i12e/postgres/migrations` before each test. Set `DOCKER_HOST` if Docker does not listen on
+the default socket.
