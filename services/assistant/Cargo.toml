@@ -7,6 +7,7 @@ edition.workspace = true
 async-stream.workspace = true
 async-trait.workspace = true
 axum.workspace = true
+central-observability = { path = "../observability" }
 base64 = "0.22.1"
 futures-core.workspace = true
 http = "1.3.1"
@@ -19,4 +20,3 @@ tokio.workspace = true
 tokio-stream = "0.1.17"
 tower-http.workspace = true
 tracing.workspace = true
-tracing-subscriber.workspace = true

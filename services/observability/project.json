@@ -1,0 +1,45 @@
+{
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "name": "service-observability",
+  "projectType": "library",
+  "root": "services/observability",
+  "sourceRoot": "services/observability/src",
+  "targets": {
+    "format": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "services/observability",
+        "command": "cargo fmt"
+      }
+    },
+    "format-check": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "services/observability",
+        "command": "cargo fmt --check"
+      }
+    },
+    "lint": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "services/observability",
+        "command": "cargo clippy --all-targets --all-features -- -D warnings"
+      }
+    },
+    "test": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "services/observability",
+        "command": "cargo test --all-targets"
+      }
+    },
+    "typecheck": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "services/observability",
+        "command": "cargo check --all-targets"
+      }
+    }
+  },
+  "tags": ["type:lib"]
+}

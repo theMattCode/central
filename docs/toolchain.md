@@ -23,17 +23,18 @@ pnpm install
 
 Nx project names match the compose service and container image names.
 
-| Project             | Path                 | Kind                              |
-| ------------------- | -------------------- | --------------------------------- |
-| `app-cockpit`       | `apps/cockpit`       | TanStack Start web app            |
-| `service-backend`   | `services/backend`   | Rust integrated HTTP API          |
-| `service-assistant` | `services/assistant` | Rust assistant turn orchestration |
-| `service-stt`       | `services/stt`       | Python faster-whisper adapter     |
-| `service-tts`       | `services/tts`       | Python Qwen3-TTS adapter          |
-| `service-llm`       | `services/llm`       | Python Ollama adapter             |
-| `i12e-postgres`     | `i12e/postgres`      | PostgreSQL image and migrations   |
-| `i12e-gateway`      | `i12e/gateway`       | Nginx production entrypoint       |
-| `i12e-orchestrator` | `i12e/orchestrator`  | Compose stacks and deploy bundle  |
+| Project                 | Path                     | Kind                                        |
+| ----------------------- | ------------------------ | ------------------------------------------- |
+| `app-cockpit`           | `apps/cockpit`           | TanStack Start web app                      |
+| `service-backend`       | `services/backend`       | Rust integrated HTTP API                    |
+| `service-assistant`     | `services/assistant`     | Rust assistant turn orchestration           |
+| `service-observability` | `services/observability` | Rust Sentry, tracing, and runtime bootstrap |
+| `service-stt`           | `services/stt`           | Python faster-whisper adapter               |
+| `service-tts`           | `services/tts`           | Python Qwen3-TTS adapter                    |
+| `service-llm`           | `services/llm`           | Python Ollama adapter                       |
+| `i12e-postgres`         | `i12e/postgres`          | PostgreSQL image and migrations             |
+| `i12e-gateway`          | `i12e/gateway`           | Nginx production entrypoint                 |
+| `i12e-orchestrator`     | `i12e/orchestrator`      | Compose stacks and deploy bundle            |
 
 ## Nx targets
 

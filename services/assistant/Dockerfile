@@ -10,6 +10,8 @@ COPY services/assistant/Cargo.toml ./assistant/Cargo.toml
 COPY services/assistant/src ./assistant/src
 COPY services/backend/Cargo.toml ./backend/Cargo.toml
 COPY services/backend/src ./backend/src
+COPY services/observability/Cargo.toml ./observability/Cargo.toml
+COPY services/observability/src ./observability/src
 WORKDIR /workspace/services/assistant
 ENV ASSISTANT_PORT=8080
 ENV ASSISTANT_BACKEND_MODE=mock
@@ -23,6 +25,8 @@ COPY services/assistant/Cargo.toml ./assistant/Cargo.toml
 COPY services/assistant/src ./assistant/src
 COPY services/backend/Cargo.toml ./backend/Cargo.toml
 COPY services/backend/src ./backend/src
+COPY services/observability/Cargo.toml ./observability/Cargo.toml
+COPY services/observability/src ./observability/src
 RUN cargo build --release --package assistant-service
 
 FROM alpine:3.22

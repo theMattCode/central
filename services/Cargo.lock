@@ -191,6 +191,7 @@ dependencies = [
  "async-trait",
  "axum",
  "base64 0.22.1",
+ "central-observability",
  "futures-core",
  "http 1.4.0",
  "reqwest 0.12.28",
@@ -202,7 +203,6 @@ dependencies = [
  "tokio-stream",
  "tower-http",
  "tracing",
- "tracing-subscriber",
 ]
 
 [[package]]
@@ -434,6 +434,7 @@ dependencies = [
  "async-stream",
  "async-trait",
  "axum",
+ "central-observability",
  "chrono",
  "chrono-tz",
  "futures-core",
@@ -445,6 +446,15 @@ dependencies = [
  "tokio",
  "tokio-postgres",
  "tower-http",
+ "tracing",
+]
+
+[[package]]
+name = "central-observability"
+version = "0.1.0"
+dependencies = [
+ "sentry",
+ "tokio",
  "tracing",
  "tracing-subscriber",
 ]

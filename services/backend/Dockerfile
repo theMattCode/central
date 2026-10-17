@@ -15,6 +15,8 @@ COPY services/assistant/Cargo.toml ./assistant/Cargo.toml
 COPY services/assistant/src ./assistant/src
 COPY services/backend/Cargo.toml ./backend/Cargo.toml
 COPY services/backend/src ./backend/src
+COPY services/observability/Cargo.toml ./observability/Cargo.toml
+COPY services/observability/src ./observability/src
 WORKDIR /workspace/services/backend
 ENV BACKEND_PORT=8080
 EXPOSE 8080
@@ -28,6 +30,8 @@ COPY services/assistant/Cargo.toml ./assistant/Cargo.toml
 COPY services/assistant/src ./assistant/src
 COPY services/backend/Cargo.toml ./backend/Cargo.toml
 COPY services/backend/src ./backend/src
+COPY services/observability/Cargo.toml ./observability/Cargo.toml
+COPY services/observability/src ./observability/src
 
 RUN cargo build --release --package central-backend
 
