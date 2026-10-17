@@ -56,13 +56,22 @@ export function validateFinancialAccountInput(input: unknown): FinancialAccountI
   return { name: value.name, accountType: value.accountType, primaryCurrencyCode: value.primaryCurrencyCode };
 }
 
-export type UpdateFinancialAccountInput = Readonly<{ id: string; account: FinancialAccountInput }>;
+export type FinancialAccountIdInput = Readonly<{ id: string }>;
 
-export function validateUpdateFinancialAccountInput(input: unknown): UpdateFinancialAccountInput {
-  const value = (input ?? {}) as Partial<Record<keyof UpdateFinancialAccountInput, unknown>>;
+export function validateFinancialAccountIdInput(input: unknown): FinancialAccountIdInput {
+  const value = (input ?? {}) as Partial<Record<keyof FinancialAccountIdInput, unknown>>;
   if (typeof value.id !== 'string' || !value.id) {
     throw new Error('Invalid financial account payload.');
   }
 
-  return { id: value.id, account: validateFinancialAccountInput(value.account) };
+  return { id: value.id };
+}
+
+export type UpdateFinancialAccountInput = Readonly<{ id: string; account: FinancialAccountInput }>;
+
+export function validateUpdateFinancialAccountInput(input: unknown): UpdateFinancialAccountInput {
+  const { id } = validateFinancialAccountIdInput(input);
+  const value = input as Partial<Record<keyof UpdateFinancialAccountInput, unknown>>;
+
+  return { id, account: validateFinancialAccountInput(value.account) };
 }

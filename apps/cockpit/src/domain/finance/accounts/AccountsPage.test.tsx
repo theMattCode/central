@@ -27,12 +27,16 @@ describe('AccountsPage', () => {
   const getAccountsMock = vi.fn<FinanceClient['getAccounts']>();
   const createAccountMock = vi.fn<FinanceClient['createAccount']>();
   const updateAccountMock = vi.fn<FinanceClient['updateAccount']>();
+  const archiveAccountMock = vi.fn<FinanceClient['archiveAccount']>();
+  const restoreAccountMock = vi.fn<FinanceClient['restoreAccount']>();
 
   const financeClientMock: FinanceClient = {
     getTransactions: () => Promise.reject(new Error('not used by accounts')),
     getAccounts: (options) => getAccountsMock(options),
     createAccount: (input) => createAccountMock(input),
     updateAccount: (id, input) => updateAccountMock(id, input),
+    archiveAccount: (id) => archiveAccountMock(id),
+    restoreAccount: (id) => restoreAccountMock(id),
   };
 
   function TestWrapper({ children }: PropsWithChildren) {
@@ -43,6 +47,8 @@ describe('AccountsPage', () => {
     getAccountsMock.mockReset();
     createAccountMock.mockReset();
     updateAccountMock.mockReset();
+    archiveAccountMock.mockReset();
+    restoreAccountMock.mockReset();
     getAccountsMock.mockResolvedValue([]);
   });
 
@@ -171,5 +177,94 @@ describe('AccountsPage', () => {
       "The currency of a financial account with entries can't be changed",
     );
     expect(screen.getByRole('form', { name: 'Edit Girokonto' })).toBeDefined();
+  });
+
+  it('shows archived accounts in a collapsed section without edit actions', async () => {
+    getAccountsMock.mockResolvedValue([
+      createAccount({ id: 'giro', name: 'Girokonto' }),
+      createAccount({
+        id: 'old',
+        name: 'Old wallet',
+        accountType: 'cash',
+        status: 'archived',
+        archivedAt: '2026-10-01T10:00:00Z',
+      }),
+    ]);
+    render(<AccountsPage />, { wrapper: TestWrapper });
+
+    const active = await screen.findByRole('list', { name: 'Accounts' });
+    expect(
+      within(active)
+        .getAllByRole('listitem')
+        .map((item) => item.textContent),
+    ).toEqual(['GirokontoBankEUR']);
+    const toggle = screen.getByRole('button', { name: 'Archived (1)' });
+    expect(toggle.getAttribute('aria-expanded')).toBe('false');
+    expect(screen.queryByRole('list', { name: 'Archived accounts' })).toBeNull();
+
+    await user.click(toggle);
+
+    const archived = screen.getByRole('list', { name: 'Archived accounts' });
+    expect(
+      within(archived)
+        .getAllByRole('listitem')
+        .map((item) => item.textContent),
+    ).toEqual(['Old walletCashEUR']);
+    expect(within(archived).queryByRole('button', { name: 'Edit Old wallet' })).toBeNull();
+    expect(toggle.getAttribute('aria-expanded')).toBe('true');
+  });
+
+  it('hides the archived section when nothing is archived', async () => {
+    getAccountsMock.mockResolvedValue([createAccount({ id: 'giro', name: 'Girokonto' })]);
+    render(<AccountsPage />, { wrapper: TestWrapper });
+
+    await screen.findByRole('list', { name: 'Accounts' });
+
+    expect(screen.queryByRole('button', { name: /Archived/ })).toBeNull();
+  });
+
+  it('archives an account and shows it as archived after reloading', async () => {
+    const giro = createAccount({ id: 'giro', name: 'Girokonto' });
+    const archivedGiro = { ...giro, status: 'archived' as const, archivedAt: '2026-10-17T12:00:00Z' };
+    archiveAccountMock.mockResolvedValue(archivedGiro);
+    getAccountsMock.mockResolvedValueOnce([giro]).mockResolvedValue([archivedGiro]);
+    render(<AccountsPage />, { wrapper: TestWrapper });
+
+    await user.click(await screen.findByRole('button', { name: 'Archive Girokonto' }));
+
+    expect(archiveAccountMock).toHaveBeenCalledWith('giro');
+    expect(await screen.findByRole('button', { name: 'Archived (1)' })).toBeDefined();
+    expect(screen.getByText('No active accounts.')).toBeDefined();
+  });
+
+  it('restores an archived account', async () => {
+    const old = createAccount({
+      id: 'old',
+      name: 'Old wallet',
+      status: 'archived',
+      archivedAt: '2026-10-01T10:00:00Z',
+    });
+    const restored = { ...old, status: 'active' as const, archivedAt: null };
+    restoreAccountMock.mockResolvedValue(restored);
+    getAccountsMock.mockResolvedValueOnce([old]).mockResolvedValue([restored]);
+    render(<AccountsPage />, { wrapper: TestWrapper });
+
+    await user.click(await screen.findByRole('button', { name: 'Archived (1)' }));
+    await user.click(screen.getByRole('button', { name: 'Restore Old wallet' }));
+
+    expect(restoreAccountMock).toHaveBeenCalledWith('old');
+    const active = await screen.findByRole('list', { name: 'Accounts' });
+    expect(within(active).getByText('Old wallet')).toBeDefined();
+    expect(screen.queryByRole('button', { name: /Archived/ })).toBeNull();
+  });
+
+  it('shows the backend error when archiving fails', async () => {
+    getAccountsMock.mockResolvedValue([createAccount({ id: 'giro', name: 'Girokonto' })]);
+    archiveAccountMock.mockRejectedValue(new Error('Financial account giro was not found'));
+    render(<AccountsPage />, { wrapper: TestWrapper });
+
+    await user.click(await screen.findByRole('button', { name: 'Archive Girokonto' }));
+
+    expect(await screen.findByRole('alert')).toHaveProperty('textContent', 'Financial account giro was not found');
   });
 });

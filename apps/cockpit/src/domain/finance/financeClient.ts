@@ -4,6 +4,7 @@ import type { Summary, Transaction } from '@/domain/finance/transactions/model.t
 import {
   type FinancialAccount,
   type FinancialAccountInput,
+  validateFinancialAccountIdInput,
   validateFinancialAccountInput,
   validateUpdateFinancialAccountInput,
 } from '@/domain/finance/accounts/model.ts';
@@ -14,6 +15,8 @@ export interface FinanceClient {
   getAccounts(options?: { signal?: AbortSignal }): Promise<FinancialAccount[]>;
   createAccount(input: FinancialAccountInput): Promise<FinancialAccount>;
   updateAccount(id: string, input: FinancialAccountInput): Promise<FinancialAccount>;
+  archiveAccount(id: string): Promise<FinancialAccount>;
+  restoreAccount(id: string): Promise<FinancialAccount>;
 }
 
 // TODO remove export (once api.ts is migrated to finance client)
@@ -68,9 +71,23 @@ const putAccount = createServerFn({ method: 'POST' })
     }),
   );
 
+const postArchiveAccount = createServerFn({ method: 'POST' })
+  .inputValidator(validateFinancialAccountIdInput)
+  .handler(async ({ data }) =>
+    fetchJson<FinancialAccount>(getAccountsURL(`/${encodeURIComponent(data.id)}/archive`), { method: 'POST' }),
+  );
+
+const postRestoreAccount = createServerFn({ method: 'POST' })
+  .inputValidator(validateFinancialAccountIdInput)
+  .handler(async ({ data }) =>
+    fetchJson<FinancialAccount>(getAccountsURL(`/${encodeURIComponent(data.id)}/restore`), { method: 'POST' }),
+  );
+
 export const DEFAULT_FINANCE_CLIENT: FinanceClient = {
   getTransactions: ({ from, to }, { signal } = {}) => fetchTransactions({ data: { from, to }, signal }),
   getAccounts: ({ signal } = {}) => fetchAccounts({ signal }),
   createAccount: (input) => postAccount({ data: input }),
   updateAccount: (id, account) => putAccount({ data: { id, account } }),
+  archiveAccount: (id) => postArchiveAccount({ data: { id } }),
+  restoreAccount: (id) => postRestoreAccount({ data: { id } }),
 };

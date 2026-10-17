@@ -28,6 +28,8 @@ describe('useTransactions', () => {
     getAccounts: () => Promise.reject(new Error('not used by transactions')),
     createAccount: () => Promise.reject(new Error('not used by transactions')),
     updateAccount: () => Promise.reject(new Error('not used by transactions')),
+    archiveAccount: () => Promise.reject(new Error('not used by transactions')),
+    restoreAccount: () => Promise.reject(new Error('not used by transactions')),
   };
 
   function TestWrapper({ children }: PropsWithChildren) {
