@@ -53,6 +53,8 @@ describe('useTransactions', () => {
       description: partial.description ?? 'Test transaction',
       category: partial.category,
       note: partial.note,
+      financialAccountId: partial.financialAccountId ?? 'giro',
+      financialAccountName: partial.financialAccountName ?? 'Girokonto',
       createdAt: partial.createdAt ?? '2026-05-12T10:00:00Z',
       updatedAt: partial.updatedAt ?? '2026-05-12T10:00:00Z',
     };

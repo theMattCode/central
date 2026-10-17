@@ -1,5 +1,5 @@
 import { createServerFn } from '@tanstack/react-start';
-import type { TransactionInput, Transaction } from 'src/domain/finance/transactions/model.ts';
+import type { TransactionInput, Transaction } from '@/domain/finance/transactions/model.ts';
 import { fetchJson, resolveErrorMessage } from '@/utils/backend.ts';
 import { getFinanceURL } from '@/domain/finance/financeClient.ts';
 
@@ -11,7 +11,13 @@ type DeleteTransactionInput = {
   id: string;
 };
 
-function validateTransactionInput(input: unknown): TransactionInput {
+export function getTransactionURL(id: string): URL {
+  const url = getFinanceURL();
+  url.pathname = `${url.pathname}/${encodeURIComponent(id)}`;
+  return url;
+}
+
+export function validateTransactionInput(input: unknown): TransactionInput {
   if (!input || typeof input !== 'object') {
     throw new Error('Invalid cash transaction payload.');
   }
@@ -23,7 +29,9 @@ function validateTransactionInput(input: unknown): TransactionInput {
     typeof value.amount !== 'string' ||
     typeof value.description !== 'string' ||
     (value.category !== undefined && typeof value.category !== 'string') ||
-    (value.note !== undefined && typeof value.note !== 'string')
+    (value.note !== undefined && typeof value.note !== 'string') ||
+    typeof value.financialAccountId !== 'string' ||
+    !value.financialAccountId
   ) {
     throw new Error('Invalid cash transaction payload.');
   }
@@ -35,6 +43,7 @@ function validateTransactionInput(input: unknown): TransactionInput {
     description: value.description,
     category: value.category,
     note: value.note,
+    financialAccountId: value.financialAccountId,
   };
 }
 
@@ -77,19 +86,16 @@ async function requestCreateCashTransaction(input: TransactionInput): Promise<Tr
 }
 
 async function requestUpdateCashTransaction(input: UpdateTransactionInput): Promise<Transaction> {
-  const url = getFinanceURL(/*`api/v1/finance/transactions/${input.id}`*/);
-  const { id: _id, ...transaction } = input;
+  const { id, ...transaction } = input;
 
-  return fetchJson<Transaction>(url, {
+  return fetchJson<Transaction>(getTransactionURL(id), {
     method: 'PUT',
     body: JSON.stringify(transaction),
   });
 }
 
-async function requestDeleteCashTransaction(): Promise<void> {
-  /*input: DeleteTransactionInput,*/
-  const url = getFinanceURL(/*`api/v1/finance/transactions/${input.id}`*/);
-  const response = await fetch(url, { method: 'DELETE' });
+async function requestDeleteCashTransaction(input: DeleteTransactionInput): Promise<void> {
+  const response = await fetch(getTransactionURL(input.id), { method: 'DELETE' });
 
   if (!response.ok) {
     throw new Error(await resolveErrorMessage(response));
@@ -106,4 +112,4 @@ export const updateCashTransaction = createServerFn({ method: 'POST' })
 
 export const deleteCashTransaction = createServerFn({ method: 'POST' })
   .inputValidator(validateDeleteTransactionInput)
-  .handler(async (/*{ data }*/) => requestDeleteCashTransaction(/*data*/));
+  .handler(async ({ data }) => requestDeleteCashTransaction(data));
