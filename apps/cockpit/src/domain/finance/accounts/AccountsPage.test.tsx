@@ -26,11 +26,13 @@ describe('AccountsPage', () => {
   const user = userEvent.setup();
   const getAccountsMock = vi.fn<FinanceClient['getAccounts']>();
   const createAccountMock = vi.fn<FinanceClient['createAccount']>();
+  const updateAccountMock = vi.fn<FinanceClient['updateAccount']>();
 
   const financeClientMock: FinanceClient = {
     getTransactions: () => Promise.reject(new Error('not used by accounts')),
     getAccounts: (options) => getAccountsMock(options),
     createAccount: (input) => createAccountMock(input),
+    updateAccount: (id, input) => updateAccountMock(id, input),
   };
 
   function TestWrapper({ children }: PropsWithChildren) {
@@ -40,6 +42,7 @@ describe('AccountsPage', () => {
   beforeEach(() => {
     getAccountsMock.mockReset();
     createAccountMock.mockReset();
+    updateAccountMock.mockReset();
     getAccountsMock.mockResolvedValue([]);
   });
 
@@ -112,5 +115,61 @@ describe('AccountsPage', () => {
     );
     expect((screen.getByLabelText('Name') as HTMLInputElement).value).toBe('Wallet');
     await waitFor(() => expect(getAccountsMock).toHaveBeenCalledTimes(1));
+  });
+
+  it('edits an account and shows the change after reloading', async () => {
+    const giro = createAccount({ id: 'giro', name: 'Girokonto', accountType: 'bank' });
+    const renamed = { ...giro, name: 'Main account', primaryCurrencyCode: 'CHF' };
+    updateAccountMock.mockResolvedValue(renamed);
+    getAccountsMock.mockResolvedValueOnce([giro]).mockResolvedValue([renamed]);
+    render(<AccountsPage />, { wrapper: TestWrapper });
+
+    await user.click(await screen.findByRole('button', { name: 'Edit Girokonto' }));
+    const editor = screen.getByRole('form', { name: 'Edit Girokonto' });
+    expect((within(editor).getByLabelText('Name') as HTMLInputElement).value).toBe('Girokonto');
+    expect((within(editor).getByLabelText('Type') as HTMLSelectElement).value).toBe('bank');
+    await user.clear(within(editor).getByLabelText('Name'));
+    await user.type(within(editor).getByLabelText('Name'), 'Main account ');
+    await user.clear(within(editor).getByLabelText('Currency'));
+    await user.type(within(editor).getByLabelText('Currency'), 'chf');
+    await user.click(within(editor).getByRole('button', { name: 'Save account' }));
+
+    expect(updateAccountMock).toHaveBeenCalledWith('giro', {
+      name: 'Main account',
+      accountType: 'bank',
+      primaryCurrencyCode: 'CHF',
+    });
+    const list = await screen.findByRole('list', { name: 'Accounts' });
+    expect(await within(list).findByText('Main account')).toBeDefined();
+    expect(screen.queryByRole('form', { name: 'Edit Girokonto' })).toBeNull();
+  });
+
+  it('closes the editor without saving on cancel', async () => {
+    getAccountsMock.mockResolvedValue([createAccount({ id: 'giro', name: 'Girokonto' })]);
+    render(<AccountsPage />, { wrapper: TestWrapper });
+
+    await user.click(await screen.findByRole('button', { name: 'Edit Girokonto' }));
+    await user.click(screen.getByRole('button', { name: 'Cancel editing' }));
+
+    expect(screen.queryByRole('form', { name: 'Edit Girokonto' })).toBeNull();
+    expect(updateAccountMock).not.toHaveBeenCalled();
+  });
+
+  it('keeps the editor open and shows the backend error when saving fails', async () => {
+    getAccountsMock.mockResolvedValue([createAccount({ id: 'giro', name: 'Girokonto' })]);
+    updateAccountMock.mockRejectedValue(new Error("The currency of a financial account with entries can't be changed"));
+    render(<AccountsPage />, { wrapper: TestWrapper });
+
+    await user.click(await screen.findByRole('button', { name: 'Edit Girokonto' }));
+    const editor = screen.getByRole('form', { name: 'Edit Girokonto' });
+    await user.clear(within(editor).getByLabelText('Currency'));
+    await user.type(within(editor).getByLabelText('Currency'), 'USD');
+    await user.click(within(editor).getByRole('button', { name: 'Save account' }));
+
+    expect(await within(editor).findByRole('alert')).toHaveProperty(
+      'textContent',
+      "The currency of a financial account with entries can't be changed",
+    );
+    expect(screen.getByRole('form', { name: 'Edit Girokonto' })).toBeDefined();
   });
 });

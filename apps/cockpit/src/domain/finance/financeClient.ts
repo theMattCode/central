@@ -5,6 +5,7 @@ import {
   type FinancialAccount,
   type FinancialAccountInput,
   validateFinancialAccountInput,
+  validateUpdateFinancialAccountInput,
 } from '@/domain/finance/accounts/model.ts';
 import { isIsoDateRange, type IsoDateRange } from '@/utils/datetime.ts';
 
@@ -12,6 +13,7 @@ export interface FinanceClient {
   getTransactions(input: IsoDateRange, options?: { signal?: AbortSignal }): Promise<TransactionsResponse>;
   getAccounts(options?: { signal?: AbortSignal }): Promise<FinancialAccount[]>;
   createAccount(input: FinancialAccountInput): Promise<FinancialAccount>;
+  updateAccount(id: string, input: FinancialAccountInput): Promise<FinancialAccount>;
 }
 
 // TODO remove export (once api.ts is migrated to finance client)
@@ -19,8 +21,8 @@ export function getFinanceURL(): URL {
   return new URL('api/v1/finance/transactions', resolveBackendBaseUrl());
 }
 
-function getAccountsURL(): URL {
-  return new URL('api/v1/finance/accounts', resolveBackendBaseUrl());
+function getAccountsURL(path = ''): URL {
+  return new URL(`api/v1/finance/accounts${path}`, resolveBackendBaseUrl());
 }
 
 export interface TransactionsResponse extends IsoDateRange {
@@ -57,8 +59,18 @@ const postAccount = createServerFn({ method: 'POST' })
     fetchJson<FinancialAccount>(getAccountsURL(), { method: 'POST', body: JSON.stringify(data) }),
   );
 
+const putAccount = createServerFn({ method: 'POST' })
+  .inputValidator(validateUpdateFinancialAccountInput)
+  .handler(async ({ data }) =>
+    fetchJson<FinancialAccount>(getAccountsURL(`/${encodeURIComponent(data.id)}`), {
+      method: 'PUT',
+      body: JSON.stringify(data.account),
+    }),
+  );
+
 export const DEFAULT_FINANCE_CLIENT: FinanceClient = {
   getTransactions: ({ from, to }, { signal } = {}) => fetchTransactions({ data: { from, to }, signal }),
   getAccounts: ({ signal } = {}) => fetchAccounts({ signal }),
   createAccount: (input) => postAccount({ data: input }),
+  updateAccount: (id, account) => putAccount({ data: { id, account } }),
 };

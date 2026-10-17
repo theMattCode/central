@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { validateFinancialAccountInput } from '@/domain/finance/accounts/model.ts';
+import { validateFinancialAccountInput, validateUpdateFinancialAccountInput } from '@/domain/finance/accounts/model.ts';
 
 describe('validateFinancialAccountInput', () => {
   it('accepts every account type', () => {
@@ -26,5 +26,22 @@ describe('validateFinancialAccountInput', () => {
     ['a non-string currency', { name: 'Depot', accountType: 'bank', primaryCurrencyCode: 978 }],
   ])('rejects %s', (_label, input) => {
     expect(() => validateFinancialAccountInput(input)).toThrow('Invalid financial account payload.');
+  });
+});
+
+describe('validateUpdateFinancialAccountInput', () => {
+  const account = { name: 'Depot', accountType: 'investment', primaryCurrencyCode: 'EUR' };
+
+  it('accepts an id with a valid account', () => {
+    expect(validateUpdateFinancialAccountInput({ id: 'depot', account })).toEqual({ id: 'depot', account });
+  });
+
+  it.each([
+    ['null', null],
+    ['a missing id', { account }],
+    ['an empty id', { id: '', account }],
+    ['an invalid account', { id: 'depot', account: { ...account, accountType: 'savings' } }],
+  ])('rejects %s', (_label, input) => {
+    expect(() => validateUpdateFinancialAccountInput(input)).toThrow('Invalid financial account payload.');
   });
 });

@@ -55,3 +55,14 @@ export function validateFinancialAccountInput(input: unknown): FinancialAccountI
 
   return { name: value.name, accountType: value.accountType, primaryCurrencyCode: value.primaryCurrencyCode };
 }
+
+export type UpdateFinancialAccountInput = Readonly<{ id: string; account: FinancialAccountInput }>;
+
+export function validateUpdateFinancialAccountInput(input: unknown): UpdateFinancialAccountInput {
+  const value = (input ?? {}) as Partial<Record<keyof UpdateFinancialAccountInput, unknown>>;
+  if (typeof value.id !== 'string' || !value.id) {
+    throw new Error('Invalid financial account payload.');
+  }
+
+  return { id: value.id, account: validateFinancialAccountInput(value.account) };
+}
