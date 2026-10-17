@@ -19,6 +19,7 @@ services:
       dockerfile: apps/cockpit/Dockerfile
       args:
         VITE_SENTRY_DSN: ${COCKPIT_SENTRY_DSN:-}
+        VITE_SENTRY_ENVIRONMENT: ${SENTRY_ENVIRONMENT:-production}
         SENTRY_RELEASE: ${SENTRY_RELEASE:-}
 
   i12e-gateway:

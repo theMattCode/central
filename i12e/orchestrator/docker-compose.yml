@@ -104,6 +104,7 @@ services:
       SENTRY_DSN: ${COCKPIT_SENTRY_DSN:-}
       VITE_SENTRY_DSN: ${COCKPIT_SENTRY_DSN:-}
       SENTRY_ENVIRONMENT: development
+      VITE_SENTRY_ENVIRONMENT: development
     restart: ${SERVICE_RESTART_POLICY:-no}
     ports:
       - '${COCKPIT_PORT:-3000}:3000'

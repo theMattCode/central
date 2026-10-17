@@ -69,12 +69,15 @@ Cockpit, Backend, and Assistant report errors and traces to Sentry (organization
 project each: `central-cockpit`, `central-backend`, `central-assistant`. Each service reads its DSN from
 `SENTRY_DSN`; an empty DSN disables reporting. In the Rust services, `error`-level `tracing` events and every API response with a 5xx status become Sentry issues; `warn` and `info` become breadcrumbs. The orchestrator maps per-service variables onto it:
 
-| Variable               | Service             | Notes                                                             |
-| ---------------------- | ------------------- | ----------------------------------------------------------------- |
-| `COCKPIT_SENTRY_DSN`   | `app-cockpit`       | Also the browser DSN (`VITE_SENTRY_DSN`), baked in at image build |
-| `BACKEND_SENTRY_DSN`   | `service-backend`   |                                                                   |
-| `ASSISTANT_SENTRY_DSN` | `service-assistant` | Dev stack only                                                    |
-| `SENTRY_ENVIRONMENT`   | all                 | `development` in the dev stack, default `production` in prod      |
+| Variable               | Service             | Notes                                                              |
+| ---------------------- | ------------------- | ------------------------------------------------------------------ |
+| `COCKPIT_SENTRY_DSN`   | `app-cockpit`       | Also the browser DSN (`VITE_SENTRY_DSN`), baked in at image build  |
+| `BACKEND_SENTRY_DSN`   | `service-backend`   |                                                                    |
+| `ASSISTANT_SENTRY_DSN` | `service-assistant` | Dev stack only                                                     |
+| `SENTRY_ENVIRONMENT`   | all                 | Default `production`; baked into the browser bundle at image build |
+
+`SENTRY_ENVIRONMENT` is `development` in the dev stack. The browser SDK cannot read it at runtime, so the cockpit image
+bakes it in as `VITE_SENTRY_ENVIRONMENT`: `pnpm prod` uses the value from `.env.prod`, CI images use `production`.
 
 The repository is public, so DSNs are not committed: export them in your shell for `pnpm dev`, set them in
 `.env.prod`, and set the `COCKPIT_SENTRY_DSN` GitHub Actions variable for CI image builds. Cockpit uploads source

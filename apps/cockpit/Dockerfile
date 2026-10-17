@@ -24,11 +24,14 @@ ARG VITE_BACKEND_API_BASE_URL=http://localhost:3010
 ARG VITE_ASSISTANT_API_BASE_URL=http://localhost:3020
 # Browser Sentry DSN; empty disables browser error reporting. The server DSN (SENTRY_DSN) is read at runtime.
 ARG VITE_SENTRY_DSN=
+# Browser Sentry environment; must match the SENTRY_ENVIRONMENT the server runs with.
+ARG VITE_SENTRY_ENVIRONMENT=production
 # Release name injected into the bundles and used for the source map upload.
 ARG SENTRY_RELEASE=
 ENV VITE_BACKEND_API_BASE_URL=$VITE_BACKEND_API_BASE_URL
 ENV VITE_ASSISTANT_API_BASE_URL=$VITE_ASSISTANT_API_BASE_URL
 ENV VITE_SENTRY_DSN=$VITE_SENTRY_DSN
+ENV VITE_SENTRY_ENVIRONMENT=$VITE_SENTRY_ENVIRONMENT
 ENV SENTRY_RELEASE=$SENTRY_RELEASE
 COPY . .
 

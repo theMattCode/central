@@ -11,10 +11,11 @@ export function getRouter() {
   });
 
   // The server SDK is initialized in instrument.server.mjs. An unset VITE_SENTRY_DSN disables the SDK.
+  // VITE_SENTRY_ENVIRONMENT is baked in at build time to match the server's SENTRY_ENVIRONMENT.
   if (!router.isServer) {
     Sentry.init({
       dsn: import.meta.env.VITE_SENTRY_DSN,
-      environment: import.meta.env.MODE,
+      environment: import.meta.env.VITE_SENTRY_ENVIRONMENT || import.meta.env.MODE,
       integrations: [Sentry.tanstackRouterBrowserTracingIntegration(router)],
       tracesSampleRate: 1.0,
     });
