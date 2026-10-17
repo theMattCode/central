@@ -25,6 +25,8 @@ describe('useTransactions', () => {
     getTransactions(input: IsoDateRange, options?: { signal?: AbortSignal }): Promise<TransactionsResponse> {
       return getTransactionsMock(input, options);
     },
+    getAccounts: () => Promise.reject(new Error('not used by transactions')),
+    createAccount: () => Promise.reject(new Error('not used by transactions')),
   };
 
   function TestWrapper({ children }: PropsWithChildren) {
