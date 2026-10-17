@@ -84,5 +84,6 @@ The repository is public, so DSNs are not committed: export them in your shell f
 maps to Sentry during `vite build` when `SENTRY_AUTH_TOKEN` is set; image builds receive it as the BuildKit secret
 `sentry_auth_token`, which CI fills from the `SENTRY_AUTH_TOKEN` repository secret. Every image built in CI is tagged
 with the Sentry release `central@<commit SHA>`. On pushes to `main` and release tags, the `sentry-release` CI job
-creates that release for all three projects with its commits (read from the checkout, so no Sentry GitHub integration
-is needed), and `central-update` records each production deploy on it.
+creates that release for `central-cockpit` and `central-backend` (the assistant has no CI image) with its commits
+(read from the checkout, so no Sentry GitHub integration is needed), and `central-update` records each production
+deploy on it.

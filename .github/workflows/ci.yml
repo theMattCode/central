@@ -151,8 +151,8 @@ jobs:
           }
 
           # `--local` reads commits from this checkout, so no Sentry GitHub integration is needed.
-          sentry_cli releases new "$SENTRY_RELEASE" \
-            --project central-cockpit --project central-backend --project central-assistant
+          # Only projects whose images CI builds; the assistant runs in the dev stack only.
+          sentry_cli releases new "$SENTRY_RELEASE" --project central-cockpit --project central-backend
           sentry_cli releases set-commits "$SENTRY_RELEASE" --local --ignore-missing
           sentry_cli releases finalize "$SENTRY_RELEASE"
 
