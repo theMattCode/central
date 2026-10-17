@@ -186,6 +186,15 @@ impl FinancialAccountStore for FakeFinanceStore {
             "finance store should not be called by weather tests".to_string(),
         ))
     }
+
+    async fn reorder_financial_accounts(
+        &self,
+        _account_ids: &[String],
+    ) -> Result<Vec<FinancialAccount>, ApiError> {
+        Err(ApiError::Internal(
+            "finance store should not be called by weather tests".to_string(),
+        ))
+    }
 }
 
 fn test_snapshot() -> WeatherSnapshotResponse {

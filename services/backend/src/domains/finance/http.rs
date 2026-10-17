@@ -6,6 +6,7 @@ use axum::{
 
 use crate::domains::finance::accounts::{
     FinancialAccount, FinancialAccountInput, FinancialAccountListResponse,
+    FinancialAccountOrderInput,
 };
 use crate::domains::finance::model::{
     TransactionInput, TransactionListResponse, TransactionResponse, TransactionsQueryInput,
@@ -112,6 +113,19 @@ pub(in crate::domains::finance) async fn restore_financial_account(
     let response = context
         .finance_service
         .restore_financial_account(&id)
+        .await?;
+
+    Ok(Json(response))
+}
+
+pub(in crate::domains::finance) async fn reorder_financial_accounts(
+    State(context): State<Context>,
+    Json(input): Json<FinancialAccountOrderInput>,
+) -> Result<Json<FinancialAccountListResponse>, ApiError> {
+    let account_ids = input.into_account_ids()?;
+    let response = context
+        .finance_service
+        .reorder_financial_accounts(&account_ids)
         .await?;
 
     Ok(Json(response))

@@ -49,6 +49,18 @@ impl FinanceService {
         self.accounts.restore_financial_account(id).await
     }
 
+    pub async fn reorder_financial_accounts(
+        &self,
+        account_ids: &[String],
+    ) -> Result<FinancialAccountListResponse, ApiError> {
+        let accounts = self
+            .accounts
+            .reorder_financial_accounts(account_ids)
+            .await?;
+
+        Ok(FinancialAccountListResponse { accounts })
+    }
+
     pub async fn list_transactions(
         &self,
         month: &TransactionsQuery,

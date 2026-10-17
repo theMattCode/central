@@ -1,4 +1,4 @@
-use super::{FinancialAccountInput, FinancialAccountType};
+use super::{FinancialAccountInput, FinancialAccountOrderInput, FinancialAccountType};
 
 fn input(name: &str, account_type: &str, currency: &str) -> FinancialAccountInput {
     FinancialAccountInput {
@@ -102,4 +102,38 @@ fn draft_rejects_currency_that_is_not_three_uppercase_letters() {
             "{currency:?} gave {error}"
         );
     }
+}
+
+#[test]
+fn order_input_returns_account_ids_in_order() {
+    let ids = FinancialAccountOrderInput {
+        account_ids: Some(vec!["b".to_string(), "a".to_string()]),
+    }
+    .into_account_ids()
+    .expect("valid order");
+
+    assert_eq!(ids, ["b", "a"]);
+}
+
+#[test]
+fn order_input_rejects_missing_account_ids() {
+    let error = FinancialAccountOrderInput { account_ids: None }
+        .into_account_ids()
+        .expect_err("missing ids");
+
+    assert_eq!(error.to_string(), "Missing required field: accountIds");
+}
+
+#[test]
+fn order_input_rejects_duplicate_account_ids() {
+    let error = FinancialAccountOrderInput {
+        account_ids: Some(vec!["a".to_string(), "b".to_string(), "a".to_string()]),
+    }
+    .into_account_ids()
+    .expect_err("duplicate ids");
+
+    assert_eq!(
+        error.to_string(),
+        "Field accountIds must not contain duplicates"
+    );
 }

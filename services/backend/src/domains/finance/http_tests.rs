@@ -100,6 +100,21 @@ impl FinancialAccountStore for FakeFinanceStore {
 
         Ok(account.clone())
     }
+
+    async fn reorder_financial_accounts(
+        &self,
+        account_ids: &[String],
+    ) -> Result<Vec<FinancialAccount>, ApiError> {
+        let mut accounts = self.accounts.lock().expect("lock accounts");
+        for account in accounts.iter_mut() {
+            if let Some(position) = account_ids.iter().position(|id| *id == account.id) {
+                account.display_order = i32::try_from(position).expect("position fits i32");
+            }
+        }
+        accounts.sort_by_key(|account| account.display_order);
+
+        Ok(accounts.clone())
+    }
 }
 
 #[async_trait::async_trait]
@@ -572,4 +587,45 @@ async fn archive_and_restore_unknown_financial_account_return_not_found() {
 
         assert_eq!(response.status(), StatusCode::NOT_FOUND, "{action}");
     }
+}
+
+#[tokio::test]
+async fn reorder_financial_accounts_returns_accounts_in_new_order() {
+    let base_url = spawn_http_server(test_context()).await;
+    let client = reqwest::Client::new();
+    let first = create_test_account(&client, &base_url).await;
+    let second = create_test_account(&client, &base_url).await;
+
+    let response = client
+        .put(format!("{base_url}/api/v1/finance/accounts/order"))
+        .json(&serde_json::json!({ "accountIds": [second["id"], first["id"]] }))
+        .send()
+        .await
+        .expect("reorder accounts");
+
+    assert_eq!(response.status(), StatusCode::OK);
+    let payload: serde_json::Value = response.json().await.expect("json payload");
+    let ids = payload["accounts"]
+        .as_array()
+        .expect("accounts array")
+        .iter()
+        .map(|account| account["id"].clone())
+        .collect::<Vec<_>>();
+    assert_eq!(ids, [second["id"].clone(), first["id"].clone()]);
+}
+
+#[tokio::test]
+async fn reorder_financial_accounts_with_duplicates_returns_bad_request() {
+    let base_url = spawn_http_server(test_context()).await;
+    let client = reqwest::Client::new();
+    let account = create_test_account(&client, &base_url).await;
+
+    let response = client
+        .put(format!("{base_url}/api/v1/finance/accounts/order"))
+        .json(&serde_json::json!({ "accountIds": [account["id"], account["id"]] }))
+        .send()
+        .await
+        .expect("reorder accounts");
+
+    assert_eq!(response.status(), StatusCode::BAD_REQUEST);
 }

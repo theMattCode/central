@@ -378,3 +378,135 @@ async fn archive_and_restore_unknown_financial_account_are_not_found() {
         );
     }
 }
+
+async fn create_accounts(repository: &FinanceRepository, names: &[&str]) -> Vec<String> {
+    let mut ids = Vec::new();
+    for name in names {
+        let account = repository
+            .create_financial_account(&account_draft(name, FinancialAccountType::Bank))
+            .await
+            .expect("create account");
+        ids.push(account.id);
+    }
+    ids
+}
+
+#[tokio::test]
+async fn reorder_financial_accounts_sets_display_order_by_position() {
+    let database = TestDatabase::start().await;
+    let repository = connect_repository(&database).await;
+    let ids = create_accounts(&repository, &["A", "B", "C"]).await;
+
+    let accounts = repository
+        .reorder_financial_accounts(&[ids[2].clone(), ids[0].clone(), ids[1].clone()])
+        .await
+        .expect("reorder accounts");
+
+    let order = accounts
+        .iter()
+        .map(|account| (account.name.as_str(), account.display_order))
+        .collect::<Vec<_>>();
+    assert_eq!(order, [("C", 0), ("A", 1), ("B", 2)]);
+}
+
+#[tokio::test]
+async fn reorder_financial_accounts_only_touches_moved_accounts() {
+    let database = TestDatabase::start().await;
+    let repository = connect_repository(&database).await;
+    let ids = create_accounts(&repository, &["A", "B", "C"]).await;
+    let before = repository
+        .list_financial_accounts()
+        .await
+        .expect("list accounts");
+
+    let after = repository
+        .reorder_financial_accounts(&[ids[1].clone(), ids[0].clone(), ids[2].clone()])
+        .await
+        .expect("swap A and B");
+
+    let c_before = before.iter().find(|account| account.name == "C").unwrap();
+    let c_after = after.iter().find(|account| account.name == "C").unwrap();
+    assert_eq!(c_after.updated_at, c_before.updated_at);
+}
+
+#[tokio::test]
+async fn reorder_financial_accounts_keeps_archived_accounts_last() {
+    let database = TestDatabase::start().await;
+    let repository = connect_repository(&database).await;
+    let ids = create_accounts(&repository, &["A", "B", "C"]).await;
+    repository
+        .archive_financial_account(&ids[0])
+        .await
+        .expect("archive A");
+
+    let accounts = repository
+        .reorder_financial_accounts(&[ids[2].clone(), ids[1].clone()])
+        .await
+        .expect("reorder active accounts");
+
+    let names = accounts
+        .iter()
+        .map(|account| account.name.as_str())
+        .collect::<Vec<_>>();
+    assert_eq!(names, ["C", "B", "A"]);
+}
+
+#[tokio::test]
+async fn reorder_financial_accounts_rejects_ids_that_are_not_exactly_the_active_accounts() {
+    let database = TestDatabase::start().await;
+    let repository = connect_repository(&database).await;
+    let ids = create_accounts(&repository, &["A", "B", "C"]).await;
+    repository
+        .archive_financial_account(&ids[2])
+        .await
+        .expect("archive C");
+    let unknown = "00000000-0000-7000-9000-000000000404".to_string();
+
+    for (label, account_ids) in [
+        ("missing B", vec![ids[0].clone()]),
+        ("unknown id", vec![ids[0].clone(), ids[1].clone(), unknown]),
+        (
+            "archived C",
+            vec![ids[0].clone(), ids[1].clone(), ids[2].clone()],
+        ),
+        (
+            "malformed id",
+            vec![ids[0].clone(), "not-a-uuid".to_string()],
+        ),
+        ("duplicate A", vec![ids[0].clone(), ids[0].clone()]),
+        ("empty", vec![]),
+    ] {
+        let error = repository
+            .reorder_financial_accounts(&account_ids)
+            .await
+            .expect_err(label);
+
+        assert!(
+            matches!(error, ApiError::BadRequest(_)),
+            "{label}: {error:?}"
+        );
+    }
+
+    let unchanged = repository
+        .list_financial_accounts()
+        .await
+        .expect("list accounts");
+    let order = unchanged
+        .iter()
+        .map(|account| (account.name.as_str(), account.display_order))
+        .collect::<Vec<_>>();
+    assert_eq!(order, [("A", 0), ("B", 1), ("C", 2)]);
+}
+
+#[tokio::test]
+async fn reorder_financial_accounts_without_accounts_accepts_empty_list() {
+    let database = TestDatabase::start().await;
+    let repository = connect_repository(&database).await;
+
+    let accounts = repository
+        .reorder_financial_accounts(&[])
+        .await
+        .expect("empty reorder");
+
+    assert!(accounts.is_empty());
+}

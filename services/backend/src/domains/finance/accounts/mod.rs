@@ -126,6 +126,29 @@ impl FinancialAccountInput {
     }
 }
 
+#[derive(Debug, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct FinancialAccountOrderInput {
+    pub account_ids: Option<Vec<String>>,
+}
+
+impl FinancialAccountOrderInput {
+    /// Checks the shape only; whether the ids are exactly the active accounts is up to the store.
+    pub fn into_account_ids(self) -> Result<Vec<String>, ApiError> {
+        let account_ids = self.account_ids.ok_or_else(|| {
+            ApiError::BadRequest("Missing required field: accountIds".to_string())
+        })?;
+        let unique = account_ids.iter().collect::<std::collections::HashSet<_>>();
+        if unique.len() != account_ids.len() {
+            return Err(ApiError::BadRequest(
+                "Field accountIds must not contain duplicates".to_string(),
+            ));
+        }
+
+        Ok(account_ids)
+    }
+}
+
 fn parse_currency_code(input: Option<String>) -> Result<String, ApiError> {
     let value = clean_required_text(input, "primaryCurrencyCode")?;
     if value.len() != 3 || !value.bytes().all(|byte| byte.is_ascii_uppercase()) {
@@ -158,4 +181,11 @@ pub trait FinancialAccountStore: Send + Sync {
     /// Idempotent: restoring an active account returns it unchanged. A restored account is
     /// appended to the end of the active order.
     async fn restore_financial_account(&self, id: &str) -> Result<FinancialAccount, ApiError>;
+
+    /// Sets the display order of all active accounts to their position in `account_ids`, which
+    /// must contain every active account exactly once. Returns all accounts in list order.
+    async fn reorder_financial_accounts(
+        &self,
+        account_ids: &[String],
+    ) -> Result<Vec<FinancialAccount>, ApiError>;
 }

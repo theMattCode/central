@@ -539,6 +539,62 @@ impl FinancialAccountStore for FinanceRepository {
         self.change_financial_account_status(&sql, id, "restore")
             .await
     }
+
+    async fn reorder_financial_accounts(
+        &self,
+        account_ids: &[String],
+    ) -> Result<Vec<FinancialAccount>, ApiError> {
+        // One statement checks that the ids are exactly the active accounts and only then
+        // updates, so a stale or partial list never leaves a half-applied order behind.
+        const REORDER_SQL: &str = r#"
+WITH input AS (
+  SELECT id::uuid AS id, (position - 1)::integer AS display_order
+  FROM unnest($1::text[]) WITH ORDINALITY AS ids(id, position)
+),
+active AS (
+  SELECT id FROM service_finance.financial_accounts WHERE status = 'active'
+),
+validation AS (
+  SELECT
+    (SELECT count(*) FROM input) = (SELECT count(*) FROM active)
+    AND (SELECT count(DISTINCT id) FROM input) = (SELECT count(*) FROM input)
+    AND NOT EXISTS (SELECT id FROM input EXCEPT SELECT id FROM active) AS is_valid
+),
+updated AS (
+  UPDATE service_finance.financial_accounts AS accounts
+  SET display_order = input.display_order,
+      updated_at = CASE
+        WHEN accounts.display_order <> input.display_order THEN now()
+        ELSE accounts.updated_at
+      END
+  FROM input, validation
+  WHERE accounts.id = input.id AND validation.is_valid
+  RETURNING accounts.id
+)
+SELECT is_valid FROM validation
+"#;
+        let invalid_ids = || {
+            ApiError::BadRequest(
+                "Field accountIds must contain every active financial account exactly once"
+                    .to_string(),
+            )
+        };
+
+        let is_valid: bool = self
+            .client
+            .query_one(REORDER_SQL, &[&account_ids])
+            .await
+            .map_err(|error| match error.code() {
+                Some(&SqlState::INVALID_TEXT_REPRESENTATION) => invalid_ids(),
+                _ => ApiError::Internal(format!("Failed to reorder financial accounts: {error}")),
+            })?
+            .get("is_valid");
+        if !is_valid {
+            return Err(invalid_ids());
+        }
+
+        self.list_financial_accounts().await
+    }
 }
 
 impl FinanceRepository {

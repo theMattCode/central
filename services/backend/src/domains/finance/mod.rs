@@ -27,6 +27,7 @@ pub fn router() -> Router<Context> {
     Router::new()
         .route("/accounts", get(http::list_financial_accounts))
         .route("/accounts", post(http::create_financial_account))
+        .route("/accounts/order", put(http::reorder_financial_accounts))
         .route("/accounts/{id}", put(http::update_financial_account))
         .route(
             "/accounts/{id}/archive",
