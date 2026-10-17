@@ -2,7 +2,7 @@
 import type { PropsWithChildren } from 'react';
 import { render, screen, waitFor, within } from '@testing-library/react';
 import { userEvent } from '@testing-library/user-event';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { FinancialAccount } from '@/domain/finance/accounts/model.ts';
 import { AccountsPage } from '@/domain/finance/accounts/AccountsPage.tsx';
 import type { FinanceClient } from '@/domain/finance/financeClient.ts';
@@ -29,6 +29,7 @@ describe('AccountsPage', () => {
   const updateAccountMock = vi.fn<FinanceClient['updateAccount']>();
   const archiveAccountMock = vi.fn<FinanceClient['archiveAccount']>();
   const restoreAccountMock = vi.fn<FinanceClient['restoreAccount']>();
+  const reorderAccountsMock = vi.fn<FinanceClient['reorderAccounts']>();
 
   const financeClientMock: FinanceClient = {
     getTransactions: () => Promise.reject(new Error('not used by accounts')),
@@ -37,6 +38,7 @@ describe('AccountsPage', () => {
     updateAccount: (id, input) => updateAccountMock(id, input),
     archiveAccount: (id) => archiveAccountMock(id),
     restoreAccount: (id) => restoreAccountMock(id),
+    reorderAccounts: (ids) => reorderAccountsMock(ids),
   };
 
   function TestWrapper({ children }: PropsWithChildren) {
@@ -49,6 +51,7 @@ describe('AccountsPage', () => {
     updateAccountMock.mockReset();
     archiveAccountMock.mockReset();
     restoreAccountMock.mockReset();
+    reorderAccountsMock.mockReset();
     getAccountsMock.mockResolvedValue([]);
   });
 
@@ -266,5 +269,80 @@ describe('AccountsPage', () => {
     await user.click(await screen.findByRole('button', { name: 'Archive Girokonto' }));
 
     expect(await screen.findByRole('alert')).toHaveProperty('textContent', 'Financial account giro was not found');
+  });
+
+  describe('reordering', () => {
+    const accounts = [
+      createAccount({ id: 'a', name: 'A', displayOrder: 0 }),
+      createAccount({ id: 'b', name: 'B', displayOrder: 1 }),
+      createAccount({ id: 'c', name: 'C', displayOrder: 2 }),
+    ];
+
+    // jsdom has no layout; give each list item its own row so dnd-kit can measure positions.
+    beforeEach(() => {
+      vi.spyOn(Element.prototype, 'getBoundingClientRect').mockImplementation(function (this: Element) {
+        const item = this.closest('li');
+        const index = item?.parentElement ? Array.from(item.parentElement.children).indexOf(item) : 0;
+        const top = index * 50;
+        return { x: 0, y: top, top, left: 0, right: 300, bottom: top + 40, width: 300, height: 40, toJSON: () => ({}) };
+      });
+    });
+
+    afterEach(() => {
+      vi.restoreAllMocks();
+    });
+
+    function activeNames() {
+      return within(screen.getByRole('list', { name: 'Accounts' }))
+        .getAllByRole('listitem')
+        .map((item) => item.textContent);
+    }
+
+    it('moves an account down with the keyboard and saves the new order', async () => {
+      getAccountsMock.mockResolvedValue(accounts);
+      reorderAccountsMock.mockResolvedValue([accounts[1], accounts[0], accounts[2]]);
+      render(<AccountsPage />, { wrapper: TestWrapper });
+
+      const handle = await screen.findByRole('button', { name: 'Reorder A' });
+      handle.focus();
+      await user.keyboard(' ');
+      await user.keyboard('{ArrowDown}');
+      await user.keyboard(' ');
+
+      await waitFor(() => expect(reorderAccountsMock).toHaveBeenCalledWith(['b', 'a', 'c']));
+      expect(activeNames()).toEqual(['BBankEUR', 'ABankEUR', 'CBankEUR']);
+    });
+
+    it('snaps back and shows the error when saving the order fails', async () => {
+      getAccountsMock.mockResolvedValue(accounts);
+      reorderAccountsMock.mockRejectedValue(
+        new Error('Field accountIds must contain every active financial account exactly once'),
+      );
+      render(<AccountsPage />, { wrapper: TestWrapper });
+
+      const handle = await screen.findByRole('button', { name: 'Reorder A' });
+      handle.focus();
+      await user.keyboard(' ');
+      await user.keyboard('{ArrowDown}');
+      await user.keyboard(' ');
+
+      expect(await screen.findByRole('alert')).toHaveProperty(
+        'textContent',
+        'Field accountIds must contain every active financial account exactly once',
+      );
+      expect(activeNames()).toEqual(['ABankEUR', 'BBankEUR', 'CBankEUR']);
+    });
+
+    it('does not offer reordering for archived accounts', async () => {
+      getAccountsMock.mockResolvedValue([
+        accounts[0],
+        createAccount({ id: 'old', name: 'Old', status: 'archived', archivedAt: '2026-10-01T10:00:00Z' }),
+      ]);
+      render(<AccountsPage />, { wrapper: TestWrapper });
+
+      await user.click(await screen.findByRole('button', { name: 'Archived (1)' }));
+
+      expect(screen.queryByRole('button', { name: 'Reorder Old' })).toBeNull();
+    });
   });
 });

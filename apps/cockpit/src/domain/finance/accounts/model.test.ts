@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import {
+  moveAccountId,
   validateFinancialAccountIdInput,
   validateFinancialAccountInput,
   validateUpdateFinancialAccountInput,
+  validateReorderFinancialAccountsInput,
 } from '@/domain/finance/accounts/model.ts';
 
 describe('validateFinancialAccountInput', () => {
@@ -62,5 +64,34 @@ describe('validateFinancialAccountIdInput', () => {
     ['a numeric id', { id: 42 }],
   ])('rejects %s', (_label, input) => {
     expect(() => validateFinancialAccountIdInput(input)).toThrow('Invalid financial account payload.');
+  });
+});
+
+describe('moveAccountId', () => {
+  it('moves an id down to the position of another', () => {
+    expect(moveAccountId(['a', 'b', 'c'], 'a', 'c')).toEqual(['b', 'c', 'a']);
+  });
+
+  it('moves an id up to the position of another', () => {
+    expect(moveAccountId(['a', 'b', 'c'], 'c', 'a')).toEqual(['c', 'a', 'b']);
+  });
+
+  it('keeps the order for unknown or identical ids', () => {
+    expect(moveAccountId(['a', 'b'], 'a', 'a')).toEqual(['a', 'b']);
+    expect(moveAccountId(['a', 'b'], 'x', 'a')).toEqual(['a', 'b']);
+  });
+});
+
+describe('validateReorderFinancialAccountsInput', () => {
+  it('accepts a list of ids', () => {
+    expect(validateReorderFinancialAccountsInput({ accountIds: ['b', 'a'] })).toEqual({ accountIds: ['b', 'a'] });
+  });
+
+  it.each([
+    ['null', null],
+    ['missing ids', {}],
+    ['non-string ids', { accountIds: ['a', 1] }],
+  ])('rejects %s', (_label, input) => {
+    expect(() => validateReorderFinancialAccountsInput(input)).toThrow('Invalid financial account payload.');
   });
 });

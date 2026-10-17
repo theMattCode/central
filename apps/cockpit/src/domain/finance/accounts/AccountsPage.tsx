@@ -1,9 +1,7 @@
 import { useState } from 'react';
-import { MdAdd as AddIcon, MdArchive as ArchiveIcon, MdEdit as EditIcon, MdSave as SaveIcon } from 'react-icons/md';
-import { Button } from '@/components/Button/Button.tsx';
+import { MdAdd as AddIcon } from 'react-icons/md';
 import { Section } from '@/components/Section/Section.tsx';
 import { AccountEditor } from '@/domain/finance/accounts/AccountEditor.tsx';
-import { AccountSummary } from '@/domain/finance/accounts/AccountSummary.tsx';
 import { ArchivedAccounts } from '@/domain/finance/accounts/ArchivedAccounts.tsx';
 import { useAccounts } from '@/domain/finance/accounts/data.ts';
 import { ErrorMessage } from '@/domain/finance/accounts/ErrorMessage.tsx';
@@ -12,12 +10,13 @@ import {
   type FinancialAccount,
   type FinancialAccountInput,
 } from '@/domain/finance/accounts/model.ts';
+import { SortableAccountList } from '@/domain/finance/accounts/SortableAccountList.tsx';
 import { useFinanceClient } from '@/domain/finance/FinanceClientContext.tsx';
 import { toErrorMessage } from '@/utils/formatting.ts';
 
 export function AccountsPage() {
   const financeClient = useFinanceClient();
-  const { accounts, error, loading, reload } = useAccounts();
+  const { accounts, error, loading, reload, setAccounts } = useAccounts();
   const [actionError, setActionError] = useState<string | null>(null);
 
   const createAccount = async (input: FinancialAccountInput) => {
@@ -43,6 +42,23 @@ export function AccountsPage() {
   const activeAccounts = accounts?.filter((account) => account.status === 'active') ?? [];
   const archivedAccounts = accounts?.filter((account) => account.status === 'archived') ?? [];
 
+  // Show the new order right away and roll back if the backend rejects it.
+  const reorderAccounts = async (accountIds: string[]) => {
+    if (!accounts) {
+      return;
+    }
+    const previous = accounts;
+    const reordered = accountIds.flatMap((id) => activeAccounts.filter((account) => account.id === id));
+    setActionError(null);
+    setAccounts([...reordered, ...archivedAccounts]);
+    try {
+      setAccounts(await financeClient.reorderAccounts(accountIds));
+    } catch (error) {
+      setAccounts(previous);
+      setActionError(toErrorMessage(error));
+    }
+  };
+
   return (
     <>
       {error && <ErrorMessage message={error} />}
@@ -60,11 +76,12 @@ export function AccountsPage() {
       {actionError && <ErrorMessage message={actionError} />}
       {loading && !accounts && <p className="col-span-full text-sm text-(--color-txt-sec)">Loading accounts...</p>}
       {accounts && (
-        <AccountList
+        <SortableAccountList
           accounts={activeAccounts}
           emptyMessage={archivedAccounts.length > 0 ? 'No active accounts.' : 'No accounts yet.'}
           onUpdate={updateAccount}
           onArchive={(account) => void runAccountAction(() => financeClient.archiveAccount(account.id))}
+          onReorder={(accountIds) => void reorderAccounts(accountIds)}
         />
       )}
       {archivedAccounts.length > 0 && (
@@ -74,67 +91,5 @@ export function AccountsPage() {
         />
       )}
     </>
-  );
-}
-
-type AccountListProps = {
-  accounts: FinancialAccount[];
-  emptyMessage: string;
-  onUpdate: (id: string, input: FinancialAccountInput) => Promise<void>;
-  onArchive: (account: FinancialAccount) => void;
-};
-
-function AccountList({ accounts, emptyMessage, onUpdate, onArchive }: AccountListProps) {
-  const [editingAccountId, setEditingAccountId] = useState<string | null>(null);
-
-  if (accounts.length === 0) {
-    return (
-      <Section className="col-span-full">
-        <p className="text-sm text-(--color-txt-sec)">{emptyMessage}</p>
-      </Section>
-    );
-  }
-
-  return (
-    <Section className="col-span-full">
-      <ul aria-label="Accounts" className="w-full flex flex-col divide-y divide-(--color-section-border)">
-        {accounts.map((account) => (
-          <li key={account.id} className="flex flex-wrap items-center gap-3 py-2">
-            {editingAccountId === account.id ? (
-              <AccountEditor
-                label={`Edit ${account.name}`}
-                initialValue={account}
-                submitLabel="Save account"
-                submitText="Save"
-                submitIcon={SaveIcon}
-                onSubmit={async (input) => {
-                  await onUpdate(account.id, input);
-                  setEditingAccountId(null);
-                }}
-                onCancel={() => setEditingAccountId(null)}
-              />
-            ) : (
-              <>
-                <AccountSummary account={account} />
-                <Button
-                  type="button"
-                  aria-label={`Edit ${account.name}`}
-                  title="Edit"
-                  icon={EditIcon}
-                  onClick={() => setEditingAccountId(account.id)}
-                />
-                <Button
-                  type="button"
-                  aria-label={`Archive ${account.name}`}
-                  title="Archive"
-                  icon={ArchiveIcon}
-                  onClick={() => onArchive(account)}
-                />
-              </>
-            )}
-          </li>
-        ))}
-      </ul>
-    </Section>
   );
 }

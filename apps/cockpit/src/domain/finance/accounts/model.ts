@@ -75,3 +75,27 @@ export function validateUpdateFinancialAccountInput(input: unknown): UpdateFinan
 
   return { id, account: validateFinancialAccountInput(value.account) };
 }
+
+export type ReorderFinancialAccountsInput = Readonly<{ accountIds: string[] }>;
+
+export function validateReorderFinancialAccountsInput(input: unknown): ReorderFinancialAccountsInput {
+  const value = (input ?? {}) as Partial<Record<keyof ReorderFinancialAccountsInput, unknown>>;
+  if (!Array.isArray(value.accountIds) || !value.accountIds.every((id) => typeof id === 'string')) {
+    throw new Error('Invalid financial account payload.');
+  }
+
+  return { accountIds: value.accountIds };
+}
+
+/** Moves `activeId` to the position of `overId`, like dropping a dragged item onto another. */
+export function moveAccountId(ids: readonly string[], activeId: string, overId: string): string[] {
+  const from = ids.indexOf(activeId);
+  const to = ids.indexOf(overId);
+  if (from === -1 || to === -1 || from === to) {
+    return [...ids];
+  }
+
+  const moved = ids.filter((id) => id !== activeId);
+  moved.splice(to, 0, activeId);
+  return moved;
+}

@@ -6,6 +6,7 @@ import {
   type FinancialAccountInput,
   validateFinancialAccountIdInput,
   validateFinancialAccountInput,
+  validateReorderFinancialAccountsInput,
   validateUpdateFinancialAccountInput,
 } from '@/domain/finance/accounts/model.ts';
 import { isIsoDateRange, type IsoDateRange } from '@/utils/datetime.ts';
@@ -17,6 +18,7 @@ export interface FinanceClient {
   updateAccount(id: string, input: FinancialAccountInput): Promise<FinancialAccount>;
   archiveAccount(id: string): Promise<FinancialAccount>;
   restoreAccount(id: string): Promise<FinancialAccount>;
+  reorderAccounts(accountIds: string[]): Promise<FinancialAccount[]>;
 }
 
 // TODO remove export (once api.ts is migrated to finance client)
@@ -83,6 +85,16 @@ const postRestoreAccount = createServerFn({ method: 'POST' })
     fetchJson<FinancialAccount>(getAccountsURL(`/${encodeURIComponent(data.id)}/restore`), { method: 'POST' }),
   );
 
+const putAccountOrder = createServerFn({ method: 'POST' })
+  .inputValidator(validateReorderFinancialAccountsInput)
+  .handler(async ({ data }) => {
+    const response = await fetchJson<{ accounts: FinancialAccount[] }>(getAccountsURL('/order'), {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+    return response.accounts;
+  });
+
 export const DEFAULT_FINANCE_CLIENT: FinanceClient = {
   getTransactions: ({ from, to }, { signal } = {}) => fetchTransactions({ data: { from, to }, signal }),
   getAccounts: ({ signal } = {}) => fetchAccounts({ signal }),
@@ -90,4 +102,5 @@ export const DEFAULT_FINANCE_CLIENT: FinanceClient = {
   updateAccount: (id, account) => putAccount({ data: { id, account } }),
   archiveAccount: (id) => postArchiveAccount({ data: { id } }),
   restoreAccount: (id) => postRestoreAccount({ data: { id } }),
+  reorderAccounts: (accountIds) => putAccountOrder({ data: { accountIds } }),
 };

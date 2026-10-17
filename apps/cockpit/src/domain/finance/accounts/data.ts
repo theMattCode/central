@@ -8,12 +8,18 @@ interface Accounts {
   error: string | null;
   loading: boolean;
   reload: () => void;
+  /** Replaces the loaded accounts locally, e.g. for an optimistic update. */
+  setAccounts: (accounts: FinancialAccount[]) => void;
 }
 
 export function useAccounts(): Accounts {
   const financeClient = useFinanceClient();
   const [reloadVersion, setReloadVersion] = useState(0);
-  const [state, setState] = useState<Omit<Accounts, 'reload'>>({ accounts: null, error: null, loading: true });
+  const [state, setState] = useState<Omit<Accounts, 'reload' | 'setAccounts'>>({
+    accounts: null,
+    error: null,
+    loading: true,
+  });
 
   useEffect(() => {
     const abortController = new AbortController();
@@ -36,5 +42,9 @@ export function useAccounts(): Accounts {
     return () => abortController.abort();
   }, [financeClient, reloadVersion]);
 
-  return { ...state, reload: () => setReloadVersion((version) => version + 1) };
+  return {
+    ...state,
+    reload: () => setReloadVersion((version) => version + 1),
+    setAccounts: (accounts) => setState((prev) => ({ ...prev, accounts })),
+  };
 }
