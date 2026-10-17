@@ -1,48 +1,23 @@
 # Central
 
-Monorepo for a personal _Life OS_ app
+Monorepo for a personal _Life OS_ app.
 
-## Dev
-
-Start the full hot-reload development stack from the repository root:
+## Quick start
 
 ```bash
-pnpm dev
-```
-
-Stop it with:
-
-```bash
+corepack enable
+pnpm install
+pnpm dev        # hot-reload dev stack on http://localhost:3000
 pnpm dev:down
 ```
 
-## Prod
+## Documentation
 
-Production releases and server updates are documented in [docs/deployment.md](docs/deployment.md).
-
-Create the local production environment file once:
-
-```bash
-cp i12e/orchestrator/.env.prod.example i12e/orchestrator/.env.prod
-```
-
-Set production secrets in `i12e/orchestrator/.env.prod`, replace placeholder values, then start the release-style stack:
-
-```bash
-pnpm prod
-```
-
-Stop it with:
-
-```bash
-pnpm prod:down
-```
-
-Inspect stacks:
-
-```bash
-pnpm ps:dev
-pnpm logs:dev
-pnpm ps:prod
-pnpm logs:prod
-```
+- [Vision](docs/vision.md): product direction and implemented slices
+- [Architecture](docs/architecture.md): components, data flow, and boundary rules
+- [Toolchain](docs/toolchain.md): projects, Nx targets, and all commands
+- [Service catalog](docs/service-catalog.md): services, ports, and environment differences
+- [Deployment](docs/deployment.md): releases and the production server
+- [Domains](docs/domains/): domain language, starting with [finance](docs/domains/finance.md)
+- [Style](docs/style.md) and [ADRs](docs/adr/)
+- [AGENTS.md](AGENTS.md): working agreement for coding agents

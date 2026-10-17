@@ -2,10 +2,14 @@ use std::sync::{Arc, Mutex};
 
 use chrono::{DateTime, Utc};
 
-use crate::domains::weather::model::{CurrentWeatherPayload, HourlyWeatherPayload, WeatherForecastMetaPayload, WeatherForecastResponse, WeatherLocationPayload, WeatherLocationQuery, WeatherMetaPayload, WeatherSnapshotResponse};
+use crate::domains::weather::contracts::{WeatherDataFetcher, WeatherDataStore};
+use crate::domains::weather::model::{
+    CurrentWeatherPayload, HourlyWeatherPayload, WeatherForecastMetaPayload,
+    WeatherForecastResponse, WeatherLocationPayload, WeatherLocationQuery, WeatherMetaPayload,
+    WeatherSnapshotResponse,
+};
 use crate::domains::weather::service::WeatherService;
 use crate::error::ApiError;
-use crate::domains::weather::contracts::{WeatherDataFetcher, WeatherDataStore};
 
 type ForecastLoadCall = (WeatherLocationQuery, DateTime<Utc>, DateTime<Utc>);
 

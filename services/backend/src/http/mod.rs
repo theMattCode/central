@@ -1,8 +1,10 @@
 use axum::{
+    extract::Request,
     http::{HeaderValue, Method},
     routing::get,
     Json, Router,
 };
+use sentry::integrations::tower::{NewSentryLayer, SentryHttpLayer};
 use serde::Serialize;
 use tower_http::{
     cors::{Any, CorsLayer},
@@ -28,6 +30,8 @@ pub fn build_router(context: Context) -> Router {
         .with_state(context)
         .layer(cors)
         .layer(TraceLayer::new_for_http())
+        .layer(SentryHttpLayer::new().enable_transaction())
+        .layer(NewSentryLayer::<Request>::new_from_top())
 }
 
 async fn healthz() -> Json<HealthResponse> {

@@ -1,0 +1,28 @@
+# Overlay for `pnpm prod`: builds the release image set from this checkout and
+# runs it with the production deploy compose file (deploy/docker-compose.prod.yml).
+# Relative paths resolve against deploy/, the directory of the first compose file.
+services:
+  i12e-postgres:
+    build:
+      context: ../../postgres
+
+  service-backend:
+    build:
+      context: ../../..
+      dockerfile: services/backend/Dockerfile
+      args:
+        SENTRY_RELEASE: ${SENTRY_RELEASE:-}
+
+  app-cockpit:
+    build:
+      context: ../../..
+      dockerfile: apps/cockpit/Dockerfile
+      args:
+        VITE_SENTRY_DSN: ${COCKPIT_SENTRY_DSN:-}
+        VITE_SENTRY_ENVIRONMENT: ${SENTRY_ENVIRONMENT:-production}
+        SENTRY_RELEASE: ${SENTRY_RELEASE:-}
+
+  i12e-gateway:
+    build:
+      context: ../../..
+      dockerfile: i12e/gateway/Dockerfile

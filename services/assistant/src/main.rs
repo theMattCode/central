@@ -19,24 +19,18 @@ use infrastructure::{
     tts::{JsonTextToSpeechClient, MockTextToSpeech, OpenAiTextToSpeechClient},
 };
 use reqwest::Client;
-use tracing::{error, info};
+use tracing::info;
 
-#[tokio::main]
-async fn main() {
-    tracing_subscriber::fmt()
-        .with_env_filter(
-            tracing_subscriber::EnvFilter::try_from_default_env()
-                .unwrap_or_else(|_| "assistant_service=info,axum=info,tower_http=info".into()),
-        )
-        .init();
+fn main() {
+    central_observability::run_service(
+        sentry::release_name!(),
+        "assistant_service=info,axum=info,tower_http=info",
+        run,
+    );
+}
 
-    let config = match Config::from_env() {
-        Ok(config) => Arc::new(config),
-        Err(error) => {
-            eprintln!("{error}");
-            std::process::exit(1);
-        }
-    };
+async fn run() -> Result<(), String> {
+    let config = Arc::new(Config::from_env()?);
 
     info!(
         backend_mode = ?config.backend_mode,
@@ -53,10 +47,7 @@ async fn main() {
     let http_client = Client::builder()
         .timeout(config.request_timeout)
         .build()
-        .unwrap_or_else(|error| {
-            error!("Failed to build HTTP client: {error}");
-            std::process::exit(1);
-        });
+        .map_err(|error| format!("Failed to build HTTP client: {error}"))?;
 
     let speech_to_text: Arc<dyn SpeechToText> = match &config.backend_mode {
         BackendMode::Mock | BackendMode::LlmProxy => Arc::new(MockSpeechToText),
@@ -139,10 +130,7 @@ async fn main() {
         config.default_voice_instruction.clone(),
     );
 
-    if let Err(error) = run_http_server(config, assistant_turn_service).await {
-        error!("{error}");
-        std::process::exit(1);
-    }
+    run_http_server(config, assistant_turn_service).await
 }
 
 async fn run_http_server(
@@ -164,17 +152,9 @@ async fn run_http_server(
         .map_err(|error| format!("Failed to bind assistant service socket: {error}"))?;
 
     axum::serve(listener, app)
-        .with_graceful_shutdown(shutdown_signal())
+        .with_graceful_shutdown(central_observability::shutdown_signal())
         .await
         .map_err(|error| format!("Assistant service HTTP server error: {error}"))?;
 
     Ok(())
-}
-
-async fn shutdown_signal() {
-    if let Err(error) = tokio::signal::ctrl_c().await {
-        error!("Failed to listen for shutdown signal: {error}");
-    }
-
-    info!("Shutdown signal received");
 }

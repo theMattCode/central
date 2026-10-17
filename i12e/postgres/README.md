@@ -1,47 +1,33 @@
 # i12e-postgres
 
-Nx project for the persistence-layer PostgreSQL 18.3 image with bootstrap initialization and forward-only SQL migrations.
+PostgreSQL 18.3 image with bootstrap initialization (`init/`) and forward-only SQL migrations (`migrations/`).
 
-## Build
+The image uses PostgreSQL 18 for built-in UUID v7 generation (see [ADR 0001](../../docs/adr/0001-postgres-18-uuid-v7.md)).
+Existing PostgreSQL 16 data volumes cannot be reused directly; recreate the local dev volume or dump/restore data.
+PostgreSQL 18 containers mount the data volume at `/var/lib/postgresql`.
+
+## Migrations
+
+Migrations are named `<NNNN>_<kebab-case-name>.sql` and applied in order by
+[`scripts/apply-migrations.sh`](./scripts/apply-migrations.sh), which records applied files in
+`public.schema_migrations`.
+
+Create the next migration file:
 
 ```bash
-pnpm nx build i12e-postgres
+pnpm nx run i12e-postgres:create-migration "create users"
+```
+
+Apply migrations to the running dev stack:
+
+```bash
+pnpm migrate:dev
 ```
 
 ## Validate
 
 ```bash
 pnpm nx run i12e-postgres:lint
-pnpm nx run i12e-postgres:test
-pnpm nx run i12e-postgres:typecheck
 ```
 
-## Run
-
-```bash
-pnpm nx run i12e-postgres:run
-```
-
-Default host-to-container mapping is `5001:5432`.
-
-The image uses PostgreSQL 18.3 for built-in UUID v7 generation. Existing local PostgreSQL 16 data volumes cannot be reused directly with PostgreSQL 18; recreate the local dev volume or dump/restore data before running the upgraded image. PostgreSQL 18 containers must mount the data volume at `/var/lib/postgresql`; the image stores database files under a versioned subdirectory.
-
-Override defaults when needed:
-
-```bash
-POSTGRES_PORT=55432 POSTGRES_CONTAINER_NAME=central-i12e-postgres-dev pnpm nx run i12e-postgres:run
-```
-
-## Apply migrations
-
-Requires the `i12e-postgres` container to be running.
-
-```bash
-pnpm nx run i12e-postgres:migrate
-```
-
-## Create a migration file
-
-```bash
-MIGRATION_NAME=create_users pnpm nx run i12e-postgres:create-migration
-```
+Lint syntax-checks the scripts and rejects migration files that break the naming scheme or reuse a number.

@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { Transactions } from '@/domain/finance/transactions/Transactions.tsx';
-import { GridLayout } from '@/components/ContentLayout/GridLayout.tsx';
+import { GridLayout } from '@/components/GridLayout/GridLayout.tsx';
 
 export const Route = createFileRoute('/finance/transactions')({
   component: TransactionsRoute,

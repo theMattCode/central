@@ -1,22 +1,22 @@
 {
   "$schema": "../../node_modules/nx/schemas/project-schema.json",
-  "name": "cockpit",
+  "name": "app-cockpit",
   "projectType": "application",
   "root": "apps/cockpit",
   "sourceRoot": "apps/cockpit/src",
   "targets": {
-    "lint": {
-      "executor": "nx:run-commands",
-      "options": {
-        "cwd": "apps/cockpit",
-        "command": "pnpm exec prettier --check \"src/**/*.{ts,tsx,css}\" \"!src/routeTree.gen.ts\""
-      }
-    },
-    "lint-fix": {
+    "format": {
       "executor": "nx:run-commands",
       "options": {
         "cwd": "apps/cockpit",
         "command": "pnpm exec prettier --write \"src/**/*.{ts,tsx,css}\" \"!src/routeTree.gen.ts\""
+      }
+    },
+    "format-check": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "apps/cockpit",
+        "command": "pnpm exec prettier --check \"src/**/*.{ts,tsx,css}\" \"!src/routeTree.gen.ts\""
       }
     },
     "start": {
@@ -41,18 +41,6 @@
         "command": "pnpm run build"
       }
     },
-    "container-build": {
-      "executor": "nx:run-commands",
-      "options": {
-        "command": "docker build --build-arg BACKEND_BASE_URL=${BACKEND_BASE_URL:-http://host.docker.internal:5010} --build-arg ASSISTANT_SERVICE_BASE_URL=${ASSISTANT_SERVICE_BASE_URL:-http://host.docker.internal:5020} --build-arg VITE_BACKEND_API_BASE_URL=${VITE_BACKEND_API_BASE_URL:-http://localhost:5010} --build-arg VITE_ASSISTANT_API_BASE_URL=${VITE_ASSISTANT_API_BASE_URL:-http://localhost:5020} --file apps/cockpit/Dockerfile --tag central/apps/cockpit:latest ."
-      }
-    },
-    "container-run": {
-      "executor": "nx:run-commands",
-      "options": {
-        "command": "docker run --rm --name central-cockpit --add-host=host.docker.internal:host-gateway -e BACKEND_BASE_URL=${BACKEND_BASE_URL:-http://host.docker.internal:5010} -e ASSISTANT_SERVICE_BASE_URL=${ASSISTANT_SERVICE_BASE_URL:-http://host.docker.internal:5020} -p 5000:3000 central/apps/cockpit:latest"
-      }
-    },
     "test": {
       "executor": "nx:run-commands",
       "options": {
@@ -68,5 +56,5 @@
       }
     }
   },
-  "tags": []
+  "tags": ["type:app"]
 }

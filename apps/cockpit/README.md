@@ -21,7 +21,7 @@ The `/jarvis` route is a browser-native voice HUD inspired by the linked Tkinter
 From repository root:
 
 ```bash
-pnpm nx run cockpit:start
+pnpm nx run app-cockpit:start
 ```
 
 Directly from `apps/cockpit`:
@@ -30,15 +30,18 @@ Directly from `apps/cockpit`:
 pnpm run start:dev
 ```
 
+The standalone Vite server runs on port `5000` and expects the backend of the dev stack on `http://localhost:3010`.
+The full dev stack (`pnpm dev`) serves Cockpit with HMR on port `3000`.
+
 ## Validate
 
 From repository root:
 
 ```bash
-pnpm nx run cockpit:lint
-pnpm nx run cockpit:test
-pnpm nx run cockpit:typecheck
-pnpm nx run cockpit:build
+pnpm nx run app-cockpit:format-check
+pnpm nx run app-cockpit:typecheck
+pnpm nx run app-cockpit:test
+pnpm nx run app-cockpit:build
 ```
 
 ## Weather Widget
@@ -52,14 +55,20 @@ The weather widget module owns its loading contract:
 
 If neither is set, cockpit uses `http://localhost:3010` as the local orchestrator default. Other runtimes should set `BACKEND_BASE_URL` explicitly instead of relying on endpoint probing.
 
-Weather widget diagnostics are written by cockpit as structured `@central/ts-log` records with scope `cockpit.weather.*`, including invalid location payloads, outbound request attempts, and upstream request failures.
+Errors and traces go to the Sentry project `central-cockpit`: the browser SDK is initialized in `src/router.tsx`
+(`VITE_SENTRY_DSN` and `VITE_SENTRY_ENVIRONMENT`, build time), the server SDK in `instrument.server.mjs` (`SENTRY_DSN`, runtime, loaded with
+`node --import`). See [error monitoring](../../docs/service-catalog.md#error-monitoring).
 
-## Finance Cash Page
+Weather widget diagnostics are written by cockpit as structured logger records (`src/utils/logger`) with scope `cockpit.weather.*`, including invalid location payloads, outbound request attempts, and upstream request failures.
 
-The `/finance/cash` route manages manual income and expense transactions:
+## Finance Transactions Page
+
+The `/finance/transactions` route manages manual income and expense transactions (see
+[finance domain](../../docs/domains/finance.md)):
 
 - Cockpit calls backend finance APIs through TanStack Start server functions.
-- The page supports month filtering, create/edit/delete, category reuse from the loaded month, and monthly income/expense/net summary.
+- The page supports date-range filtering, listing and creating transactions, and an income/expense/net summary. Edit
+  and delete controls still need route-id wiring in the server function helpers.
 - Amounts are entered and displayed as decimal strings while backend persistence uses integer minor units.
 
 ## Voice Widget
@@ -80,15 +89,8 @@ If neither is set, cockpit uses `http://localhost:3020` as the local orchestrato
 
 When cockpit runs in Docker Compose, keep `ASSISTANT_SERVICE_BASE_URL` on the internal service DNS name for server-side calls, but set `VITE_ASSISTANT_API_BASE_URL` to the published host port so browser streaming requests do not try to resolve `service-assistant`.
 
-Voice widget diagnostics are written as structured `@central/ts-log` records with scope `cockpit.voice.*`.
+Voice widget diagnostics are written as structured logger records (`src/utils/logger`) with scope `cockpit.voice.*`.
 
 For local debugging in Node-backed assistant turns, cockpit dumps artifacts into `apps/cockpit/tmp/` as input audio, per-chunk output audio files, and a JSON metadata file.
 
 VAD asset synchronization is disabled while browser VAD is offline.
-
-## Container
-
-```bash
-pnpm nx run cockpit:container-build
-pnpm nx run cockpit:container-run
-```

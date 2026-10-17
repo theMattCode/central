@@ -48,18 +48,17 @@ Response body:
 - `HF_HOME` (compose sets this under `/models/huggingface`)
 
 Qwen's best clone quality uses both reference audio and an accurate transcript from `TTS_REFERENCE_TEXT` or `TTS_REFERENCE_TEXT_FILE`.
-The service defaults to the bundled transcript in `res/morgan-freeman.txt`, so the commented orchestrator definition uses the full voice-clone prompt by default. Set `TTS_X_VECTOR_ONLY_MODE=true` when using a custom sample without a transcript.
+The service defaults to the bundled transcript in `res/morgan-freeman.txt`, so the dev stack's `voice` profile uses the full voice-clone prompt by default. Set `TTS_X_VECTOR_ONLY_MODE=true` when using a custom sample without a transcript.
 
 The Docker image installs PyTorch and Torchaudio for CUDA 12.8, then installs the matching prebuilt FlashAttention 2 wheel for Python 3.12 / Torch 2.8 / Linux x86_64. The image does not compile `flash-attn` from source during normal builds. When `TTS_ATTENTION_IMPLEMENTATION=flash_attention_2`, startup fails if the `flash_attn` package is unavailable so the service does not silently run without the required attention backend.
 
 `voiceInstruction` is kept in the HTTP contract, but the Qwen Base voice-clone path does not provide the free-form style control exposed by Qwen CustomVoice or OpenAI TTS. The service logs and ignores it while preserving the cloned Morgan voice across requests.
 
-The standalone `tts-service:container-run` target requests `gpus: all`, loads Qwen onto `cuda:0`, uses the bundled `res/morgan-freeman.mp3` sample, and caches downloaded Hugging Face model files in the `central_tts_models` Docker volume. The commented orchestrator service definition does the same, but it is not active in the default stack while that compose block remains commented out.
+In the dev stack's `voice` profile (`COMPOSE_PROFILES=voice pnpm dev`) the service requests `gpus: all`, loads Qwen onto `cuda:0`, uses the bundled `res/morgan-freeman.mp3` sample, and caches downloaded Hugging Face model files in the `central_tts_models` Docker volume.
 
 ## Nx targets
 
-- `pnpm nx run tts-service:lint`
-- `pnpm nx run tts-service:test`
-- `pnpm nx run tts-service:typecheck`
-- `pnpm nx run tts-service:build`
-- `pnpm nx run tts-service:container-run`
+```bash
+pnpm nx run service-tts:lint
+pnpm nx run service-tts:test
+```

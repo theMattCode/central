@@ -6,7 +6,7 @@ use crate::domains::weather::service::WeatherService;
 
 #[derive(Clone)]
 pub struct Context {
-  pub config: Arc<Config>,
-  pub finance_service: FinanceService,
-  pub weather_service: WeatherService,
+    pub config: Arc<Config>,
+    pub finance_service: FinanceService,
+    pub weather_service: WeatherService,
 }

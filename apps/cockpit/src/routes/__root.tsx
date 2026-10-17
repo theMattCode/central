@@ -1,4 +1,5 @@
-import { lazy, type PropsWithChildren } from 'react';
+import { lazy, useEffect, type PropsWithChildren } from 'react';
+import * as Sentry from '@sentry/tanstackstart-react';
 import { createRootRoute, HeadContent, Scripts } from '@tanstack/react-router';
 import appCss from '../styles.css?url';
 import { PageLayout } from '@/components/PageLayout/PageLayout.tsx';
@@ -43,6 +44,10 @@ function RootDocument({ children }: PropsWithChildren) {
 }
 
 function RootErrorBoundary({ error }: { error: unknown }) {
+  useEffect(() => {
+    Sentry.captureException(error);
+  }, [error]);
+
   const message = error instanceof Error ? error.message : 'unexpected application error.';
 
   return (

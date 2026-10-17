@@ -1,7 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { WeatherWidget } from '@/domain/weather/WeatherWidget.tsx';
 import { LOCATION_MOESSINGEN, LOCATION_OBERNHEIM, LOCATION_TUEBINGEN } from '@/domain/weather/model/model.ts';
-import { GridLayout } from '@/components/ContentLayout/GridLayout.tsx';
+import { GridLayout } from '@/components/GridLayout/GridLayout.tsx';
 import { Section } from '@/components/Section/Section.tsx';
 
 export const Route = createFileRoute('/')({

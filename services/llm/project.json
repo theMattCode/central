@@ -1,6 +1,6 @@
 {
   "$schema": "../../node_modules/nx/schemas/project-schema.json",
-  "name": "llm-service",
+  "name": "service-llm",
   "projectType": "application",
   "root": "services/llm",
   "sourceRoot": "services/llm/src",
@@ -9,7 +9,7 @@
       "executor": "nx:run-commands",
       "options": {
         "cwd": "services/llm",
-        "command": "python3 -m py_compile src/service.py tests/test_service.py"
+        "command": "python3 -m compileall -q src tests"
       }
     },
     "test": {
@@ -18,26 +18,7 @@
         "cwd": "services/llm",
         "command": "python3 -m unittest discover -s tests -p 'test_*.py'"
       }
-    },
-    "typecheck": {
-      "executor": "nx:run-commands",
-      "options": {
-        "cwd": "services/llm",
-        "command": "python3 -m py_compile src/service.py tests/test_service.py"
-      }
-    },
-    "build": {
-      "executor": "nx:run-commands",
-      "options": {
-        "command": "docker build --file services/llm/Dockerfile --tag central/services/llm:latest ."
-      }
-    },
-    "container-run": {
-      "executor": "nx:run-commands",
-      "options": {
-        "command": "docker run --rm -i --name central-llm -p 5050:8083 central/services/llm:latest"
-      }
     }
   },
-  "tags": ["scope:platform", "type:service"]
+  "tags": ["type:service"]
 }

@@ -177,7 +177,7 @@ For an Ollama-only path in this repository, keep `ASSISTANT_BACKEND_MODE=llm-pro
 - `LLM_BASE_URL` to `http://service-llm-runtime:11434/v1`
 - `LLM_MODEL` to your Ollama model name
 
-For an STT/TTS setup in this repository, use the `stt-service` and `tts-service` services, then point:
+For an STT/TTS setup in this repository, use the `service-stt` and `service-tts` services, then point:
 
 - `STT_URL` to `http://service-stt:8081/transcribe`
 - `TTS_URL` to `http://service-tts:8082/synthesize`
@@ -189,7 +189,7 @@ For an STT/TTS/LLM setup in this repository, either point directly at the Ollama
 - `LLM_BASE_URL` to `http://service-llm-runtime:11434/v1`
 - `LLM_MODEL` to your Ollama model name
 
-Or keep the `llm-service` wrapper when you want lazy model pulls and a repo-owned adapter boundary:
+Or keep the `service-llm` wrapper when you want lazy model pulls and a repo-owned adapter boundary:
 
 - `STT_URL` to `http://service-stt:8081/transcribe`
 - `TTS_URL` to `http://service-tts:8082/synthesize`
@@ -199,7 +199,7 @@ Or keep the `llm-service` wrapper when you want lazy model pulls and a repo-owne
 ## Configuration
 
 - `ASSISTANT_PORT` (default: `5020`)
-- `ASSISTANT_BACKEND_MODE` (`mock`, `llm-proxy`, `openai`, or `proxy`, standalone default: `mock`; commented orchestrator default: `proxy`)
+- `ASSISTANT_BACKEND_MODE` (`mock`, `llm-proxy`, `openai`, or `proxy`, native and image default: `mock`; dev stack `voice` profile default: `proxy`)
 - `ASSISTANT_REQUEST_TIMEOUT_SECONDS` (default: `30`)
 - `TTS_STREAM_SOFT_LIMIT_CHARS` (default: `220`, larger values improve local TTS prosody but delay the first streamed audio chunk)
 - `ASSISTANT_CORS_ALLOW_ORIGIN` (default: `*`)
@@ -215,6 +215,8 @@ Or keep the `llm-service` wrapper when you want lazy model pulls and a repo-owne
 - `TTS_MODEL` (required in `openai` mode)
 - `TTS_URL` (required in `proxy` mode)
 - `TTS_VOICE` (default: `alloy`)
+- `SENTRY_DSN` (default: unset, which disables Sentry; see [error monitoring](../../docs/service-catalog.md#error-monitoring))
+- `SENTRY_ENVIRONMENT` (default: `development` for debug builds, `production` for release builds)
 
 ## Logging
 
@@ -223,12 +225,16 @@ The service uses structured logs via `tracing`.
 - Startup logs include backend mode and upstream configuration presence.
 - Turn logs include transcript length and response length.
 - Upstream failures are surfaced as structured error responses.
+- `error`-level events are reported to Sentry as issues, lower levels become breadcrumbs.
 
 ## Nx targets
 
-- `pnpm nx run assistant-service:lint`
-- `pnpm nx run assistant-service:test`
-- `pnpm nx run assistant-service:typecheck`
-- `pnpm nx run assistant-service:build`
-- `pnpm nx run assistant-service:container-build`
-- `pnpm nx run assistant-service:container-run`
+```bash
+pnpm nx run service-assistant:format-check
+pnpm nx run service-assistant:lint
+pnpm nx run service-assistant:typecheck
+pnpm nx run service-assistant:test
+pnpm nx run service-assistant:build
+```
+
+Run it in the dev stack with `COMPOSE_PROFILES=voice pnpm dev`.

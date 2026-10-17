@@ -148,6 +148,44 @@ curl --fail --silent --show-error "$gateway_url/healthz" >/dev/null
 curl --fail --silent --show-error "$gateway_url/" >/dev/null
 compose exec -T service-backend wget -qO- http://127.0.0.1:8080/healthz >/dev/null
 
+record_sentry_deploy() {
+  # Optional: needs an auth token with release permissions (an organization token works).
+  if [ -z "${SENTRY_AUTH_TOKEN:-}" ]; then
+    return 0
+  fi
+
+  # Moving aliases like `stable` would make every deploy look the same; the release already names the commit.
+  local name_field=""
+  if [ -n "$(semver_major "$target_version")" ]; then
+    name_field=",\"name\":\"$target_version\""
+  fi
+
+  # Each image carries its own release, so read it per service instead of assuming they match.
+  local service project release
+  for service in service-backend:central-backend app-cockpit:central-cockpit; do
+    project="${service#*:}"
+    service="${service%%:*}"
+    release="$(compose exec -T "$service" printenv SENTRY_RELEASE 2>/dev/null || true)"
+    if [ -z "$release" ]; then
+      echo "Skipping Sentry deploy for $project: the image carries no SENTRY_RELEASE." >&2
+      continue
+    fi
+
+    if curl --fail --silent --show-error --output /dev/null \
+      --request POST \
+      --header "Authorization: Bearer $SENTRY_AUTH_TOKEN" \
+      --header 'Content-Type: application/json' \
+      --data "{\"environment\":\"${SENTRY_ENVIRONMENT:-production}\",\"projects\":[\"$project\"]$name_field}" \
+      "${SENTRY_URL:-https://de.sentry.io}/api/0/organizations/${SENTRY_ORG:-elyverse-studio}/releases/$release/deploys/"; then
+      echo "Recorded Sentry deploy for $project: $release"
+    else
+      echo "Failed to record Sentry deploy for $project ($release); continuing." >&2
+    fi
+  done
+}
+
+record_sentry_deploy
+
 echo "Central deployed: $target_version"
 compose ps
 

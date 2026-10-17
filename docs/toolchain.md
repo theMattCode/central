@@ -2,292 +2,122 @@
 
 ## Stack
 
-- Monorepo: Nx (integrated workspace)
-- Package manager: pnpm
-- Frontend framework: TanStack Start (React) + TypeScript
-- Backend services: Rust (Axum) for Backend and Assistant; Python HTTP adapters for STT, TTS, and LLM
-- Routing: TanStack Router
-- Build/dev server: Vite (via TanStack Start)
-- Styling: Tailwind CSS
-- Tests: Vitest + Testing Library for TypeScript, Cargo tests for Rust, `unittest`/`py_compile` for Python adapters
-- CI: GitHub Actions, staging tested build images in GHCR and publishing release tags from the tested image set
+- Monorepo: Nx with pnpm workspaces (`apps/*`, `libs/*`) and a Cargo workspace (`services/Cargo.toml`)
+- Frontend: TanStack Start (React) + TypeScript, TanStack Router, Vite, Tailwind CSS
+- Backend services: Rust (Axum) for Backend and Assistant, toolchain pinned in `services/rust-toolchain.toml`; Python
+  HTTP adapters for STT, TTS, and LLM
+- Persistence: PostgreSQL 18 with forward-only SQL migrations
+- Tests: Vitest + Testing Library for TypeScript, Cargo tests for Rust, `unittest` for Python
+- Formatting: Prettier for TypeScript/JSON/Markdown, rustfmt (defaults) for Rust
+- CI: GitHub Actions (see [deployment](./deployment.md) for the release flow)
 - Node requirement: `>=24` (`package.json`, `.nvmrc` uses `lts/*`)
 
-## Command Reference
-
-Run commands from the repository root.
-
-### Setup
+## Setup
 
 ```bash
 corepack enable
 pnpm install
 ```
 
-### Nx task execution
+## Projects
+
+Nx project names match the compose service and container image names.
+
+| Project                 | Path                     | Kind                                        |
+| ----------------------- | ------------------------ | ------------------------------------------- |
+| `app-cockpit`           | `apps/cockpit`           | TanStack Start web app                      |
+| `service-backend`       | `services/backend`       | Rust integrated HTTP API                    |
+| `service-assistant`     | `services/assistant`     | Rust assistant turn orchestration           |
+| `service-observability` | `services/observability` | Rust Sentry, tracing, and runtime bootstrap |
+| `service-stt`           | `services/stt`           | Python faster-whisper adapter               |
+| `service-tts`           | `services/tts`           | Python Qwen3-TTS adapter                    |
+| `service-llm`           | `services/llm`           | Python Ollama adapter                       |
+| `i12e-postgres`         | `i12e/postgres`          | PostgreSQL image and migrations             |
+| `i12e-gateway`          | `i12e/gateway`           | Nginx production entrypoint                 |
+| `i12e-orchestrator`     | `i12e/orchestrator`      | Compose stacks and deploy bundle            |
+
+## Nx targets
+
+Targets use the same names everywhere; a project only defines the ones that make sense for it.
+
+| Target         | Meaning                                                                  |
+| -------------- | ------------------------------------------------------------------------ |
+| `format`       | Apply the formatter (Prettier or rustfmt).                               |
+| `format-check` | Verify formatting without changing files.                                |
+| `lint`         | Run a real linter or static check (clippy, compileall, nginx -t, sh -n). |
+| `typecheck`    | Type-check without producing artifacts.                                  |
+| `test`         | Run the tests.                                                           |
+| `build`        | Produce the native build artifact (Vite bundle, cargo binary, tsc).      |
+
+Container images are built by Docker Compose (local stacks) and CI, not by Nx targets.
+
+`nx format` is a built-in Nx command, so call the formatter target as `pnpm nx run <project>:format`.
 
 ```bash
-nx <target> <project>
-nx run-many -t <target>
+pnpm nx <target> <project>
+pnpm nx run-many -t format-check lint typecheck test   # what CI runs
+pnpm nx run-many -t build
 ```
 
 ### Nx in sandboxed environments
 
-Nx plugin workers use Unix domain sockets for IPC. In restricted sandboxes this can fail with errors like:
+Nx plugin workers use Unix domain sockets for IPC. In restricted sandboxes this can fail with errors like
+`Failed to start plugin worker for plugin ...` or `listen EPERM ... /tmp/.../d.sock`. Run Nx outside the sandbox, or
+run the underlying command directly (for example `pnpm exec vitest run`, `pnpm exec tsc --noEmit`, `cargo test`).
 
-- `Failed to start plugin worker for plugin ...`
-- `listen EPERM ... /tmp/.../d.sock`
+## Local stacks
 
-If this occurs, run Nx commands outside the sandbox.
-
-As a fallback for quick validation, run the underlying project commands directly (for example `pnpm exec vitest run`, `pnpm exec tsc --noEmit`, `pnpm run build`).
-
-### CI-equivalent local check
+All stack commands go through [`i12e/orchestrator/scripts/stack.sh`](../i12e/orchestrator/scripts/stack.sh):
 
 ```bash
-nx run-many -t lint test build typecheck
-```
-
-### Generate a new TypeScript library
-
-```bash
-npx nx g @nx/js:lib libs/<name> --publishable --importPath=@central/<name>
-```
-
-### Persistence image project
-
-The persistence image uses PostgreSQL 18.3. Existing local PostgreSQL 16 data volumes cannot be reused directly with PostgreSQL 18; recreate the local dev volume or dump/restore data before running the upgraded image. PostgreSQL 18 containers must mount the data volume at `/var/lib/postgresql`; the image stores database files under a versioned subdirectory.
-
-Build the persistence-layer PostgreSQL image:
-
-```bash
-nx build i12e-postgres
-```
-
-Run the persistence-layer PostgreSQL container:
-
-```bash
-nx run i12e-postgres:run
-```
-
-The standalone PostgreSQL run target publishes `5001:5432` by default.
-
-Override standalone container name and port when needed:
-
-```bash
-POSTGRES_PORT=55432 POSTGRES_CONTAINER_NAME=central-i12e-postgres-dev pnpm nx run i12e-postgres:run
-```
-
-Apply SQL migrations against the running PostgreSQL container:
-
-```bash
-nx run i12e-postgres:migrate
-```
-
-Create a new SQL migration file:
-
-```bash
-MIGRATION_NAME=create_users pnpm nx run i12e-postgres:create-migration
-```
-
-### Cockpit container
-
-Build the cockpit container image:
-
-```bash
-nx run cockpit:container-build
-```
-
-Run the cockpit container image:
-
-```bash
-nx run cockpit:container-run
-```
-
-The standalone cockpit dev server (`pnpm nx run cockpit:start`) runs on `5000`.
-
-The cockpit container run target publishes `5000:3000`.
-
-### Backend service container
-
-Build the backend service container image:
-
-```bash
-nx run backend:container-build
-```
-
-Run the backend service container image:
-
-```bash
-nx run backend:container-run
-```
-
-The backend container run target publishes `5010:8080`.
-
-Weather update polling defaults to 15 minutes (`WEATHER_REFRESH_INTERVAL_SECONDS=900`), and successful updates are persisted to PostgreSQL via `BACKEND_DATABASE_URL`.
-
-### Assistant service container
-
-Build the assistant service container image:
-
-```bash
-nx run assistant-service:container-build
-```
-
-Run the assistant service container image:
-
-```bash
-nx run assistant-service:container-run
-```
-
-The assistant container run target publishes `5020:8080`.
-
-The standalone assistant container still defaults to `ASSISTANT_BACKEND_MODE=mock` unless environment overrides are supplied. The commented orchestrator assistant definition defaults to `ASSISTANT_BACKEND_MODE=proxy` with STT, TTS, and LLM services wired in.
-
-### STT and TTS containers
-
-Build the faster-whisper STT container image:
-
-```bash
-nx run stt-service:build
-```
-
-Build the Qwen3-TTS container image:
-
-```bash
-nx run tts-service:build
-```
-
-Run them standalone when needed:
-
-```bash
-nx run stt-service:container-run
-nx run tts-service:container-run
-```
-
-The standalone STT and TTS containers publish `5030:8081` and `5040:8082`.
-
-### LLM container
-
-Build the Ollama wrapper container image:
-
-```bash
-nx run llm-service:build
-```
-
-Run it standalone when needed:
-
-```bash
-nx run llm-service:container-run
-```
-
-The standalone LLM wrapper publishes `5050:8083`.
-
-### Orchestrator project
-
-Start the active hot-reload development environment:
-
-```bash
-pnpm dev
-```
-
-This delegates to `nx run i12e-orchestrator:dev` / `up-dev-hot`. It starts PostgreSQL, runs migrations, then starts the active service stack with the dev compose overlay:
-
-- `app-cockpit` runs the Vite dev server for browser HMR.
-- `service-backend` runs through `cargo watch`.
-
-Assistant, STT, TTS, Ollama runtime, and LLM wrapper compose blocks exist as commented prototypes in the orchestrator compose files. Their standalone service projects and container targets are still available, but they are not part of the active `pnpm dev` or `pnpm prod` stack.
-
-Stop the dev stack with:
-
-```bash
+pnpm dev                          # hot-reload dev stack (compose watch)
+COMPOSE_PROFILES=voice pnpm dev   # including assistant, STT, TTS, and LLM services
 pnpm dev:down
-```
+pnpm logs:dev
+pnpm ps:dev
+pnpm migrate:dev
 
-Create the ignored production env file once:
-
-```bash
-cp i12e/orchestrator/.env.prod.example i12e/orchestrator/.env.prod
-```
-
-Set real production values in `i12e/orchestrator/.env.prod`, especially DB password and CORS origins.
-
-Start the production environment:
-
-```bash
-pnpm prod
-```
-
-The production deployment path is the code-free deploy bundle under `i12e/orchestrator/deploy`. CI pushes PR and SHA build images to GHCR for integration testing, publishes release tags from the tested SHA image set, and packages:
-
-- `docker-compose.prod.yml`
-- `central-update`
-- `.env.prod.example`
-
-On the production host, run `./central-update` from the unpacked bundle and choose `stable` or an exact release tag such as `v1.2.3`.
-
-Stop it with:
-
-```bash
+pnpm prod                         # build the release image set and run it like production
 pnpm prod:down
+pnpm logs:prod
+pnpm ps:prod
+pnpm migrate:prod
 ```
 
-The orchestrator `up-*` targets share startup sequencing through `i12e/orchestrator/scripts/up_stack.sh`.
-Startup waits for PostgreSQL health before running migrations.
-Long-running services use `SERVICE_RESTART_POLICY`; dev defaults to `no`, prod example defaults to `unless-stopped`.
+`pnpm prod` needs the ignored `i12e/orchestrator/.env.prod`, created once from
+`i12e/orchestrator/deploy/.env.prod.example`. Details are in the
+[orchestrator README](../i12e/orchestrator/README.md); ports are in the [service catalog](./service-catalog.md).
 
-Advanced targets:
+Run Cockpit on its own (port `5000`, against the dev stack backend):
 
 ```bash
-nx run i12e-orchestrator:up-dev
-nx run i12e-orchestrator:up-dev-llm-proxy-ollama
+pnpm nx run app-cockpit:start
 ```
 
-`up-dev` starts release-style dev containers without watchers.
-`up-dev-llm-proxy-ollama` is retained as an experimental target, but it currently references assistant and Ollama compose services that are commented out in `docker-compose.yml`.
-
-The tracked `i12e/orchestrator/.env.dev` still includes assistant tuning values. Those values are not consumed by the active compose stack unless the commented assistant support services are re-enabled. The commented service definitions request `gpus: all` for STT, TTS, and Ollama runtime.
-
-Run the experimental voice smoke test target:
+## Database migrations
 
 ```bash
-nx run i12e-orchestrator:smoke-dev-voice
+pnpm nx run i12e-postgres:create-migration "create users"
+pnpm migrate:dev
 ```
 
-Override `SMOKE_VOICE_TEXT` and `SMOKE_VOICE_LANGUAGE` when you want to exercise a different sample input. This target depends on the currently commented assistant support services and is not part of the active default stack.
+See the [postgres README](../i12e/postgres/README.md) for the naming scheme and the PostgreSQL 18 volume notes.
 
-The local production target starts PostgreSQL, migrations, Backend, and Cockpit by default, using port mappings from ignored `i12e/orchestrator/.env.prod`.
+## Shared TypeScript libraries
 
-The migration step runs as a one-off `postgres-migrate` container and is removed after completion.
-
-For a complete list of orchestrated services and their port mappings, see [Service Catalog](./service-catalog.md).
-
-Stop all orchestrated services:
+Generate a new library:
 
 ```bash
-pnpm dev:down
-pnpm prod:down
+pnpm nx g @nx/js:lib libs/<name> --publishable --importPath=@central/<name>
 ```
 
-Re-run migrations (requires PostgreSQL to already be running):
+Then rename the Nx project to `lib-<name>`, tag it `type:lib`, and add `format`, `format-check`, `typecheck`, `test`,
+and `build` targets. Consumption without a build step is described in
+[architecture](./architecture.md#shared-library-packaging).
+
+Nx keeps TypeScript project references in sync; trigger or verify it manually with:
 
 ```bash
-nx run i12e-orchestrator:migrate-dev
-nx run i12e-orchestrator:migrate-prod
-```
-
-### Keep TypeScript project references up to date
-
-Nx automatically updates TypeScript project references in `tsconfig.json` files to ensure they remain accurate based on project dependencies.
-
-To manually trigger sync:
-
-```bash
-npx nx sync
-```
-
-To check sync state:
-
-```bash
-npx nx sync:check
+pnpm nx sync
+pnpm nx sync:check
 ```

@@ -1,10 +1,24 @@
 {
   "$schema": "../../node_modules/nx/schemas/project-schema.json",
-  "name": "assistant-service",
+  "name": "service-assistant",
   "projectType": "application",
   "root": "services/assistant",
   "sourceRoot": "services/assistant/src",
   "targets": {
+    "format": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "services/assistant",
+        "command": "cargo fmt"
+      }
+    },
+    "format-check": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "services/assistant",
+        "command": "cargo fmt --check"
+      }
+    },
     "lint": {
       "executor": "nx:run-commands",
       "options": {
@@ -32,19 +46,7 @@
         "cwd": "services/assistant",
         "command": "cargo check --all-targets"
       }
-    },
-    "container-build": {
-      "executor": "nx:run-commands",
-      "options": {
-        "command": "docker build --file services/assistant/Dockerfile --tag central/services/assistant:latest ."
-      }
-    },
-    "container-run": {
-      "executor": "nx:run-commands",
-      "options": {
-        "command": "docker run --rm -i --name central-assistant -p 5020:8080 central/services/assistant:latest"
-      }
     }
   },
-  "tags": ["scope:platform", "type:service"]
+  "tags": ["type:service"]
 }

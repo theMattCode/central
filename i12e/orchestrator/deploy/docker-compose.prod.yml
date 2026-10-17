@@ -43,6 +43,8 @@ services:
       WEATHER_REFRESH_INTERVAL_SECONDS: ${WEATHER_REFRESH_INTERVAL_SECONDS:-900}
       WEATHER_REQUEST_TIMEOUT_SECONDS: ${WEATHER_REQUEST_TIMEOUT_SECONDS:-10}
       WEATHER_OPEN_METEO_BASE_URL: ${WEATHER_OPEN_METEO_BASE_URL:-https://api.open-meteo.com}
+      SENTRY_DSN: ${BACKEND_SENTRY_DSN:-}
+      SENTRY_ENVIRONMENT: ${SENTRY_ENVIRONMENT:-production}
     restart: ${SERVICE_RESTART_POLICY:-unless-stopped}
     healthcheck:
       test: ['CMD', 'wget', '-qO', '-', 'http://127.0.0.1:8080/healthz']
@@ -59,6 +61,8 @@ services:
     environment:
       NODE_ENV: production
       BACKEND_BASE_URL: ${BACKEND_BASE_URL:-http://service-backend:8080}
+      SENTRY_DSN: ${COCKPIT_SENTRY_DSN:-}
+      SENTRY_ENVIRONMENT: ${SENTRY_ENVIRONMENT:-production}
     restart: ${SERVICE_RESTART_POLICY:-unless-stopped}
 
   i12e-gateway:
