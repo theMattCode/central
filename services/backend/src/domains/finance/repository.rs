@@ -504,6 +504,59 @@ impl FinancialAccountStore for FinanceRepository {
 
         row_to_financial_account(&row)
     }
+
+    async fn archive_financial_account(&self, id: &str) -> Result<FinancialAccount, ApiError> {
+        // Timestamps only move when the status actually changes, which keeps repeats idempotent.
+        let sql = format!(
+            "UPDATE service_finance.financial_accounts
+             SET status = 'archived',
+                 archived_at = COALESCE(archived_at, now()),
+                 updated_at = CASE WHEN status = 'active' THEN now() ELSE updated_at END
+             WHERE id = $1::text::uuid
+             RETURNING {FINANCIAL_ACCOUNT_COLUMNS}"
+        );
+        self.change_financial_account_status(&sql, id, "archive")
+            .await
+    }
+
+    async fn restore_financial_account(&self, id: &str) -> Result<FinancialAccount, ApiError> {
+        let sql = format!(
+            "UPDATE service_finance.financial_accounts
+             SET status = 'active',
+                 archived_at = NULL,
+                 display_order = CASE
+                   WHEN status = 'archived' THEN (
+                     SELECT COALESCE(max(display_order) + 1, 0)
+                     FROM service_finance.financial_accounts
+                     WHERE status = 'active'
+                   )
+                   ELSE display_order
+                 END,
+                 updated_at = CASE WHEN status = 'archived' THEN now() ELSE updated_at END
+             WHERE id = $1::text::uuid
+             RETURNING {FINANCIAL_ACCOUNT_COLUMNS}"
+        );
+        self.change_financial_account_status(&sql, id, "restore")
+            .await
+    }
+}
+
+impl FinanceRepository {
+    async fn change_financial_account_status(
+        &self,
+        sql: &str,
+        id: &str,
+        action: &str,
+    ) -> Result<FinancialAccount, ApiError> {
+        let row = self
+            .client
+            .query_opt(sql, &[&id])
+            .await
+            .map_err(|error| financial_account_error(id, action, error))?
+            .ok_or_else(|| financial_account_not_found(id))?;
+
+        row_to_financial_account(&row)
+    }
 }
 
 fn financial_account_not_found(id: &str) -> ApiError {

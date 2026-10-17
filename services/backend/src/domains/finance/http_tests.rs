@@ -72,6 +72,34 @@ impl FinancialAccountStore for FakeFinanceStore {
 
         Ok(account.clone())
     }
+
+    async fn archive_financial_account(&self, id: &str) -> Result<FinancialAccount, ApiError> {
+        let mut accounts = self.accounts.lock().expect("lock accounts");
+        let Some(account) = accounts.iter_mut().find(|account| account.id == id) else {
+            return Err(ApiError::NotFound(format!(
+                "Financial account {id} was not found"
+            )));
+        };
+
+        account.status = FinancialAccountStatus::Archived;
+        account.archived_at.get_or_insert_with(Utc::now);
+
+        Ok(account.clone())
+    }
+
+    async fn restore_financial_account(&self, id: &str) -> Result<FinancialAccount, ApiError> {
+        let mut accounts = self.accounts.lock().expect("lock accounts");
+        let Some(account) = accounts.iter_mut().find(|account| account.id == id) else {
+            return Err(ApiError::NotFound(format!(
+                "Financial account {id} was not found"
+            )));
+        };
+
+        account.status = FinancialAccountStatus::Active;
+        account.archived_at = None;
+
+        Ok(account.clone())
+    }
 }
 
 #[async_trait::async_trait]
@@ -493,4 +521,55 @@ fn conflict_maps_to_409() {
 
     assert_eq!(error.status_code(), StatusCode::CONFLICT);
     assert_eq!(error.code(), "conflict");
+}
+
+#[tokio::test]
+async fn archive_and_restore_financial_account_return_the_account() {
+    let base_url = spawn_http_server(test_context()).await;
+    let client = reqwest::Client::new();
+    let created = create_test_account(&client, &base_url).await;
+    let account_url = format!(
+        "{base_url}/api/v1/finance/accounts/{}",
+        created["id"].as_str().expect("account id")
+    );
+
+    let archive_response = client
+        .post(format!("{account_url}/archive"))
+        .send()
+        .await
+        .expect("archive account");
+
+    assert_eq!(archive_response.status(), StatusCode::OK);
+    let archived: serde_json::Value = archive_response.json().await.expect("json payload");
+    assert_eq!(archived["status"], "archived");
+    assert!(archived["archivedAt"].is_string());
+
+    let restore_response = client
+        .post(format!("{account_url}/restore"))
+        .send()
+        .await
+        .expect("restore account");
+
+    assert_eq!(restore_response.status(), StatusCode::OK);
+    let restored: serde_json::Value = restore_response.json().await.expect("json payload");
+    assert_eq!(restored["status"], "active");
+    assert_eq!(restored["archivedAt"], serde_json::Value::Null);
+}
+
+#[tokio::test]
+async fn archive_and_restore_unknown_financial_account_return_not_found() {
+    let base_url = spawn_http_server(test_context()).await;
+    let client = reqwest::Client::new();
+
+    for action in ["archive", "restore"] {
+        let response = client
+            .post(format!(
+                "{base_url}/api/v1/finance/accounts/00000000-0000-7000-9000-000000000404/{action}"
+            ))
+            .send()
+            .await
+            .expect("post account action");
+
+        assert_eq!(response.status(), StatusCode::NOT_FOUND, "{action}");
+    }
 }

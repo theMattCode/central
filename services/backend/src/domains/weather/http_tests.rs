@@ -174,6 +174,18 @@ impl FinancialAccountStore for FakeFinanceStore {
             "finance store should not be called by weather tests".to_string(),
         ))
     }
+
+    async fn archive_financial_account(&self, _id: &str) -> Result<FinancialAccount, ApiError> {
+        Err(ApiError::Internal(
+            "finance store should not be called by weather tests".to_string(),
+        ))
+    }
+
+    async fn restore_financial_account(&self, _id: &str) -> Result<FinancialAccount, ApiError> {
+        Err(ApiError::Internal(
+            "finance store should not be called by weather tests".to_string(),
+        ))
+    }
 }
 
 fn test_snapshot() -> WeatherSnapshotResponse {

@@ -151,4 +151,11 @@ pub trait FinancialAccountStore: Send + Sync {
         id: &str,
         draft: &FinancialAccountDraft,
     ) -> Result<FinancialAccount, ApiError>;
+
+    /// Idempotent: archiving an archived account returns it unchanged.
+    async fn archive_financial_account(&self, id: &str) -> Result<FinancialAccount, ApiError>;
+
+    /// Idempotent: restoring an active account returns it unchanged. A restored account is
+    /// appended to the end of the active order.
+    async fn restore_financial_account(&self, id: &str) -> Result<FinancialAccount, ApiError>;
 }

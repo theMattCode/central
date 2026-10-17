@@ -41,6 +41,14 @@ impl FinanceService {
         self.accounts.update_financial_account(id, draft).await
     }
 
+    pub async fn archive_financial_account(&self, id: &str) -> Result<FinancialAccount, ApiError> {
+        self.accounts.archive_financial_account(id).await
+    }
+
+    pub async fn restore_financial_account(&self, id: &str) -> Result<FinancialAccount, ApiError> {
+        self.accounts.restore_financial_account(id).await
+    }
+
     pub async fn list_transactions(
         &self,
         month: &TransactionsQuery,

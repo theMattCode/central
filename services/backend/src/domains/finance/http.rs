@@ -92,3 +92,27 @@ pub(in crate::domains::finance) async fn update_financial_account(
 
     Ok(Json(response))
 }
+
+pub(in crate::domains::finance) async fn archive_financial_account(
+    State(context): State<Context>,
+    Path(id): Path<String>,
+) -> Result<Json<FinancialAccount>, ApiError> {
+    let response = context
+        .finance_service
+        .archive_financial_account(&id)
+        .await?;
+
+    Ok(Json(response))
+}
+
+pub(in crate::domains::finance) async fn restore_financial_account(
+    State(context): State<Context>,
+    Path(id): Path<String>,
+) -> Result<Json<FinancialAccount>, ApiError> {
+    let response = context
+        .finance_service
+        .restore_financial_account(&id)
+        .await?;
+
+    Ok(Json(response))
+}

@@ -267,3 +267,114 @@ async fn update_unknown_financial_account_is_not_found() {
         assert!(matches!(error, ApiError::NotFound(_)), "{id}: {error:?}");
     }
 }
+
+#[tokio::test]
+async fn archive_financial_account_marks_it_archived() {
+    let database = TestDatabase::start().await;
+    let repository = connect_repository(&database).await;
+    let created = repository
+        .create_financial_account(&account_draft("Wallet", FinancialAccountType::Cash))
+        .await
+        .expect("create account");
+
+    let archived = repository
+        .archive_financial_account(&created.id)
+        .await
+        .expect("archive account");
+
+    assert_eq!(archived.status, FinancialAccountStatus::Archived);
+    assert!(archived.archived_at.is_some());
+    assert!(archived.updated_at > created.updated_at);
+}
+
+#[tokio::test]
+async fn archive_financial_account_twice_leaves_it_unchanged() {
+    let database = TestDatabase::start().await;
+    let repository = connect_repository(&database).await;
+    let created = repository
+        .create_financial_account(&account_draft("Wallet", FinancialAccountType::Cash))
+        .await
+        .expect("create account");
+    let first = repository
+        .archive_financial_account(&created.id)
+        .await
+        .expect("archive account");
+
+    let second = repository
+        .archive_financial_account(&created.id)
+        .await
+        .expect("archive account again");
+
+    assert_eq!(second, first);
+}
+
+#[tokio::test]
+async fn restore_financial_account_appends_it_to_active_order() {
+    let database = TestDatabase::start().await;
+    let repository = connect_repository(&database).await;
+    let mut ids = Vec::new();
+    for name in ["A", "B", "C"] {
+        let account = repository
+            .create_financial_account(&account_draft(name, FinancialAccountType::Bank))
+            .await
+            .expect("create account");
+        ids.push(account.id);
+    }
+    let archived = repository
+        .archive_financial_account(&ids[0])
+        .await
+        .expect("archive A");
+
+    let restored = repository
+        .restore_financial_account(&ids[0])
+        .await
+        .expect("restore A");
+
+    assert_eq!(restored.status, FinancialAccountStatus::Active);
+    assert_eq!(restored.archived_at, None);
+    assert_eq!(restored.display_order, 3);
+    assert!(restored.updated_at > archived.updated_at);
+}
+
+#[tokio::test]
+async fn restore_active_financial_account_leaves_it_unchanged() {
+    let database = TestDatabase::start().await;
+    let repository = connect_repository(&database).await;
+    let created = repository
+        .create_financial_account(&account_draft("Wallet", FinancialAccountType::Cash))
+        .await
+        .expect("create account");
+
+    let restored = repository
+        .restore_financial_account(&created.id)
+        .await
+        .expect("restore active account");
+
+    assert_eq!(restored, created);
+}
+
+#[tokio::test]
+async fn archive_and_restore_unknown_financial_account_are_not_found() {
+    let database = TestDatabase::start().await;
+    let repository = connect_repository(&database).await;
+
+    for id in ["00000000-0000-7000-9000-000000000404", "not-a-uuid"] {
+        let archive_error = repository
+            .archive_financial_account(id)
+            .await
+            .expect_err("unknown account");
+        let restore_error = repository
+            .restore_financial_account(id)
+            .await
+            .expect_err("unknown account");
+
+        assert!(
+            matches!(archive_error, ApiError::NotFound(_)),
+            "{id}: {archive_error:?}"
+        );
+        assert!(
+            matches!(restore_error, ApiError::NotFound(_)),
+            "{id}: {restore_error:?}"
+        );
+    }
+}
