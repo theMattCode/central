@@ -3,6 +3,9 @@ use std::sync::{Arc, Mutex};
 use chrono::{DateTime, Utc};
 use reqwest::StatusCode;
 
+use crate::domains::finance::accounts::{
+    FinancialAccount, FinancialAccountDraft, FinancialAccountStatus, FinancialAccountStore,
+};
 use crate::domains::finance::contracts::FinanceDataStore;
 use crate::domains::finance::model::{
     format_amount_minor_units, summarize, TransactionDraft, TransactionListResponse,
@@ -19,6 +22,36 @@ use crate::{config::Config, context::Context, error::ApiError};
 #[derive(Default)]
 struct FakeFinanceStore {
     transactions: Mutex<Vec<TransactionResponse>>,
+    accounts: Mutex<Vec<FinancialAccount>>,
+}
+
+#[async_trait::async_trait]
+impl FinancialAccountStore for FakeFinanceStore {
+    async fn list_financial_accounts(&self) -> Result<Vec<FinancialAccount>, ApiError> {
+        Ok(self.accounts.lock().expect("lock accounts").clone())
+    }
+
+    async fn create_financial_account(
+        &self,
+        draft: &FinancialAccountDraft,
+    ) -> Result<FinancialAccount, ApiError> {
+        let mut accounts = self.accounts.lock().expect("lock accounts");
+        let now = Utc::now();
+        let account = FinancialAccount {
+            id: format!("00000000-0000-7000-9000-{:012}", accounts.len() + 1),
+            name: draft.name.clone(),
+            account_type: draft.account_type.clone(),
+            primary_currency_code: draft.primary_currency_code.clone(),
+            display_order: i32::try_from(accounts.len()).expect("display order fits i32"),
+            status: FinancialAccountStatus::Active,
+            archived_at: None,
+            created_at: now,
+            updated_at: now,
+        };
+        accounts.push(account.clone());
+
+        Ok(account)
+    }
 }
 
 #[async_trait::async_trait]
@@ -195,6 +228,7 @@ async fn spawn_http_server(context: Context) -> String {
 }
 
 fn test_context() -> Context {
+    let finance_store = Arc::new(FakeFinanceStore::default());
     Context {
         config: Arc::new(Config {
             port: 0,
@@ -202,7 +236,7 @@ fn test_context() -> Context {
             cors_allow_origin: "*".to_string(),
             weather_config: None,
         }),
-        finance_service: FinanceService::new(Arc::new(FakeFinanceStore::default())),
+        finance_service: FinanceService::new(finance_store.clone(), finance_store),
         weather_service: WeatherService::new(
             Arc::new(FakeWeatherFetcher),
             Arc::new(FakeWeatherStore),
@@ -280,4 +314,76 @@ async fn missing_delete_target_returns_not_found() {
         .expect("delete missing transaction");
 
     assert_eq!(response.status(), StatusCode::NOT_FOUND);
+}
+
+#[tokio::test]
+async fn list_financial_accounts_returns_empty_list() {
+    let base_url = spawn_http_server(test_context()).await;
+
+    let response = reqwest::get(format!("{base_url}/api/v1/finance/accounts"))
+        .await
+        .expect("list accounts");
+
+    assert_eq!(response.status(), StatusCode::OK);
+    let payload: serde_json::Value = response.json().await.expect("json payload");
+    assert_eq!(payload, serde_json::json!({ "accounts": [] }));
+}
+
+#[tokio::test]
+async fn create_financial_account_returns_created_account_and_lists_it() {
+    let base_url = spawn_http_server(test_context()).await;
+    let client = reqwest::Client::new();
+
+    let create_response = client
+        .post(format!("{base_url}/api/v1/finance/accounts"))
+        .json(&serde_json::json!({
+            "name": " Depot ",
+            "accountType": "investment",
+            "primaryCurrencyCode": "EUR"
+        }))
+        .send()
+        .await
+        .expect("create account");
+
+    assert_eq!(create_response.status(), StatusCode::CREATED);
+    let created: serde_json::Value = create_response.json().await.expect("json payload");
+    assert_eq!(created["name"], "Depot");
+    assert_eq!(created["accountType"], "investment");
+    assert_eq!(created["primaryCurrencyCode"], "EUR");
+    assert_eq!(created["status"], "active");
+    assert_eq!(created["displayOrder"], 0);
+    assert_eq!(created["archivedAt"], serde_json::Value::Null);
+
+    let list: serde_json::Value = client
+        .get(format!("{base_url}/api/v1/finance/accounts"))
+        .send()
+        .await
+        .expect("list accounts")
+        .json()
+        .await
+        .expect("json payload");
+    assert_eq!(list["accounts"], serde_json::json!([created]));
+}
+
+#[tokio::test]
+async fn create_financial_account_with_invalid_input_returns_bad_request() {
+    let base_url = spawn_http_server(test_context()).await;
+    let client = reqwest::Client::new();
+
+    for body in [
+        serde_json::json!({ "name": "", "accountType": "cash", "primaryCurrencyCode": "EUR" }),
+        serde_json::json!({ "name": "Wallet", "accountType": "savings", "primaryCurrencyCode": "EUR" }),
+        serde_json::json!({ "name": "Wallet", "accountType": "cash", "primaryCurrencyCode": "eur" }),
+    ] {
+        let response = client
+            .post(format!("{base_url}/api/v1/finance/accounts"))
+            .json(&body)
+            .send()
+            .await
+            .expect("create account");
+
+        assert_eq!(response.status(), StatusCode::BAD_REQUEST, "{body}");
+        let payload: serde_json::Value = response.json().await.expect("json payload");
+        assert_eq!(payload["error"]["code"], "bad_request", "{body}");
+    }
 }

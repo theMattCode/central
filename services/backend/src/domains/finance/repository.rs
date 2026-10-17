@@ -4,6 +4,10 @@ use chrono::{DateTime, NaiveDate, Utc};
 use tokio_postgres::{config::Host, Client, NoTls, Row};
 use tracing::{error, info, warn};
 
+use crate::domains::finance::accounts::{
+    FinancialAccount, FinancialAccountDraft, FinancialAccountStatus, FinancialAccountStore,
+    FinancialAccountType,
+};
 use crate::domains::finance::contracts::FinanceDataStore;
 use crate::domains::finance::model::{
     format_amount_minor_units, summarize, TransactionDirection, TransactionDraft,
@@ -13,6 +17,18 @@ use crate::error::ApiError;
 
 const DB_CONNECT_MAX_ATTEMPTS: usize = 10;
 const DB_CONNECT_RETRY_DELAY: Duration = Duration::from_secs(1);
+
+const FINANCIAL_ACCOUNT_COLUMNS: &str = r#"
+  id::text,
+  name,
+  account_type,
+  primary_currency_code,
+  display_order,
+  status,
+  archived_at,
+  created_at,
+  updated_at
+"#;
 
 const SELECT_TRANSACTIONS_SQL: &str = r#"
 SELECT
@@ -406,4 +422,76 @@ impl FinanceDataStore for FinanceRepository {
     async fn delete_transaction(&self, id: &str) -> Result<(), ApiError> {
         FinanceRepository::delete_transaction(self, id).await
     }
+}
+
+#[async_trait::async_trait]
+impl FinancialAccountStore for FinanceRepository {
+    async fn list_financial_accounts(&self) -> Result<Vec<FinancialAccount>, ApiError> {
+        let sql = format!(
+            "SELECT {FINANCIAL_ACCOUNT_COLUMNS}
+             FROM service_finance.financial_accounts
+             ORDER BY status = 'archived', display_order, name, id"
+        );
+        let rows = self.client.query(&sql, &[]).await.map_err(|error| {
+            ApiError::Internal(format!("Failed to list financial accounts: {error}"))
+        })?;
+
+        rows.iter().map(row_to_financial_account).collect()
+    }
+
+    async fn create_financial_account(
+        &self,
+        draft: &FinancialAccountDraft,
+    ) -> Result<FinancialAccount, ApiError> {
+        // New accounts go to the end of the active order.
+        let sql = format!(
+            "INSERT INTO service_finance.financial_accounts
+               (name, account_type, primary_currency_code, display_order)
+             SELECT $1, $2, $3, COALESCE(max(display_order) + 1, 0)
+             FROM service_finance.financial_accounts
+             WHERE status = 'active'
+             RETURNING {FINANCIAL_ACCOUNT_COLUMNS}"
+        );
+        let row = self
+            .client
+            .query_one(
+                &sql,
+                &[
+                    &draft.name,
+                    &draft.account_type.as_str(),
+                    &draft.primary_currency_code,
+                ],
+            )
+            .await
+            .map_err(|error| {
+                ApiError::Internal(format!("Failed to create financial account: {error}"))
+            })?;
+
+        row_to_financial_account(&row)
+    }
+}
+
+fn row_to_financial_account(row: &Row) -> Result<FinancialAccount, ApiError> {
+    let account_type =
+        FinancialAccountType::try_from(row.get::<_, &str>("account_type")).map_err(|_| {
+            ApiError::Internal(format!(
+                "Unsupported financial account type: {}",
+                row.get::<_, &str>("account_type")
+            ))
+        })?;
+
+    Ok(FinancialAccount {
+        id: row.get("id"),
+        name: row.get("name"),
+        account_type,
+        primary_currency_code: row
+            .get::<_, String>("primary_currency_code")
+            .trim()
+            .to_string(),
+        display_order: row.get("display_order"),
+        status: FinancialAccountStatus::try_from(row.get::<_, &str>("status"))?,
+        archived_at: row.get("archived_at"),
+        created_at: row.get("created_at"),
+        updated_at: row.get("updated_at"),
+    })
 }

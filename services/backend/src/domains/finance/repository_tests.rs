@@ -2,6 +2,9 @@ use chrono::NaiveDate;
 use tokio_postgres::error::SqlState;
 use tokio_postgres::{Error, NoTls};
 
+use crate::domains::finance::accounts::{
+    FinancialAccountDraft, FinancialAccountStatus, FinancialAccountStore, FinancialAccountType,
+};
 use crate::domains::finance::contracts::FinanceDataStore;
 use crate::domains::finance::model::TransactionsQuery;
 use crate::domains::finance::repository::FinanceRepository;
@@ -64,4 +67,92 @@ async fn financial_accounts_reject_unknown_account_type() {
         .expect_err("unknown account type must be rejected");
 
     assert_eq!(error.code(), Some(&SqlState::CHECK_VIOLATION));
+}
+
+async fn connect_repository(database: &TestDatabase) -> FinanceRepository {
+    FinanceRepository::connect(database.url())
+        .await
+        .expect("connect finance repository")
+}
+
+fn account_draft(name: &str, account_type: FinancialAccountType) -> FinancialAccountDraft {
+    FinancialAccountDraft {
+        name: name.to_string(),
+        account_type,
+        primary_currency_code: "EUR".to_string(),
+    }
+}
+
+#[tokio::test]
+async fn create_financial_account_returns_active_account() {
+    let database = TestDatabase::start().await;
+    let repository = connect_repository(&database).await;
+
+    let account = repository
+        .create_financial_account(&account_draft("Depot", FinancialAccountType::Investment))
+        .await
+        .expect("create account");
+
+    assert_eq!(account.name, "Depot");
+    assert_eq!(account.account_type, FinancialAccountType::Investment);
+    assert_eq!(account.primary_currency_code, "EUR");
+    assert_eq!(account.status, FinancialAccountStatus::Active);
+    assert_eq!(account.archived_at, None);
+    assert_eq!(account.display_order, 0);
+}
+
+#[tokio::test]
+async fn create_financial_account_appends_to_active_order() {
+    let database = TestDatabase::start().await;
+    let repository = connect_repository(&database).await;
+
+    let first = repository
+        .create_financial_account(&account_draft("Wallet", FinancialAccountType::Cash))
+        .await
+        .expect("create first account");
+    let second = repository
+        .create_financial_account(&account_draft("Girokonto", FinancialAccountType::Bank))
+        .await
+        .expect("create second account");
+
+    assert_eq!(first.display_order, 0);
+    assert_eq!(second.display_order, 1);
+}
+
+#[tokio::test]
+async fn list_financial_accounts_orders_active_first_then_by_display_order() {
+    let database = TestDatabase::start().await;
+    let repository = connect_repository(&database).await;
+    for name in ["A", "B", "C"] {
+        repository
+            .create_financial_account(&account_draft(name, FinancialAccountType::Bank))
+            .await
+            .expect("create account");
+    }
+    let (client, connection) = tokio_postgres::connect(database.url(), NoTls)
+        .await
+        .expect("connect to test database");
+    tokio::spawn(connection);
+    client
+        .batch_execute(
+            "UPDATE service_finance.financial_accounts
+             SET status = 'archived', archived_at = now()
+             WHERE name = 'A';
+             UPDATE service_finance.financial_accounts SET display_order = 5 WHERE name = 'B';",
+        )
+        .await
+        .expect("archive A and move B");
+
+    let accounts = repository
+        .list_financial_accounts()
+        .await
+        .expect("list accounts");
+
+    let names = accounts
+        .iter()
+        .map(|account| account.name.as_str())
+        .collect::<Vec<_>>();
+    assert_eq!(names, ["C", "B", "A"]);
+    assert_eq!(accounts[2].status, FinancialAccountStatus::Archived);
+    assert!(accounts[2].archived_at.is_some());
 }

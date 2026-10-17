@@ -188,7 +188,10 @@ fn required_iso_date(input: Option<String>, field: &str) -> Result<NaiveDate, Ap
     })
 }
 
-fn clean_required_text(input: Option<String>, field: &str) -> Result<String, ApiError> {
+pub(in crate::domains::finance) fn clean_required_text(
+    input: Option<String>,
+    field: &str,
+) -> Result<String, ApiError> {
     let value = input
         .map(|value| value.trim().to_string())
         .filter(|value| !value.is_empty())

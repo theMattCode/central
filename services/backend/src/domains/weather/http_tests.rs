@@ -9,6 +9,9 @@ use std::{
 use chrono::{DateTime, Utc};
 use reqwest::StatusCode;
 
+use crate::domains::finance::accounts::{
+    FinancialAccount, FinancialAccountDraft, FinancialAccountStore,
+};
 use crate::domains::finance::contracts::FinanceDataStore;
 use crate::domains::finance::model::{
     TransactionDraft, TransactionListResponse, TransactionResponse, TransactionsQuery,
@@ -145,6 +148,24 @@ impl FinanceDataStore for FakeFinanceStore {
     }
 }
 
+#[async_trait::async_trait]
+impl FinancialAccountStore for FakeFinanceStore {
+    async fn list_financial_accounts(&self) -> Result<Vec<FinancialAccount>, ApiError> {
+        Err(ApiError::Internal(
+            "finance store should not be called by weather tests".to_string(),
+        ))
+    }
+
+    async fn create_financial_account(
+        &self,
+        _draft: &FinancialAccountDraft,
+    ) -> Result<FinancialAccount, ApiError> {
+        Err(ApiError::Internal(
+            "finance store should not be called by weather tests".to_string(),
+        ))
+    }
+}
+
 fn test_snapshot() -> WeatherSnapshotResponse {
     WeatherSnapshotResponse {
         location: WeatherLocationPayload {
@@ -238,7 +259,8 @@ fn test_config() -> Arc<Config> {
 }
 
 fn test_finance_service() -> FinanceService {
-    FinanceService::new(Arc::new(FakeFinanceStore))
+    let store = Arc::new(FakeFinanceStore);
+    FinanceService::new(store.clone(), store)
 }
 
 #[tokio::test]
