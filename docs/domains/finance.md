@@ -16,8 +16,8 @@ Backend code: `services/backend/src/domains/finance`. Cockpit code: `apps/cockpi
 ## Language
 
 **Financial Account**:
-A place where money is held or owed: `cash`, `bank`, `credit`, or `loan`. Has a primary **Currency** and can be
-archived.
+A place where money or assets are held or owed: `cash`, `bank`, `credit`, `loan`, or `investment`. Has a primary
+**Currency** and can be archived.
 _Avoid_: Wallet, pot
 
 **Ledger Entry**:

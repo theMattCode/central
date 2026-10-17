@@ -12,6 +12,7 @@ pub enum FinancialAccountType {
     Bank,
     Credit,
     Loan,
+    Investment,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
