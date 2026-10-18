@@ -8,16 +8,19 @@ Backend code: `services/backend/src/domains/finance`. Cockpit code: `apps/cockpi
 
 ## Status
 
-- **Implemented end to end:** manual **Income** and **Expense** **Transactions** with summaries
-  (`/api/v1/finance/transactions`, Cockpit route `/finance/transactions`). They are stored as **Ledger Entries**.
-- **Modelled, not yet exposed:** **Financial Accounts**, **Category** hierarchy, **Transfers**, **Balance Snapshots**,
-  **Budgets**, and **Recurring Plans**. Their schema and backend types exist and are under active development.
+- **Implemented end to end:**
+  - **Financial Accounts**: create, edit, reorder, archive, and restore (`/api/v1/finance/accounts`, Cockpit route
+    `/finance/accounts`).
+  - Manual **Income** and **Expense** **Transactions** with summaries, each booked on a **Financial Account**
+    (`/api/v1/finance/transactions`, Cockpit route `/finance/transactions`). They are stored as **Ledger Entries**.
+- **Modelled, not yet exposed:** **Category** hierarchy, **Transfers**, **Balance Snapshots**, **Budgets**, and
+  **Recurring Plans**. Their schema and backend types exist and are under active development.
 
 ## Language
 
 **Financial Account**:
-A place where money is held or owed: `cash`, `bank`, `credit`, or `loan`. Has a primary **Currency** and can be
-archived.
+A place where money or assets are held or owed: `cash`, `bank`, `credit`, `loan`, or `investment`. Has a primary
+**Currency** and a user-chosen display order. It is `active` or `archived`; archiving can be undone by restoring it.
 _Avoid_: Wallet, pot
 
 **Ledger Entry**:
@@ -80,6 +83,11 @@ An expected income, expense, or transfer on a weekly, monthly, or yearly schedul
 - A **Ledger Entry** has exactly one kind; a single movement is never both **Income** and **Expense**
 - A **Ledger Entry** has one positive **Amount**, one **Currency**, and one user-selected **Transaction Date**
 - A **Ledger Entry** belongs to zero or one **Category**
+- An **Income** or **Expense** belongs to exactly one **Financial Account**, and its **Currency** is that account's
+  primary **Currency**
+- New entries can only be booked on `active` **Financial Accounts**; existing entries keep their account when it is
+  archived
+- The primary **Currency** of a **Financial Account** can't change once entries reference it
 - A **Transfer** references a source and a destination **Financial Account**
 - An **Expense Reversal** can reference the **Expense** it reverses
 - A **Budget** covers one month and **Currency** and has at most one **Budget Allocation** per **Category**

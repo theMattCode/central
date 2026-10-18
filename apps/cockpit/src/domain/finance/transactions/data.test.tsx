@@ -25,6 +25,12 @@ describe('useTransactions', () => {
     getTransactions(input: IsoDateRange, options?: { signal?: AbortSignal }): Promise<TransactionsResponse> {
       return getTransactionsMock(input, options);
     },
+    getAccounts: () => Promise.reject(new Error('not used by transactions')),
+    createAccount: () => Promise.reject(new Error('not used by transactions')),
+    updateAccount: () => Promise.reject(new Error('not used by transactions')),
+    archiveAccount: () => Promise.reject(new Error('not used by transactions')),
+    restoreAccount: () => Promise.reject(new Error('not used by transactions')),
+    reorderAccounts: () => Promise.reject(new Error('not used by transactions')),
   };
 
   function TestWrapper({ children }: PropsWithChildren) {
@@ -47,6 +53,8 @@ describe('useTransactions', () => {
       description: partial.description ?? 'Test transaction',
       category: partial.category,
       note: partial.note,
+      financialAccountId: partial.financialAccountId ?? 'giro',
+      financialAccountName: partial.financialAccountName ?? 'Girokonto',
       createdAt: partial.createdAt ?? '2026-05-12T10:00:00Z',
       updatedAt: partial.updatedAt ?? '2026-05-12T10:00:00Z',
     };

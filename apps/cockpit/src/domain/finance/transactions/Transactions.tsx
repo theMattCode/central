@@ -19,6 +19,7 @@ import {
 import {
   createEmptyTransactionFormState,
   toCashTransactionInput,
+  TRANSACTION_CURRENCY_CODE,
   type Transaction,
   type TransactionDirection,
   type TransactionFormState,
@@ -28,12 +29,16 @@ import { useDateRange } from '@/utils/useDateRange.ts';
 import { SummaryStrip } from '@/domain/finance/transactions/SummaryStrip.tsx';
 import { Section } from '@/components/Section/Section.tsx';
 import { Input } from '@/components/Input/Input.tsx';
+import { AccountPicker } from '@/domain/finance/accounts/AccountPicker.tsx';
+import { useAccounts } from '@/domain/finance/accounts/data.ts';
+import type { FinancialAccount } from '@/domain/finance/accounts/model.ts';
 
 export type Direction = { value: TransactionDirection; label: string };
 
 export function Transactions() {
   const { dateRange /*, onFromChanged, onToChanged */ } = useDateRange();
   const { data, loading, error, reload } = useTransactions(dateRange);
+  const { accounts, error: accountsError } = useAccounts();
 
   const [form, setForm] = useState<TransactionFormState>(() => createEmptyTransactionFormState());
   const [editingTransactionId, setEditingTransactionId] = useState<string | null>(null);
@@ -55,6 +60,7 @@ export function Transactions() {
       description: transaction.description,
       category: transaction.category ?? '',
       note: transaction.note ?? '',
+      financialAccountId: transaction.financialAccountId,
     });
     setFormError(null);
   };
@@ -107,6 +113,8 @@ export function Transactions() {
       )}
 
       <TransactionForm
+        accounts={accounts}
+        accountsError={accountsError}
         categories={data?.categories ?? []}
         editing={Boolean(editingTransactionId)}
         error={formError}
@@ -130,6 +138,8 @@ export function Transactions() {
 }
 
 type TransactionFormProps = {
+  accounts: FinancialAccount[] | null;
+  accountsError: string | null;
   categories: string[];
   editing: boolean;
   error: string | null;
@@ -156,6 +166,8 @@ const DIRECTION_OPTIONS: ButtonGroupOption[] = [
 ];
 
 function TransactionForm({
+  accounts,
+  accountsError,
   categories,
   editing,
   error,
@@ -201,6 +213,13 @@ function TransactionForm({
               onChange={(event) => updateForm({ amount: event.target.value })}
             />
           </label>
+          <AccountPicker
+            accounts={accounts}
+            error={accountsError}
+            currencyCode={TRANSACTION_CURRENCY_CODE}
+            value={form.financialAccountId}
+            onChange={(financialAccountId) => updateForm({ financialAccountId })}
+          />
           <label className="flex flex-col gap-1 text-sm text-(--color-txt-sec)">
             Description
             <Input value={form.description} onChange={(event) => updateForm({ description: event.target.value })} />
@@ -273,6 +292,7 @@ function TransactionList({
             <tr>
               <th className="border-b border-(--color-section-border) py-2 pr-3 font-medium">Date</th>
               <th className="border-b border-(--color-section-border) py-2 pr-3 font-medium">Description</th>
+              <th className="border-b border-(--color-section-border) py-2 pr-3 font-medium">Account</th>
               <th className="border-b border-(--color-section-border) py-2 pr-3 font-medium">Category</th>
               <th className="border-b border-(--color-section-border) py-2 pr-3 text-right font-medium">Amount</th>
               <th className="border-b border-(--color-section-border) py-2 pl-3 text-right font-medium">Actions</th>
@@ -309,6 +329,9 @@ function TransactionRow({
       <td className="border-b border-(--color-section-border) py-2 pr-3">
         <div className="font-medium">{transaction.description}</div>
         {transaction.note && <div className="text-xs text-(--color-txt-sec)">{transaction.note}</div>}
+      </td>
+      <td className="border-b border-(--color-section-border) py-2 pr-3 text-(--color-txt-sec)">
+        {transaction.financialAccountName}
       </td>
       <td className="border-b border-(--color-section-border) py-2 pr-3 text-(--color-txt-sec)">
         {transaction.category ?? '-'}
@@ -354,7 +377,7 @@ function TransactionCard({
           <div>
             <div className="font-medium">{transaction.description}</div>
             <div className="text-sm text-(--color-txt-sec)">
-              {transaction.transactionDate}
+              {transaction.transactionDate} - {transaction.financialAccountName}
               {transaction.category ? ` - ${transaction.category}` : ''}
             </div>
             {transaction.note && <div className="mt-1 text-sm text-(--color-txt-sec)">{transaction.note}</div>}

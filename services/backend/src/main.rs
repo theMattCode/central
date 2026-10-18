@@ -3,6 +3,8 @@ mod context;
 mod domains;
 mod error;
 mod http;
+#[cfg(test)]
+mod test_support;
 
 use config::Config;
 use context::Context;
@@ -45,7 +47,11 @@ async fn build_finance_service(config: &Config) -> Result<FinanceService, String
         .await
         .map_err(|error| error.to_string())?;
 
-    Ok(FinanceService::new(Arc::new(finance_repository)))
+    let finance_repository = Arc::new(finance_repository);
+    Ok(FinanceService::new(
+        finance_repository.clone(),
+        finance_repository,
+    ))
 }
 
 async fn build_weather_service(config: &Config) -> Result<WeatherService, String> {

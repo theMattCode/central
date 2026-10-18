@@ -4,6 +4,10 @@ use axum::{
     Json,
 };
 
+use crate::domains::finance::accounts::{
+    FinancialAccount, FinancialAccountInput, FinancialAccountListResponse,
+    FinancialAccountOrderInput,
+};
 use crate::domains::finance::model::{
     TransactionInput, TransactionListResponse, TransactionResponse, TransactionsQueryInput,
 };
@@ -53,4 +57,76 @@ pub(in crate::domains::finance) async fn delete_transaction(
     context.finance_service.delete_transaction(&id).await?;
 
     Ok(StatusCode::NO_CONTENT)
+}
+
+pub(in crate::domains::finance) async fn list_financial_accounts(
+    State(context): State<Context>,
+) -> Result<Json<FinancialAccountListResponse>, ApiError> {
+    let response = context.finance_service.list_financial_accounts().await?;
+
+    Ok(Json(response))
+}
+
+pub(in crate::domains::finance) async fn create_financial_account(
+    State(context): State<Context>,
+    Json(input): Json<FinancialAccountInput>,
+) -> Result<(StatusCode, Json<FinancialAccount>), ApiError> {
+    let draft = input.into_draft()?;
+    let response = context
+        .finance_service
+        .create_financial_account(&draft)
+        .await?;
+
+    Ok((StatusCode::CREATED, Json(response)))
+}
+
+pub(in crate::domains::finance) async fn update_financial_account(
+    State(context): State<Context>,
+    Path(id): Path<String>,
+    Json(input): Json<FinancialAccountInput>,
+) -> Result<Json<FinancialAccount>, ApiError> {
+    let draft = input.into_draft()?;
+    let response = context
+        .finance_service
+        .update_financial_account(&id, &draft)
+        .await?;
+
+    Ok(Json(response))
+}
+
+pub(in crate::domains::finance) async fn archive_financial_account(
+    State(context): State<Context>,
+    Path(id): Path<String>,
+) -> Result<Json<FinancialAccount>, ApiError> {
+    let response = context
+        .finance_service
+        .archive_financial_account(&id)
+        .await?;
+
+    Ok(Json(response))
+}
+
+pub(in crate::domains::finance) async fn restore_financial_account(
+    State(context): State<Context>,
+    Path(id): Path<String>,
+) -> Result<Json<FinancialAccount>, ApiError> {
+    let response = context
+        .finance_service
+        .restore_financial_account(&id)
+        .await?;
+
+    Ok(Json(response))
+}
+
+pub(in crate::domains::finance) async fn reorder_financial_accounts(
+    State(context): State<Context>,
+    Json(input): Json<FinancialAccountOrderInput>,
+) -> Result<Json<FinancialAccountListResponse>, ApiError> {
+    let account_ids = input.into_account_ids()?;
+    let response = context
+        .finance_service
+        .reorder_financial_accounts(&account_ids)
+        .await?;
+
+    Ok(Json(response))
 }

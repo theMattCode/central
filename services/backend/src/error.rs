@@ -15,6 +15,8 @@ pub enum ApiError {
     #[error("{0}")]
     NotFound(String),
     #[error("{0}")]
+    Conflict(String),
+    #[error("{0}")]
     Upstream(String),
     #[error("{0}")]
     Internal(String),
@@ -25,6 +27,7 @@ impl ApiError {
         match self {
             Self::BadRequest(_) => "bad_request",
             Self::NotFound(_) => "not_found",
+            Self::Conflict(_) => "conflict",
             Self::Upstream(_) => "upstream_error",
             Self::Internal(_) => "internal_error",
         }
@@ -34,6 +37,7 @@ impl ApiError {
         match self {
             Self::BadRequest(_) => StatusCode::BAD_REQUEST,
             Self::NotFound(_) => StatusCode::NOT_FOUND,
+            Self::Conflict(_) => StatusCode::CONFLICT,
             Self::Upstream(_) => StatusCode::BAD_GATEWAY,
             Self::Internal(_) => StatusCode::INTERNAL_SERVER_ERROR,
         }
@@ -62,7 +66,7 @@ impl IntoResponse for ApiError {
         match self {
             Self::Internal(_) => error!(code = self.code(), "{self}"),
             Self::Upstream(_) => warn!(code = self.code(), "{self}"),
-            Self::BadRequest(_) | Self::NotFound(_) => {}
+            Self::BadRequest(_) | Self::NotFound(_) | Self::Conflict(_) => {}
         }
         let payload = ErrorResponse {
             error: ErrorPayload {

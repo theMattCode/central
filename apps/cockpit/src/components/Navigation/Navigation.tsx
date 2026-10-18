@@ -9,7 +9,11 @@ import {
   MdOutlineTask as TaskIcon,
   MdSettings as SettingsIcon,
 } from 'react-icons/md';
-import { RiArrowLeftRightLine as IncomeAndExpenseIcon, RiStockLine as InvestIcon } from 'react-icons/ri';
+import {
+  RiArrowLeftRightLine as IncomeAndExpenseIcon,
+  RiBankLine as AccountsIcon,
+  RiStockLine as InvestIcon,
+} from 'react-icons/ri';
 import { PiSidebarSimpleDuotone as NavigationToggleIcon, PiWaveform as JarvisIcon } from 'react-icons/pi';
 import { NavigationGroup } from '@/components/Navigation/NavigationGroup.tsx';
 import { useState } from 'react';
@@ -111,6 +115,9 @@ function DrawerContent({ onNavigate }: { onNavigate?: () => void }) {
         <NavigationGroup title="Finance">
           <NavigationItem Icon={IncomeAndExpenseIcon} href="/finance/transactions" onClick={onNavigate}>
             Transactions
+          </NavigationItem>
+          <NavigationItem Icon={AccountsIcon} href="/finance/accounts" onClick={onNavigate}>
+            Accounts
           </NavigationItem>
           <NavigationItem Icon={InvestIcon}>Invest</NavigationItem>
         </NavigationGroup>

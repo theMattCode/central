@@ -2,6 +2,9 @@ import { getCurrentLocalDate } from '@/utils/datetime.ts';
 
 export type TransactionDirection = 'income' | 'expense';
 
+/** The transaction flow books in EUR only; only EUR accounts can be picked. */
+export const TRANSACTION_CURRENCY_CODE = 'EUR';
+
 export type MoneyAmount = Readonly<{
   amount: string;
   currencyCode: string;
@@ -16,6 +19,8 @@ export type Transaction = Readonly<{
   description: string;
   category?: string;
   note?: string;
+  financialAccountId: string;
+  financialAccountName: string;
   createdAt: string;
   updatedAt: string;
 }>;
@@ -27,6 +32,7 @@ export type TransactionInput = Readonly<{
   description: string;
   category?: string;
   note?: string;
+  financialAccountId: string;
 }>;
 
 export type Summary = Readonly<{
@@ -42,6 +48,7 @@ export type TransactionFormState = {
   description: string;
   category: string;
   note: string;
+  financialAccountId: string;
 };
 
 export function createEmptyTransactionFormState(transactionDate = getCurrentLocalDate()): TransactionFormState {
@@ -52,10 +59,15 @@ export function createEmptyTransactionFormState(transactionDate = getCurrentLoca
     description: '',
     category: '',
     note: '',
+    financialAccountId: '',
   };
 }
 
 export function toCashTransactionInput(form: TransactionFormState): TransactionInput {
+  if (!form.financialAccountId) {
+    throw new Error('Select an account.');
+  }
+
   return {
     direction: form.direction,
     transactionDate: form.transactionDate,
@@ -63,5 +75,6 @@ export function toCashTransactionInput(form: TransactionFormState): TransactionI
     description: form.description.trim(),
     category: form.category.trim() || undefined,
     note: form.note.trim() || undefined,
+    financialAccountId: form.financialAccountId,
   };
 }

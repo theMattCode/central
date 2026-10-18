@@ -55,6 +55,7 @@ describe('Navigation', () => {
       { href: '/', label: 'Overview' },
       { href: '/jarvis', label: 'Jarvis' },
       { href: '/finance/transactions', label: 'Transactions' },
+      { href: '/finance/accounts', label: 'Accounts' },
     ]);
   });
 });
