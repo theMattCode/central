@@ -38,7 +38,7 @@ export type Direction = { value: TransactionDirection; label: string };
 export function Transactions() {
   const { dateRange /*, onFromChanged, onToChanged */ } = useDateRange();
   const { data, loading, error, reload } = useTransactions(dateRange);
-  const { accounts } = useAccounts();
+  const { accounts, error: accountsError } = useAccounts();
 
   const [form, setForm] = useState<TransactionFormState>(() => createEmptyTransactionFormState());
   const [editingTransactionId, setEditingTransactionId] = useState<string | null>(null);
@@ -113,7 +113,8 @@ export function Transactions() {
       )}
 
       <TransactionForm
-        accounts={accounts ?? []}
+        accounts={accounts}
+        accountsError={accountsError}
         categories={data?.categories ?? []}
         editing={Boolean(editingTransactionId)}
         error={formError}
@@ -137,7 +138,8 @@ export function Transactions() {
 }
 
 type TransactionFormProps = {
-  accounts: FinancialAccount[];
+  accounts: FinancialAccount[] | null;
+  accountsError: string | null;
   categories: string[];
   editing: boolean;
   error: string | null;
@@ -165,6 +167,7 @@ const DIRECTION_OPTIONS: ButtonGroupOption[] = [
 
 function TransactionForm({
   accounts,
+  accountsError,
   categories,
   editing,
   error,
@@ -212,6 +215,7 @@ function TransactionForm({
           </label>
           <AccountPicker
             accounts={accounts}
+            error={accountsError}
             currencyCode={TRANSACTION_CURRENCY_CODE}
             value={form.financialAccountId}
             onChange={(financialAccountId) => updateForm({ financialAccountId })}

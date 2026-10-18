@@ -69,4 +69,22 @@ describe('AccountPicker', () => {
     expect(screen.queryByLabelText('Account')).toBeNull();
     expect(screen.getByRole('link', { name: 'Create an account' }).getAttribute('href')).toBe('/finance/accounts');
   });
+
+  it('shows a disabled select while accounts are loading', () => {
+    render(<AccountPicker currencyCode="EUR" accounts={null} value="" onChange={() => {}} />);
+
+    expect((screen.getByLabelText('Account') as HTMLSelectElement).disabled).toBe(true);
+    expect(optionLabels()).toEqual(['Loading accounts...']);
+    expect(screen.queryByRole('link', { name: 'Create an account' })).toBeNull();
+  });
+
+  it('shows why accounts are missing when loading failed', () => {
+    render(
+      <AccountPicker currencyCode="EUR" accounts={null} error="backend unavailable" value="" onChange={() => {}} />,
+    );
+
+    expect(screen.getByRole('alert').textContent).toBe('Accounts could not be loaded: backend unavailable');
+    expect((screen.getByLabelText('Account') as HTMLSelectElement).disabled).toBe(true);
+    expect(screen.queryByRole('link', { name: 'Create an account' })).toBeNull();
+  });
 });

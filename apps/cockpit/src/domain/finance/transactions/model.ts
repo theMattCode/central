@@ -64,6 +64,10 @@ export function createEmptyTransactionFormState(transactionDate = getCurrentLoca
 }
 
 export function toCashTransactionInput(form: TransactionFormState): TransactionInput {
+  if (!form.financialAccountId) {
+    throw new Error('Select an account.');
+  }
+
   return {
     direction: form.direction,
     transactionDate: form.transactionDate,

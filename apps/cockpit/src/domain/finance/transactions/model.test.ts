@@ -23,6 +23,14 @@ describe('toCashTransactionInput', () => {
   });
 });
 
+describe('toCashTransactionInput without an account', () => {
+  it('asks for an account instead of sending an invalid payload', () => {
+    expect(() =>
+      toCashTransactionInput({ ...createEmptyTransactionFormState('2026-10-17'), amount: '1', description: 'x' }),
+    ).toThrow('Select an account.');
+  });
+});
+
 describe('validateTransactionInput', () => {
   const valid = {
     direction: 'income',
