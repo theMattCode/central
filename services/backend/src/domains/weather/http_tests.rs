@@ -9,14 +9,6 @@ use std::{
 use chrono::{DateTime, Utc};
 use reqwest::StatusCode;
 
-use crate::domains::finance::accounts::{
-    FinancialAccount, FinancialAccountDraft, FinancialAccountStore,
-};
-use crate::domains::finance::contracts::FinanceDataStore;
-use crate::domains::finance::model::{
-    TransactionDraft, TransactionListResponse, TransactionResponse, TransactionsQuery,
-};
-use crate::domains::finance::service::FinanceService;
 use crate::domains::weather::contracts::{WeatherDataFetcher, WeatherDataStore};
 use crate::domains::weather::model::{
     CurrentWeatherPayload, HourlyWeatherPayload, WeatherForecastMetaPayload,
@@ -24,6 +16,7 @@ use crate::domains::weather::model::{
     WeatherSnapshotResponse,
 };
 use crate::domains::weather::service::WeatherService;
+use crate::test_support::finance::unused_finance_service;
 use crate::{config::Config, context::Context, error::ApiError};
 
 #[derive(Clone)]
@@ -106,94 +99,6 @@ impl WeatherDataStore for FakeStore {
     ) -> Result<Vec<HourlyWeatherPayload>, ApiError> {
         self.load_calls.fetch_add(1, Ordering::SeqCst);
         Ok(self.loaded_hourly.as_ref().clone())
-    }
-}
-
-struct FakeFinanceStore;
-
-#[async_trait::async_trait]
-impl FinanceDataStore for FakeFinanceStore {
-    async fn list_transactions(
-        &self,
-        _month: &TransactionsQuery,
-    ) -> Result<TransactionListResponse, ApiError> {
-        Err(ApiError::Internal(
-            "finance store should not be called by weather tests".to_string(),
-        ))
-    }
-
-    async fn create_transaction(
-        &self,
-        _draft: &TransactionDraft,
-    ) -> Result<TransactionResponse, ApiError> {
-        Err(ApiError::Internal(
-            "finance store should not be called by weather tests".to_string(),
-        ))
-    }
-
-    async fn update_transaction(
-        &self,
-        _id: &str,
-        _draft: &TransactionDraft,
-    ) -> Result<TransactionResponse, ApiError> {
-        Err(ApiError::Internal(
-            "finance store should not be called by weather tests".to_string(),
-        ))
-    }
-
-    async fn delete_transaction(&self, _id: &str) -> Result<(), ApiError> {
-        Err(ApiError::Internal(
-            "finance store should not be called by weather tests".to_string(),
-        ))
-    }
-}
-
-#[async_trait::async_trait]
-impl FinancialAccountStore for FakeFinanceStore {
-    async fn list_financial_accounts(&self) -> Result<Vec<FinancialAccount>, ApiError> {
-        Err(ApiError::Internal(
-            "finance store should not be called by weather tests".to_string(),
-        ))
-    }
-
-    async fn create_financial_account(
-        &self,
-        _draft: &FinancialAccountDraft,
-    ) -> Result<FinancialAccount, ApiError> {
-        Err(ApiError::Internal(
-            "finance store should not be called by weather tests".to_string(),
-        ))
-    }
-
-    async fn update_financial_account(
-        &self,
-        _id: &str,
-        _draft: &FinancialAccountDraft,
-    ) -> Result<FinancialAccount, ApiError> {
-        Err(ApiError::Internal(
-            "finance store should not be called by weather tests".to_string(),
-        ))
-    }
-
-    async fn archive_financial_account(&self, _id: &str) -> Result<FinancialAccount, ApiError> {
-        Err(ApiError::Internal(
-            "finance store should not be called by weather tests".to_string(),
-        ))
-    }
-
-    async fn restore_financial_account(&self, _id: &str) -> Result<FinancialAccount, ApiError> {
-        Err(ApiError::Internal(
-            "finance store should not be called by weather tests".to_string(),
-        ))
-    }
-
-    async fn reorder_financial_accounts(
-        &self,
-        _account_ids: &[String],
-    ) -> Result<Vec<FinancialAccount>, ApiError> {
-        Err(ApiError::Internal(
-            "finance store should not be called by weather tests".to_string(),
-        ))
     }
 }
 
@@ -289,11 +194,6 @@ fn test_config() -> Arc<Config> {
     })
 }
 
-fn test_finance_service() -> FinanceService {
-    let store = Arc::new(FakeFinanceStore);
-    FinanceService::new(store.clone(), store)
-}
-
 #[tokio::test]
 async fn current_weather_returns_snapshot_and_persists() {
     let snapshot_calls = Arc::new(AtomicUsize::new(0));
@@ -317,7 +217,7 @@ async fn current_weather_returns_snapshot_and_persists() {
     );
     let context = Context {
         config: test_config(),
-        finance_service: test_finance_service(),
+        finance_service: unused_finance_service("weather"),
         weather_service: service,
     };
 
@@ -362,7 +262,7 @@ async fn current_weather_manual_refresh_persists_each_call() {
     );
     let context = Context {
         config: test_config(),
-        finance_service: test_finance_service(),
+        finance_service: unused_finance_service("weather"),
         weather_service: service,
     };
 
@@ -412,7 +312,7 @@ async fn forecast_weather_returns_hourly_forecast_and_persists() {
     );
     let context = Context {
         config: test_config(),
-        finance_service: test_finance_service(),
+        finance_service: unused_finance_service("weather"),
         weather_service: service,
     };
 
