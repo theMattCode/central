@@ -1,68 +1,33 @@
-import { useState } from 'react';
-import { MdAdd as AddIcon } from 'react-icons/md';
+import { createMemo, createSignal, Errored, Loading, Show } from 'solid-js';
+import { MdFillAdd as AddIcon } from 'solid-icons/md';
 import { Section } from '@/components/Section/Section.tsx';
 import { AccountEditor } from '@/domain/finance/accounts/AccountEditor.tsx';
 import { ArchivedAccounts } from '@/domain/finance/accounts/ArchivedAccounts.tsx';
 import { useAccounts } from '@/domain/finance/accounts/data.ts';
 import { ErrorMessage } from '@/domain/finance/accounts/ErrorMessage.tsx';
-import {
-  createEmptyFinancialAccountInput,
-  type FinancialAccount,
-  type FinancialAccountInput,
-} from '@/domain/finance/accounts/model.ts';
+import { createEmptyFinancialAccountInput } from '@/domain/finance/accounts/model.ts';
 import { SortableAccountList } from '@/domain/finance/accounts/SortableAccountList.tsx';
-import { useFinanceClient } from '@/domain/finance/FinanceClientContext.tsx';
 import { toErrorMessage } from '@/utils/formatting.ts';
 
 export function AccountsPage() {
-  const financeClient = useFinanceClient();
-  const { accounts, error, loading, reload, setAccounts } = useAccounts();
-  const [actionError, setActionError] = useState<string | null>(null);
+  const accounts = useAccounts();
+  const [actionError, setActionError] = createSignal<string | null>(null);
 
-  const createAccount = async (input: FinancialAccountInput) => {
-    await financeClient.createAccount(input);
-    reload();
-  };
+  const activeAccounts = createMemo(() => accounts.data.accounts.filter((account) => account.status === 'active'));
+  const archivedAccounts = createMemo(() => accounts.data.accounts.filter((account) => account.status === 'archived'));
 
-  const updateAccount = async (id: string, input: FinancialAccountInput) => {
-    await financeClient.updateAccount(id, input);
-    reload();
-  };
-
-  const runAccountAction = async (action: () => Promise<FinancialAccount>) => {
+  const runAccountAction = async (accountAction: () => Promise<void>) => {
     setActionError(null);
     try {
-      await action();
-      reload();
+      await accountAction();
     } catch (error) {
-      setActionError(toErrorMessage(error));
-    }
-  };
-
-  const activeAccounts = accounts?.filter((account) => account.status === 'active') ?? [];
-  const archivedAccounts = accounts?.filter((account) => account.status === 'archived') ?? [];
-
-  // Show the new order right away and roll back if the backend rejects it.
-  const reorderAccounts = async (accountIds: string[]) => {
-    if (!accounts) {
-      return;
-    }
-    const previous = accounts;
-    const reordered = accountIds.flatMap((id) => activeAccounts.filter((account) => account.id === id));
-    setActionError(null);
-    setAccounts([...reordered, ...archivedAccounts]);
-    try {
-      setAccounts(await financeClient.reorderAccounts(accountIds));
-    } catch (error) {
-      setAccounts(previous);
       setActionError(toErrorMessage(error));
     }
   };
 
   return (
     <>
-      {error && <ErrorMessage message={error} />}
-      <Section className="col-span-full">
+      <Section class="col-span-full">
         <AccountEditor
           label="New account"
           initialValue={createEmptyFinancialAccountInput()}
@@ -70,26 +35,27 @@ export function AccountsPage() {
           submitText="Add"
           submitIcon={AddIcon}
           resetOnSuccess
-          onSubmit={createAccount}
+          onSubmit={accounts.create}
         />
       </Section>
-      {actionError && <ErrorMessage message={actionError} />}
-      {loading && !accounts && <p className="col-span-full text-sm text-(--color-txt-sec)">Loading accounts...</p>}
-      {accounts && (
-        <SortableAccountList
-          accounts={activeAccounts}
-          emptyMessage={archivedAccounts.length > 0 ? 'No active accounts.' : 'No accounts yet.'}
-          onUpdate={updateAccount}
-          onArchive={(account) => void runAccountAction(() => financeClient.archiveAccount(account.id))}
-          onReorder={(accountIds) => void reorderAccounts(accountIds)}
-        />
-      )}
-      {archivedAccounts.length > 0 && (
-        <ArchivedAccounts
-          accounts={archivedAccounts}
-          onRestore={(account) => void runAccountAction(() => financeClient.restoreAccount(account.id))}
-        />
-      )}
+      <Show when={actionError()}>{(message) => <ErrorMessage message={message()} />}</Show>
+      <Errored fallback={(error) => <ErrorMessage message={toErrorMessage(error())} />}>
+        <Loading fallback={<p class="col-span-full text-sm text-(--color-txt-sec)">Loading accounts...</p>}>
+          <SortableAccountList
+            accounts={activeAccounts()}
+            emptyMessage={archivedAccounts().length > 0 ? 'No active accounts.' : 'No accounts yet.'}
+            onUpdate={accounts.update}
+            onArchive={(account) => void runAccountAction(() => accounts.archive(account.id))}
+            onReorder={(accountIds) => void runAccountAction(() => accounts.reorder(accountIds))}
+          />
+          <Show when={archivedAccounts().length > 0}>
+            <ArchivedAccounts
+              accounts={archivedAccounts()}
+              onRestore={(account) => void runAccountAction(() => accounts.restore(account.id))}
+            />
+          </Show>
+        </Loading>
+      </Errored>
     </>
   );
 }

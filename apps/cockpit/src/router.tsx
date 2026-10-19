@@ -1,6 +1,7 @@
-import * as Sentry from '@sentry/tanstackstart-react';
-import { createRouter } from '@tanstack/react-router';
+import * as Sentry from '@sentry/browser';
+import { createRouter } from '@tanstack/solid-router';
 import { routeTree } from './routeTree.gen';
+import { tanstackRouterBrowserTracingIntegration } from '@/utils/sentry/routerTracing.ts';
 
 export function getRouter() {
   const router = createRouter({
@@ -16,7 +17,7 @@ export function getRouter() {
     Sentry.init({
       dsn: import.meta.env.VITE_SENTRY_DSN,
       environment: import.meta.env.VITE_SENTRY_ENVIRONMENT || import.meta.env.MODE,
-      integrations: [Sentry.tanstackRouterBrowserTracingIntegration(router)],
+      integrations: [tanstackRouterBrowserTracingIntegration(router)],
       tracesSampleRate: 1.0,
     });
   }
@@ -24,7 +25,7 @@ export function getRouter() {
   return router;
 }
 
-declare module '@tanstack/react-router' {
+declare module '@tanstack/solid-router' {
   interface Register {
     router: ReturnType<typeof getRouter>;
   }

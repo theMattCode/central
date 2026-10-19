@@ -1,4 +1,4 @@
-import { createServerFn } from '@tanstack/react-start';
+import { createServerFn } from '@tanstack/solid-start';
 import type { TransactionInput, Transaction } from '@/domain/finance/transactions/model.ts';
 import { fetchJson, resolveErrorMessage } from '@/utils/backend.ts';
 import { getFinanceURL } from '@/domain/finance/financeClient.ts';
@@ -103,13 +103,13 @@ async function requestDeleteCashTransaction(input: DeleteTransactionInput): Prom
 }
 
 export const createCashTransaction = createServerFn({ method: 'POST' })
-  .inputValidator(validateTransactionInput)
+  .validator(validateTransactionInput)
   .handler(async ({ data }) => requestCreateCashTransaction(data));
 
 export const updateCashTransaction = createServerFn({ method: 'POST' })
-  .inputValidator(validateUpdateTransactionInput)
+  .validator(validateUpdateTransactionInput)
   .handler(async ({ data }) => requestUpdateCashTransaction(data));
 
 export const deleteCashTransaction = createServerFn({ method: 'POST' })
-  .inputValidator(validateDeleteTransactionInput)
+  .validator(validateDeleteTransactionInput)
   .handler(async ({ data }) => requestDeleteCashTransaction(data));

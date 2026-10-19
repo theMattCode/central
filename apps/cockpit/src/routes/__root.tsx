@@ -1,15 +1,16 @@
-import { lazy, useEffect, type PropsWithChildren } from 'react';
-import * as Sentry from '@sentry/tanstackstart-react';
-import { createRootRoute, HeadContent, Scripts } from '@tanstack/react-router';
+import { createEffect, type ParentProps } from 'solid-js';
+import { captureException } from '@sentry/core';
+import { clientOnly } from '@solidjs/web';
+import { createRootRoute, HeadContent, Scripts } from '@tanstack/solid-router';
 import appCss from '../styles.css?url';
 import { PageLayout } from '@/components/PageLayout/PageLayout.tsx';
 import { Section } from '@/components/Section/Section.tsx';
 import { ContentArea } from '@/components/ContentArea/ContentArea.tsx';
 import { Navigation } from '@/components/Navigation/Navigation.tsx';
-import { MdOutlineHome as HomeIcon } from 'react-icons/md';
+import { MdOutlineHome as HomeIcon } from 'solid-icons/md';
 
 const Devtools = import.meta.env.DEV
-  ? lazy(() => import('@/components/Devtools/Devtools.tsx').then((module) => ({ default: module.Devtools })))
+  ? clientOnly(() => import('@/components/Devtools/Devtools.tsx'), { export: 'Devtools', lazy: true })
   : null;
 const title = 'Central Dashboard';
 
@@ -25,7 +26,7 @@ export const Route = createRootRoute({
   },
 });
 
-function RootDocument({ children }: PropsWithChildren) {
+function RootDocument(props: ParentProps) {
   return (
     <html lang="en">
       <head title={title}>
@@ -34,7 +35,7 @@ function RootDocument({ children }: PropsWithChildren) {
       <body>
         <PageLayout>
           <Navigation />
-          <ContentArea>{children}</ContentArea>
+          <ContentArea>{props.children}</ContentArea>
         </PageLayout>
         {Devtools ? <Devtools /> : null}
         <Scripts />
@@ -43,18 +44,19 @@ function RootDocument({ children }: PropsWithChildren) {
   );
 }
 
-function RootErrorBoundary({ error }: { error: unknown }) {
-  useEffect(() => {
-    Sentry.captureException(error);
-  }, [error]);
-
-  const message = error instanceof Error ? error.message : 'unexpected application error.';
+function RootErrorBoundary(props: { error: unknown }) {
+  createEffect(
+    () => props.error,
+    (error) => {
+      captureException(error);
+    },
+  );
 
   return (
     <Section>
-      <div className="flex flex-col gap-2">
-        <h1 className="text-lg font-semibold">Application Error</h1>
-        <p>{message}</p>
+      <div class="flex flex-col gap-2">
+        <h1 class="text-lg font-semibold">Application Error</h1>
+        <p>{props.error instanceof Error ? props.error.message : 'unexpected application error.'}</p>
       </div>
     </Section>
   );

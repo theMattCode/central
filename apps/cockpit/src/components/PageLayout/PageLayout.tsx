@@ -1,4 +1,4 @@
-import type { PropsWithChildren } from 'react';
+import type { ParentProps } from 'solid-js';
 
 /**
  * Component that sets up a full-screen container with a background.
@@ -6,10 +6,10 @@ import type { PropsWithChildren } from 'react';
  *
  *
  * @param {Object} props - The props for this component.
- * @param {React.ReactNode} props.children - The child components to be rendered within the full-screen container.
+ * @param props.children - The child components to be rendered within the full-screen container.
  */
-export function PageLayout({ children }: PropsWithChildren) {
+export function PageLayout(props: ParentProps) {
   return (
-    <div className="h-dvh w-full min-h-0 overflow-hidden flex flex-col md:flex-row transition-all">{children}</div>
+    <div class="h-dvh w-full min-h-0 overflow-hidden flex flex-col md:flex-row transition-all">{props.children}</div>
   );
 }

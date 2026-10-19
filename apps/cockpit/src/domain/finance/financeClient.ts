@@ -1,4 +1,4 @@
-import { createServerFn } from '@tanstack/react-start';
+import { createServerFn } from '@tanstack/solid-start';
 import { fetchJson, resolveBackendBaseUrl } from '@/utils/backend.ts';
 import type { Summary, Transaction } from '@/domain/finance/transactions/model.ts';
 import {
@@ -50,7 +50,7 @@ function validateTransactionsParameters(input: unknown): IsoDateRange {
 }
 
 const fetchTransactions = createServerFn({ method: 'GET' })
-  .inputValidator(validateTransactionsParameters)
+  .validator(validateTransactionsParameters)
   .handler(async ({ data }) => requestTransactions(data.from, data.to));
 
 const fetchAccounts = createServerFn({ method: 'GET' }).handler(async () => {
@@ -59,13 +59,13 @@ const fetchAccounts = createServerFn({ method: 'GET' }).handler(async () => {
 });
 
 const postAccount = createServerFn({ method: 'POST' })
-  .inputValidator(validateFinancialAccountInput)
+  .validator(validateFinancialAccountInput)
   .handler(async ({ data }) =>
     fetchJson<FinancialAccount>(getAccountsURL(), { method: 'POST', body: JSON.stringify(data) }),
   );
 
 const putAccount = createServerFn({ method: 'POST' })
-  .inputValidator(validateUpdateFinancialAccountInput)
+  .validator(validateUpdateFinancialAccountInput)
   .handler(async ({ data }) =>
     fetchJson<FinancialAccount>(getAccountsURL(`/${encodeURIComponent(data.id)}`), {
       method: 'PUT',
@@ -74,19 +74,19 @@ const putAccount = createServerFn({ method: 'POST' })
   );
 
 const postArchiveAccount = createServerFn({ method: 'POST' })
-  .inputValidator(validateFinancialAccountIdInput)
+  .validator(validateFinancialAccountIdInput)
   .handler(async ({ data }) =>
     fetchJson<FinancialAccount>(getAccountsURL(`/${encodeURIComponent(data.id)}/archive`), { method: 'POST' }),
   );
 
 const postRestoreAccount = createServerFn({ method: 'POST' })
-  .inputValidator(validateFinancialAccountIdInput)
+  .validator(validateFinancialAccountIdInput)
   .handler(async ({ data }) =>
     fetchJson<FinancialAccount>(getAccountsURL(`/${encodeURIComponent(data.id)}/restore`), { method: 'POST' }),
   );
 
 const putAccountOrder = createServerFn({ method: 'POST' })
-  .inputValidator(validateReorderFinancialAccountsInput)
+  .validator(validateReorderFinancialAccountsInput)
   .handler(async ({ data }) => {
     const response = await fetchJson<{ accounts: FinancialAccount[] }>(getAccountsURL('/order'), {
       method: 'PUT',

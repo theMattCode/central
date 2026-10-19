@@ -1,59 +1,66 @@
-import { LiaArrowAltCircleUp as DirectionIcon } from 'react-icons/lia';
 import type { WeatherData } from '@/domain/weather/model/model.ts';
 import { WMO_CODE_MAP } from '@/domain/weather/model/wmo.ts';
 import { TRANSLATION } from '@/i18n/translations.ts';
-import type { ReactNode } from 'react';
+import type { JSX } from '@solidjs/web';
+import { Icon } from '@/components/Icon/Icon.tsx';
+import { WindDirectionIcon } from '@/components/Icon/OriginalIcons.tsx';
 
 type WeatherCurrentSummaryProps = {
   weather: WeatherData;
 };
 
-export function WeatherCurrentSummary({ weather }: WeatherCurrentSummaryProps) {
-  const weatherCode = WMO_CODE_MAP[weather.current.weatherCode] ?? WMO_CODE_MAP[0];
-  const icon = weather.current.isDay ? weatherCode.day : weatherCode.night;
-  const interpretation = TRANSLATION[weatherCode.i18nKey].de;
+export function WeatherCurrentSummary(props: WeatherCurrentSummaryProps) {
+  const weatherCode = () => WMO_CODE_MAP[props.weather.current.weatherCode] ?? WMO_CODE_MAP[0];
+  const icon = () => (props.weather.current.isDay ? weatherCode().day : weatherCode().night);
+  const interpretation = () => TRANSLATION[weatherCode().i18nKey].de;
 
   return (
-    <div className="flex flex-row gap-4">
-      <img src={icon} alt={weatherCode.i18nKey} className="h-40 text-(--color-txt)" />
-      <div className="flex flex-col grow gap-0.5">
-        <span className="text-4xl text-right font-semibold text-(--color-txt)">
-          {weather.current.temperatureC.toFixed(1)} °C
+    <div class="flex flex-row gap-4">
+      <img src={icon()} alt={weatherCode().i18nKey} class="h-40 text-(--color-txt)" />
+      <div class="flex flex-col grow gap-0.5">
+        <span class="text-4xl text-right font-semibold text-(--color-txt)">
+          {props.weather.current.temperatureC.toFixed(1)} °C
         </span>
-        <Detail label="" value={interpretation} />
-        <Detail label="Gefühlt" value={weather.current.temperatureApparentC.toFixed(1) + ' °C'} />
+        <Detail label="" value={interpretation()} />
+        <Detail label="Gefühlt" value={props.weather.current.temperatureApparentC.toFixed(1) + ' °C'} />
         <Detail
           label="Wind"
-          value={<WindDetails windSpeed={weather.current.windSpeed} windDirection={weather.current.windDirection} />}
+          value={
+            <WindDetails
+              windSpeed={props.weather.current.windSpeed}
+              windDirection={props.weather.current.windDirection}
+            />
+          }
         />
-        <Detail label="Luftfeuchtigkeit" value={weather.current.relativeHumidity.toFixed(0) + ' %'} />
-        <Detail label="Luftdruck" value={weather.current.pressure.toFixed(1) + ' hPa'} />
-        <Detail label="Niederschlag" value={weather.current.precipitation.toFixed(1) + ' mm'} />
+        <Detail label="Luftfeuchtigkeit" value={props.weather.current.relativeHumidity.toFixed(0) + ' %'} />
+        <Detail label="Luftdruck" value={props.weather.current.pressure.toFixed(1) + ' hPa'} />
+        <Detail label="Niederschlag" value={props.weather.current.precipitation.toFixed(1) + ' mm'} />
       </div>
     </div>
   );
 }
 
-function Detail({ label, value }: { label: string; value: string | ReactNode }) {
+function Detail(props: { label: string; value: string | JSX.Element }) {
   return (
-    <div className="flex flex-row justify-between text-sm gap-4">
-      <span className="text-(--color-txt-sec)">{label}</span>
-      <span className="text-(--color-txt)">{value}</span>
+    <div class="flex flex-row justify-between text-sm gap-4">
+      <span class="text-(--color-txt-sec)">{props.label}</span>
+      <span class="text-(--color-txt)">{props.value}</span>
     </div>
   );
 }
 
-function WindDetails({ windSpeed, windDirection }: { windSpeed: number; windDirection: number }) {
+function WindDetails(props: { windSpeed: number; windDirection: number }) {
   return (
-    <div className="flex flex-row gap-2">
-      <DirectionIcon
-        className="inline-block text-xl"
+    <div class="flex flex-row gap-2">
+      <Icon
+        icon={WindDirectionIcon}
+        class="inline-flex h-5 w-5 text-xl"
         style={{
-          transform: `rotate(${windDirection.toFixed(1)}deg)`,
-          transformOrigin: 'center',
+          transform: `rotate(${props.windDirection.toFixed(1)}deg)`,
+          'transform-origin': 'center',
         }}
       />
-      <span className="text-(--color-txt)">{windSpeed.toFixed(1) + ' km/h'}</span>
+      <span class="text-(--color-txt)">{props.windSpeed.toFixed(1) + ' km/h'}</span>
     </div>
   );
 }

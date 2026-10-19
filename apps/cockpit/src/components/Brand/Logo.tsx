@@ -1,5 +1,6 @@
-import { LuPocketKnife as LogoIcon } from 'react-icons/lu';
+import { Icon } from '@/components/Icon/Icon.tsx';
+import { PocketKnifeIcon } from '@/components/Icon/OriginalIcons.tsx';
 
 export function Logo() {
-  return <LogoIcon aria-label="Central logo" className="h-8 w-8 shrink-0 text-(--color-pri) animate-rainbow" />;
+  return <Icon icon={PocketKnifeIcon} label="Central logo" class="h-8 w-8 text-(--color-pri) animate-rainbow" />;
 }

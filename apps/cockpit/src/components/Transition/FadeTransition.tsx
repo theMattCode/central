@@ -1,61 +1,55 @@
-import { type PropsWithChildren, useEffect, useState } from 'react';
-import { cx } from '@/utils/styles.ts';
+import { createEffect, createSignal, untrack } from 'solid-js';
+import type { JSX } from '@solidjs/web';
 
-type FadeTransitionProps = PropsWithChildren<{
-  transitionKey: string | number;
+type TransitionKey = string | number;
+
+type FadeTransitionProps = {
+  children: (visibleKey: TransitionKey) => JSX.Element;
+  transitionKey: TransitionKey;
   durationMs?: number;
-  className?: string;
-}>;
+  class?: string;
+};
 
 type FadePhase = 'entered' | 'exiting' | 'entering';
 
-export function FadeTransition({ children, transitionKey, durationMs = 300, className }: FadeTransitionProps) {
-  const [visibleChildren, setVisibleChildren] = useState(children);
-  const [visibleKey, setVisibleKey] = useState(transitionKey);
-  const [phase, setPhase] = useState<FadePhase>('entered');
+export function FadeTransition(props: FadeTransitionProps) {
+  let currentVisibleKey = untrack(() => props.transitionKey);
+  const [visibleKey, setVisibleKey] = createSignal<TransitionKey>(currentVisibleKey);
+  const [phase, setPhase] = createSignal<FadePhase>('entered');
 
-  useEffect(() => {
-    if (transitionKey === visibleKey) {
-      setVisibleChildren(children);
-      return;
-    }
+  createEffect(
+    () => [props.transitionKey, props.durationMs ?? 300] as const,
+    ([nextKey, durationMs]) => {
+      if (nextKey === currentVisibleKey) return;
 
-    setPhase('exiting');
-  }, [children, transitionKey, visibleKey]);
+      let enterTimeout: ReturnType<typeof setTimeout> | undefined;
+      setPhase('exiting');
+      const exitTimeout = setTimeout(() => {
+        currentVisibleKey = nextKey;
+        setVisibleKey(nextKey);
+        setPhase('entering');
+        enterTimeout = setTimeout(() => setPhase('entered'), 16);
+      }, durationMs);
 
-  useEffect(() => {
-    if (phase !== 'exiting') {
-      return;
-    }
-
-    const exitTimeout = setTimeout(() => {
-      setVisibleChildren(children);
-      setVisibleKey(transitionKey);
-      setPhase('entering');
-    }, durationMs);
-
-    return () => clearTimeout(exitTimeout);
-  }, [children, durationMs, phase, transitionKey]);
-
-  useEffect(() => {
-    if (phase !== 'entering') {
-      return;
-    }
-    const enterTimeout = setTimeout(() => setPhase('entered'), 16);
-    return () => clearTimeout(enterTimeout);
-  }, [phase]);
+      return () => {
+        clearTimeout(exitTimeout);
+        if (enterTimeout) clearTimeout(enterTimeout);
+      };
+    },
+    { name: 'fadeTransition' },
+  );
 
   return (
     <div
-      className={cx(
+      class={[
         'w-full h-full',
         'transition-opacity',
-        phase === 'entered' ? 'opacity-100' : 'opacity-0',
-        className,
-      )}
-      style={{ transitionDuration: `${durationMs}ms` }}
+        { 'opacity-100': phase() === 'entered', 'opacity-0': phase() !== 'entered' },
+        props.class,
+      ]}
+      style={{ 'transition-duration': `${props.durationMs ?? 300}ms` }}
     >
-      {visibleChildren}
+      {props.children(visibleKey())}
     </div>
   );
 }

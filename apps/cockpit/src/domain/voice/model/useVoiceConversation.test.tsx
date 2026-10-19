@@ -1,12 +1,13 @@
 /* @vitest-environment jsdom */
 
-import { act, cleanup, renderHook, waitFor } from '@testing-library/react';
+import { cleanup, renderHook, waitFor } from '@solidjs/testing-library';
+import { flush } from 'solid-js';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { encodeFloat32ToWavBase64 } from 'src/domain/voice/model/audio.ts';
 import { streamAssistantTurn } from 'src/domain/voice/model/runAssistantTurn.ts';
 import { useVoiceConversation } from 'src/domain/voice/model/useVoiceConversation.ts';
 
-vi.mock('@/widgets/voice/model/runAssistantTurn.ts', () => ({
+vi.mock('@/domain/voice/model/runAssistantTurn.ts', () => ({
   streamAssistantTurn: vi.fn(),
 }));
 
@@ -55,7 +56,7 @@ class FakeAudioElement {
   });
 }
 
-describe.skip('useVoiceConversation', () => {
+describe('useVoiceConversation', () => {
   const streamAssistantTurnMock = vi.mocked(streamAssistantTurn);
   const originalCreateObjectURL = globalThis.URL.createObjectURL;
   const originalRevokeObjectURL = globalThis.URL.revokeObjectURL;
@@ -121,12 +122,10 @@ describe.skip('useVoiceConversation', () => {
   it('ignores late media errors after playback has already ended', async () => {
     const { result } = renderHook(() => useVoiceConversation({ language: 'de' }));
 
-    await act(async () => {
-      await result.current.processSpeech(new Float32Array([0.25, -0.25]));
-    });
+    await result.processSpeech(new Float32Array([0.25, -0.25]));
 
     await waitFor(() => {
-      expect(result.current.status).toBe('playing');
+      expect(result.status).toBe('playing');
     });
 
     const audioElement = createdAudioElements.at(-1);
@@ -134,12 +133,11 @@ describe.skip('useVoiceConversation', () => {
 
     const lateErrorHandler = audioElement?.onerror;
 
-    await act(async () => {
-      audioElement?.onended?.();
-    });
+    audioElement?.onended?.();
+    flush();
 
-    expect(result.current.status).toBe('idle');
-    expect(result.current.errorMessage).toBeNull();
+    expect(result.status).toBe('idle');
+    expect(result.errorMessage).toBeNull();
     expect(audioElement?.onerror).toBeNull();
     expect(audioElement?.removeAttribute).toHaveBeenCalledWith('src');
     expect(audioElement?.load).toHaveBeenCalledTimes(1);
@@ -147,11 +145,10 @@ describe.skip('useVoiceConversation', () => {
 
     audioElement!.error = { code: 4 };
 
-    await act(async () => {
-      lateErrorHandler?.();
-    });
+    lateErrorHandler?.();
+    flush();
 
-    expect(result.current.status).toBe('idle');
-    expect(result.current.errorMessage).toBeNull();
+    expect(result.status).toBe('idle');
+    expect(result.errorMessage).toBeNull();
   });
 });

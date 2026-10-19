@@ -1,16 +1,16 @@
 /* @vitest-environment jsdom */
 
 import { describe, expect, it } from 'vitest';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@solidjs/testing-library';
 import { NavigationGroup } from '@/components/Navigation/NavigationGroup.tsx';
 
 describe('NavigationGroup', () => {
   it('renders a divider after the title', () => {
-    render(
+    render(() => (
       <NavigationGroup title="Finance">
         <a href="/invest">Invest</a>
-      </NavigationGroup>,
-    );
+      </NavigationGroup>
+    ));
 
     expect(screen.getByText('Finance')).toBeDefined();
     const divider = screen.getByTestId('navigation-group-divider');
@@ -22,11 +22,11 @@ describe('NavigationGroup', () => {
   });
 
   it('is expandable and collapsible with native details state', () => {
-    const { container } = render(
+    const { container } = render(() => (
       <NavigationGroup title="Finance">
         <a href="/invest">Invest</a>
-      </NavigationGroup>,
-    );
+      </NavigationGroup>
+    ));
 
     const details = container.querySelector('details');
     const summary = container.querySelector('summary');

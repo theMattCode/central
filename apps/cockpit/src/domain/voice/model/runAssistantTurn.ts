@@ -1,4 +1,4 @@
-import { createServerFn } from '@tanstack/react-start';
+import { createServerFn } from '@tanstack/solid-start';
 import { getLogger } from '@/domain/voice/log.ts';
 import type {
   AssistantTurnAudioChunk,
@@ -6,10 +6,6 @@ import type {
   AssistantTurnResult,
   AssistantTurnStreamResult,
 } from 'src/domain/voice/model/model.ts';
-import {
-  dumpAssistantTurnArtifacts,
-  dumpAssistantTurnStreamArtifacts,
-} from 'src/domain/voice/model/assistantTurnDump.ts';
 import { resolveAssistantServiceBaseUrl } from 'src/domain/voice/model/assistantServiceBaseUrl.ts';
 
 type AssistantServiceError = {
@@ -206,12 +202,6 @@ async function requestAssistantTurn(input: AssistantTurnInput, signal?: AbortSig
   }
 
   const result = (await response.json()) as AssistantTurnResult;
-  try {
-    await dumpAssistantTurnArtifacts(input, result);
-  } catch (error) {
-    getLogger().error('dump-assistant-turn-artifacts-failed', { url: url.toString() }, error);
-  }
-
   getLogger().info('requested assistant turn', {
     url: url.toString(),
     transcriptLength: result.transcript.length,
@@ -370,12 +360,6 @@ export async function streamAssistantTurn(options: StreamAssistantTurnOptions): 
     transcript,
   };
 
-  try {
-    await dumpAssistantTurnStreamArtifacts(input, result);
-  } catch (error) {
-    getLogger().error('dump-streamed-assistant-turn-artifacts-failed', { url: url.toString() }, error);
-  }
-
   await options.onDone?.(result);
 
   getLogger().info('streamed assistant turn', {
@@ -389,5 +373,14 @@ export async function streamAssistantTurn(options: StreamAssistantTurnOptions): 
 }
 
 export const runAssistantTurn = createServerFn({ method: 'POST' })
-  .inputValidator(validateAssistantTurnInput)
-  .handler(async ({ data }) => requestAssistantTurn(data));
+  .validator(validateAssistantTurnInput)
+  .handler(async ({ data }) => {
+    const result = await requestAssistantTurn(data);
+    try {
+      const { dumpAssistantTurnArtifacts } = await import('src/domain/voice/model/assistantTurnDump.ts');
+      await dumpAssistantTurnArtifacts(data, result);
+    } catch (error) {
+      getLogger().error('dump-assistant-turn-artifacts-failed', undefined, error);
+    }
+    return result;
+  });

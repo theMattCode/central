@@ -28,7 +28,7 @@ describe('validateWeatherLocation', () => {
     expect(validateWeatherLocation(input)).toEqual(expected);
   });
 
-  it.skip('rejects non-string timezone values', () => {
+  it('rejects non-string timezone values', () => {
     expect(() =>
       validateWeatherLocation({
         id: 'bad',

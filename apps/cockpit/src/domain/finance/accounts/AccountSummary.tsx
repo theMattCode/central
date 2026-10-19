@@ -1,11 +1,11 @@
 import { FINANCIAL_ACCOUNT_TYPE_LABELS, type FinancialAccount } from '@/domain/finance/accounts/model.ts';
 
-export function AccountSummary({ account }: { account: FinancialAccount }) {
+export function AccountSummary(props: { account: FinancialAccount }) {
   return (
     <>
-      <span className="flex-1 truncate text-(--color-txt)">{account.name}</span>
-      <span className="text-sm text-(--color-txt-sec)">{FINANCIAL_ACCOUNT_TYPE_LABELS[account.accountType]}</span>
-      <span className="w-10 text-right text-sm text-(--color-txt-sec)">{account.primaryCurrencyCode}</span>
+      <span class="flex-1 truncate text-(--color-txt)">{props.account.name}</span>
+      <span class="text-sm text-(--color-txt-sec)">{FINANCIAL_ACCOUNT_TYPE_LABELS[props.account.accountType]}</span>
+      <span class="w-10 text-right text-sm text-(--color-txt-sec)">{props.account.primaryCurrencyCode}</span>
     </>
   );
 }

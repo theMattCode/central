@@ -1,12 +1,57 @@
 /* @vitest-environment jsdom */
-import type { PropsWithChildren } from 'react';
-import { render, screen, waitFor, within } from '@testing-library/react';
+import type { ParentProps } from 'solid-js';
+import { render, screen, waitFor, within } from '@solidjs/testing-library';
 import { userEvent } from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { FinancialAccount } from '@/domain/finance/accounts/model.ts';
 import { AccountsPage } from '@/domain/finance/accounts/AccountsPage.tsx';
 import type { FinanceClient } from '@/domain/finance/financeClient.ts';
 import { FinanceClientProvider } from '@/domain/finance/FinanceClientContext.tsx';
+
+// jsdom lacks the observers and the Web Animations API, which @dnd-kit/dom uses to measure and animate items.
+vi.hoisted(() => {
+  class NoopObserver {
+    observe(_target: Element) {}
+    unobserve() {}
+    disconnect() {}
+    takeRecords() {
+      return [];
+    }
+  }
+  // Reports every observed element as fully visible, which is when dnd-kit measures it.
+  class VisibleIntersectionObserver extends NoopObserver {
+    constructor(private readonly callback: IntersectionObserverCallback) {
+      super();
+    }
+
+    override observe(target: Element) {
+      queueMicrotask(() => {
+        const rect = target.getBoundingClientRect();
+        const entry = {
+          target,
+          isIntersecting: true,
+          intersectionRatio: 1,
+          boundingClientRect: rect,
+          intersectionRect: rect,
+        };
+        this.callback([entry as IntersectionObserverEntry], this as unknown as IntersectionObserver);
+      });
+    }
+  }
+  globalThis.ResizeObserver ??= NoopObserver as unknown as typeof ResizeObserver;
+  globalThis.IntersectionObserver ??= VisibleIntersectionObserver as unknown as typeof IntersectionObserver;
+  window.matchMedia ??= (query: string) =>
+    ({
+      matches: false,
+      media: query,
+      addEventListener() {},
+      removeEventListener() {},
+    }) as unknown as MediaQueryList;
+  document.getAnimations ??= () => [];
+  Element.prototype.getAnimations ??= () => [];
+  Element.prototype.animate ??= () =>
+    ({ finished: Promise.resolve(), cancel() {}, finish() {}, addEventListener() {} }) as unknown as Animation;
+});
 
 function createAccount(partial: Partial<FinancialAccount> & Pick<FinancialAccount, 'id' | 'name'>): FinancialAccount {
   return {
@@ -41,8 +86,8 @@ describe('AccountsPage', () => {
     reorderAccounts: (ids) => reorderAccountsMock(ids),
   };
 
-  function TestWrapper({ children }: PropsWithChildren) {
-    return <FinanceClientProvider client={financeClientMock}>{children}</FinanceClientProvider>;
+  function TestWrapper(props: ParentProps) {
+    return <FinanceClientProvider client={financeClientMock}>{props.children}</FinanceClientProvider>;
   }
 
   beforeEach(() => {
@@ -61,7 +106,7 @@ describe('AccountsPage', () => {
       createAccount({ id: 'depot', name: 'Depot', accountType: 'investment', primaryCurrencyCode: 'USD' }),
     ]);
 
-    render(<AccountsPage />, { wrapper: TestWrapper });
+    render(() => <AccountsPage />, { wrapper: TestWrapper });
 
     const list = await screen.findByRole('list', { name: 'Accounts' });
     const items = within(list).getAllByRole('listitem');
@@ -69,13 +114,13 @@ describe('AccountsPage', () => {
   });
 
   it('shows an empty state when there are no accounts', async () => {
-    render(<AccountsPage />, { wrapper: TestWrapper });
+    render(() => <AccountsPage />, { wrapper: TestWrapper });
 
     expect(await screen.findByText('No accounts yet.')).toBeDefined();
   });
 
   it('offers every account type', async () => {
-    render(<AccountsPage />, { wrapper: TestWrapper });
+    render(() => <AccountsPage />, { wrapper: TestWrapper });
 
     const options = within(screen.getByLabelText('Type')).getAllByRole('option');
     expect(options.map((option) => option.textContent)).toEqual(['Cash', 'Bank', 'Credit', 'Loan', 'Investment']);
@@ -85,7 +130,7 @@ describe('AccountsPage', () => {
     const created = createAccount({ id: 'depot', name: 'Depot', accountType: 'investment' });
     createAccountMock.mockResolvedValue(created);
     getAccountsMock.mockResolvedValueOnce([]).mockResolvedValue([created]);
-    render(<AccountsPage />, { wrapper: TestWrapper });
+    render(() => <AccountsPage />, { wrapper: TestWrapper });
 
     await user.type(screen.getByLabelText('Name'), '  Depot ');
     await user.selectOptions(screen.getByLabelText('Type'), 'investment');
@@ -102,7 +147,7 @@ describe('AccountsPage', () => {
   });
 
   it('upper-cases the currency while typing', async () => {
-    render(<AccountsPage />, { wrapper: TestWrapper });
+    render(() => <AccountsPage />, { wrapper: TestWrapper });
     const currency = screen.getByLabelText('Currency') as HTMLInputElement;
 
     await user.clear(currency);
@@ -113,7 +158,7 @@ describe('AccountsPage', () => {
 
   it('keeps the form and shows the backend error when creating fails', async () => {
     createAccountMock.mockRejectedValue(new Error('Field primaryCurrencyCode must be an ISO 4217 code like EUR'));
-    render(<AccountsPage />, { wrapper: TestWrapper });
+    render(() => <AccountsPage />, { wrapper: TestWrapper });
 
     await user.type(screen.getByLabelText('Name'), 'Wallet');
     await user.click(screen.getByRole('button', { name: 'Add account' }));
@@ -131,7 +176,7 @@ describe('AccountsPage', () => {
     const renamed = { ...giro, name: 'Main account', primaryCurrencyCode: 'CHF' };
     updateAccountMock.mockResolvedValue(renamed);
     getAccountsMock.mockResolvedValueOnce([giro]).mockResolvedValue([renamed]);
-    render(<AccountsPage />, { wrapper: TestWrapper });
+    render(() => <AccountsPage />, { wrapper: TestWrapper });
 
     await user.click(await screen.findByRole('button', { name: 'Edit Girokonto' }));
     const editor = screen.getByRole('form', { name: 'Edit Girokonto' });
@@ -155,7 +200,7 @@ describe('AccountsPage', () => {
 
   it('closes the editor without saving on cancel', async () => {
     getAccountsMock.mockResolvedValue([createAccount({ id: 'giro', name: 'Girokonto' })]);
-    render(<AccountsPage />, { wrapper: TestWrapper });
+    render(() => <AccountsPage />, { wrapper: TestWrapper });
 
     await user.click(await screen.findByRole('button', { name: 'Edit Girokonto' }));
     await user.click(screen.getByRole('button', { name: 'Cancel editing' }));
@@ -167,7 +212,7 @@ describe('AccountsPage', () => {
   it('keeps the editor open and shows the backend error when saving fails', async () => {
     getAccountsMock.mockResolvedValue([createAccount({ id: 'giro', name: 'Girokonto' })]);
     updateAccountMock.mockRejectedValue(new Error("The currency of a financial account with entries can't be changed"));
-    render(<AccountsPage />, { wrapper: TestWrapper });
+    render(() => <AccountsPage />, { wrapper: TestWrapper });
 
     await user.click(await screen.findByRole('button', { name: 'Edit Girokonto' }));
     const editor = screen.getByRole('form', { name: 'Edit Girokonto' });
@@ -193,7 +238,7 @@ describe('AccountsPage', () => {
         archivedAt: '2026-10-01T10:00:00Z',
       }),
     ]);
-    render(<AccountsPage />, { wrapper: TestWrapper });
+    render(() => <AccountsPage />, { wrapper: TestWrapper });
 
     const active = await screen.findByRole('list', { name: 'Accounts' });
     expect(
@@ -219,7 +264,7 @@ describe('AccountsPage', () => {
 
   it('hides the archived section when nothing is archived', async () => {
     getAccountsMock.mockResolvedValue([createAccount({ id: 'giro', name: 'Girokonto' })]);
-    render(<AccountsPage />, { wrapper: TestWrapper });
+    render(() => <AccountsPage />, { wrapper: TestWrapper });
 
     await screen.findByRole('list', { name: 'Accounts' });
 
@@ -231,7 +276,7 @@ describe('AccountsPage', () => {
     const archivedGiro = { ...giro, status: 'archived' as const, archivedAt: '2026-10-17T12:00:00Z' };
     archiveAccountMock.mockResolvedValue(archivedGiro);
     getAccountsMock.mockResolvedValueOnce([giro]).mockResolvedValue([archivedGiro]);
-    render(<AccountsPage />, { wrapper: TestWrapper });
+    render(() => <AccountsPage />, { wrapper: TestWrapper });
 
     await user.click(await screen.findByRole('button', { name: 'Archive Girokonto' }));
 
@@ -250,7 +295,7 @@ describe('AccountsPage', () => {
     const restored = { ...old, status: 'active' as const, archivedAt: null };
     restoreAccountMock.mockResolvedValue(restored);
     getAccountsMock.mockResolvedValueOnce([old]).mockResolvedValue([restored]);
-    render(<AccountsPage />, { wrapper: TestWrapper });
+    render(() => <AccountsPage />, { wrapper: TestWrapper });
 
     await user.click(await screen.findByRole('button', { name: 'Archived (1)' }));
     await user.click(screen.getByRole('button', { name: 'Restore Old wallet' }));
@@ -264,7 +309,7 @@ describe('AccountsPage', () => {
   it('shows the backend error when archiving fails', async () => {
     getAccountsMock.mockResolvedValue([createAccount({ id: 'giro', name: 'Girokonto' })]);
     archiveAccountMock.mockRejectedValue(new Error('Financial account giro was not found'));
-    render(<AccountsPage />, { wrapper: TestWrapper });
+    render(() => <AccountsPage />, { wrapper: TestWrapper });
 
     await user.click(await screen.findByRole('button', { name: 'Archive Girokonto' }));
 
@@ -278,12 +323,25 @@ describe('AccountsPage', () => {
       createAccount({ id: 'c', name: 'C', displayOrder: 2 }),
     ];
 
-    // jsdom has no layout; give each list item its own row so dnd-kit can measure positions.
+    // jsdom has no layout; give each list item its own row so dnd-kit can measure positions. Everything else
+    // fills the viewport, so dnd-kit does not clip the rows as hidden by their scroll container.
     beforeEach(() => {
       vi.spyOn(Element.prototype, 'getBoundingClientRect').mockImplementation(function (this: Element) {
         const item = this.closest('li');
-        const index = item?.parentElement ? Array.from(item.parentElement.children).indexOf(item) : 0;
-        const top = index * 50;
+        if (!item?.parentElement) {
+          return {
+            x: 0,
+            y: 0,
+            top: 0,
+            left: 0,
+            right: 1024,
+            bottom: 768,
+            width: 1024,
+            height: 768,
+            toJSON: () => ({}),
+          };
+        }
+        const top = Array.from(item.parentElement.children).indexOf(item) * 50;
         return { x: 0, y: top, top, left: 0, right: 300, bottom: top + 40, width: 300, height: 40, toJSON: () => ({}) };
       });
     });
@@ -299,9 +357,10 @@ describe('AccountsPage', () => {
     }
 
     it('moves an account down with the keyboard and saves the new order', async () => {
-      getAccountsMock.mockResolvedValue(accounts);
-      reorderAccountsMock.mockResolvedValue([accounts[1], accounts[0], accounts[2]]);
-      render(<AccountsPage />, { wrapper: TestWrapper });
+      const reordered = [accounts[1], accounts[0], accounts[2]];
+      getAccountsMock.mockResolvedValueOnce(accounts).mockResolvedValue(reordered);
+      reorderAccountsMock.mockResolvedValue(reordered);
+      render(() => <AccountsPage />, { wrapper: TestWrapper });
 
       const handle = await screen.findByRole('button', { name: 'Reorder A' });
       handle.focus();
@@ -318,7 +377,7 @@ describe('AccountsPage', () => {
       reorderAccountsMock.mockRejectedValue(
         new Error('Field accountIds must contain every active financial account exactly once'),
       );
-      render(<AccountsPage />, { wrapper: TestWrapper });
+      render(() => <AccountsPage />, { wrapper: TestWrapper });
 
       const handle = await screen.findByRole('button', { name: 'Reorder A' });
       handle.focus();
@@ -338,7 +397,7 @@ describe('AccountsPage', () => {
         accounts[0],
         createAccount({ id: 'old', name: 'Old', status: 'archived', archivedAt: '2026-10-01T10:00:00Z' }),
       ]);
-      render(<AccountsPage />, { wrapper: TestWrapper });
+      render(() => <AccountsPage />, { wrapper: TestWrapper });
 
       await user.click(await screen.findByRole('button', { name: 'Archived (1)' }));
 

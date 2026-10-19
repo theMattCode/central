@@ -1,7 +1,7 @@
-import { createFileRoute } from '@tanstack/react-router';
+import { createFileRoute } from '@tanstack/solid-router';
 import { Button } from '@/components/Button/Button.tsx';
 import { ButtonGroup } from '@/components/ButtonGroup/ButtonGroup.tsx';
-import { LuAlarmClockPlus, LuPencil } from 'react-icons/lu';
+import { AlarmClockPlusIcon, PencilIcon } from '@/components/Icon/OriginalIcons.tsx';
 
 export const Route = createFileRoute('/components')({
   component: Components,
@@ -12,7 +12,7 @@ export const Route = createFileRoute('/components')({
 
 function Components() {
   return (
-    <div className="w-full h-full flex flex-col gap-6 p-6">
+    <div class="w-full h-full flex flex-col gap-6 p-6">
       <ShowcaseButtons />
 
       <ShowcaseButtonGroup />
@@ -22,15 +22,15 @@ function Components() {
 
 function ShowcaseButtons() {
   return (
-    <div className="flex flex-col gap-2">
-      <h3 className="text-lg font-bold">Buttons</h3>
-      <div className="flex flex-row gap-2">
+    <div class="flex flex-col gap-2">
+      <h3 class="text-lg font-bold">Buttons</h3>
+      <div class="flex flex-row gap-2">
         <Button name="hello" text="Hello World" />
-        <Button name="alarm" text="Hello World" icon={LuAlarmClockPlus} />
-        <Button name="pencil" icon={LuPencil} />
+        <Button name="alarm" text="Hello World" icon={AlarmClockPlusIcon} />
+        <Button name="pencil" icon={PencilIcon} />
       </div>
-      <div className="flex flex-row gap-2">
-        <Button name="pencil-circle" icon={LuPencil} shape="circle" />
+      <div class="flex flex-row gap-2">
+        <Button name="pencil-circle" icon={PencilIcon} shape="circle" />
       </div>
     </div>
   );
@@ -55,8 +55,8 @@ function ShowcaseButtonGroup() {
     },
   ];
   return (
-    <div className="flex flex-col gap-2">
-      <h3 className="text-lg font-bold">Button Group</h3>
+    <div class="flex flex-col gap-2">
+      <h3 class="text-lg font-bold">Button Group</h3>
       <ButtonGroup options={options} defaultValue={options[0]} onChanged={(opt) => console.log('Selected:', opt)} />
     </div>
   );

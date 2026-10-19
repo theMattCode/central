@@ -9,15 +9,15 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as JarvisRouteImport } from './routes/jarvis'
-import { Route as ComponentsRouteImport } from './routes/components'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as FinanceTransactionsRouteImport } from './routes/finance/transactions'
+import { Route as ComponentsRouteImport } from './routes/components'
+import { Route as JarvisRouteImport } from './routes/jarvis'
 import { Route as FinanceAccountsRouteImport } from './routes/finance/accounts'
+import { Route as FinanceTransactionsRouteImport } from './routes/finance/transactions'
 
-const JarvisRoute = JarvisRouteImport.update({
-  id: '/jarvis',
-  path: '/jarvis',
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ComponentsRoute = ComponentsRouteImport.update({
@@ -25,19 +25,19 @@ const ComponentsRoute = ComponentsRouteImport.update({
   path: '/components',
   getParentRoute: () => rootRouteImport,
 } as any)
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const FinanceTransactionsRoute = FinanceTransactionsRouteImport.update({
-  id: '/finance/transactions',
-  path: '/finance/transactions',
+const JarvisRoute = JarvisRouteImport.update({
+  id: '/jarvis',
+  path: '/jarvis',
   getParentRoute: () => rootRouteImport,
 } as any)
 const FinanceAccountsRoute = FinanceAccountsRouteImport.update({
   id: '/finance/accounts',
   path: '/finance/accounts',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FinanceTransactionsRoute = FinanceTransactionsRouteImport.update({
+  id: '/finance/transactions',
+  path: '/finance/transactions',
   getParentRoute: () => rootRouteImport,
 } as any)
 
@@ -95,13 +95,13 @@ export interface RootRouteChildren {
   FinanceTransactionsRoute: typeof FinanceTransactionsRoute
 }
 
-declare module '@tanstack/react-router' {
+declare module '@tanstack/solid-router' {
   interface FileRoutesByPath {
-    '/jarvis': {
-      id: '/jarvis'
-      path: '/jarvis'
-      fullPath: '/jarvis'
-      preLoaderRoute: typeof JarvisRouteImport
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/components': {
@@ -111,18 +111,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ComponentsRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/finance/transactions': {
-      id: '/finance/transactions'
-      path: '/finance/transactions'
-      fullPath: '/finance/transactions'
-      preLoaderRoute: typeof FinanceTransactionsRouteImport
+    '/jarvis': {
+      id: '/jarvis'
+      path: '/jarvis'
+      fullPath: '/jarvis'
+      preLoaderRoute: typeof JarvisRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/finance/accounts': {
@@ -130,6 +123,13 @@ declare module '@tanstack/react-router' {
       path: '/finance/accounts'
       fullPath: '/finance/accounts'
       preLoaderRoute: typeof FinanceAccountsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/finance/transactions': {
+      id: '/finance/transactions'
+      path: '/finance/transactions'
+      fullPath: '/finance/transactions'
+      preLoaderRoute: typeof FinanceTransactionsRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
@@ -148,7 +148,7 @@ export const routeTree = rootRouteImport
 
 import type { getRouter } from './router.tsx'
 import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
+declare module '@tanstack/solid-start' {
   interface Register {
     ssr: true
     router: Awaited<ReturnType<typeof getRouter>>

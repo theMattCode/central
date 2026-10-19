@@ -1,7 +1,8 @@
 /* @vitest-environment jsdom */
 
+import { createSignal, flush } from 'solid-js';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { act, render, screen } from '@testing-library/react';
+import { render, screen } from '@solidjs/testing-library';
 import { FadeTransition } from '@/components/Transition/FadeTransition.tsx';
 
 describe('FadeTransition', () => {
@@ -10,17 +11,11 @@ describe('FadeTransition', () => {
   });
 
   it('updates children immediately when the transition key stays unchanged', () => {
-    const { rerender } = render(
-      <FadeTransition transitionKey="same">
-        <span>Initial</span>
-      </FadeTransition>,
-    );
+    const [content, setContent] = createSignal('Initial');
+    render(() => <FadeTransition transitionKey="same">{() => <span>{content()}</span>}</FadeTransition>);
 
-    rerender(
-      <FadeTransition transitionKey="same">
-        <span>Updated</span>
-      </FadeTransition>,
-    );
+    setContent('Updated');
+    flush();
 
     expect(screen.queryByText('Initial')).toBeNull();
     expect(screen.getByText('Updated')).toBeDefined();
@@ -28,34 +23,30 @@ describe('FadeTransition', () => {
 
   it('fades out old content and fades in new content on key changes', () => {
     vi.useFakeTimers();
+    const [transitionKey, setTransitionKey] = createSignal('first');
 
-    const { container, rerender } = render(
-      <FadeTransition transitionKey="first" durationMs={100}>
-        <span>First</span>
-      </FadeTransition>,
-    );
+    const { container } = render(() => (
+      <FadeTransition transitionKey={transitionKey()} durationMs={100}>
+        {(visibleKey) => <span>{visibleKey === 'first' ? 'First' : 'Second'}</span>}
+      </FadeTransition>
+    ));
 
-    rerender(
-      <FadeTransition transitionKey="second" durationMs={100}>
-        <span>Second</span>
-      </FadeTransition>,
-    );
+    setTransitionKey('second');
+    flush();
 
     expect(screen.getByText('First')).toBeDefined();
     expect(screen.queryByText('Second')).toBeNull();
     expect(container.firstElementChild?.className).toContain('opacity-0');
 
-    act(() => {
-      vi.advanceTimersByTime(100);
-    });
+    vi.advanceTimersByTime(100);
+    flush();
 
     expect(screen.queryByText('First')).toBeNull();
-    expect(screen.queryByText('Second')).not.toBeNull();
+    expect(screen.getByText('Second')).toBeDefined();
     expect(container.firstElementChild?.className).toContain('opacity-0');
 
-    act(() => {
-      vi.advanceTimersByTime(16);
-    });
+    vi.advanceTimersByTime(16);
+    flush();
 
     expect(container.firstElementChild?.className).toContain('opacity-100');
   });

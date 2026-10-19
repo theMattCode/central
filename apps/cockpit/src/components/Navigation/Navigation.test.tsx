@@ -1,7 +1,8 @@
 /* @vitest-environment jsdom */
 
 import { afterEach, describe, expect, it } from 'vitest';
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen } from '@solidjs/testing-library';
+import { flush } from 'solid-js';
 import { Navigation } from '@/components/Navigation/Navigation.tsx';
 
 describe('Navigation', () => {
@@ -10,7 +11,7 @@ describe('Navigation', () => {
   });
 
   it('keeps the logo visible while toggling desktop navigation width state', () => {
-    render(<Navigation />);
+    render(() => <Navigation />);
 
     const collapseButton = screen.getByLabelText('Collapse navigation');
     const desktopNavigation = collapseButton.closest('aside');
@@ -20,31 +21,35 @@ describe('Navigation', () => {
     expect(screen.getAllByLabelText('Central logo').length).toBeGreaterThan(0);
 
     fireEvent.click(collapseButton);
+    flush();
 
     expect(screen.getByLabelText('Expand navigation')).toBeDefined();
     expect(desktopNavigation?.className).toContain('w-16');
     expect(screen.getAllByLabelText('Central logo').length).toBeGreaterThan(0);
 
     fireEvent.click(screen.getByLabelText('Expand navigation'));
+    flush();
 
     expect(screen.getByLabelText('Collapse navigation')).toBeDefined();
     expect(desktopNavigation?.className).toContain('w-64');
   });
 
   it('opens and closes the mobile drawer', () => {
-    render(<Navigation />);
+    render(() => <Navigation />);
 
     expect(screen.queryByLabelText('Close mobile navigation')).toBeNull();
 
     fireEvent.click(screen.getByLabelText('Open mobile navigation'));
+    flush();
     expect(screen.getByLabelText('Close mobile navigation')).toBeDefined();
 
     fireEvent.click(screen.getByLabelText('Close mobile navigation'));
+    flush();
     expect(screen.queryByLabelText('Close mobile navigation')).toBeNull();
   });
 
   it('renders primary route links', () => {
-    render(<Navigation />);
+    render(() => <Navigation />);
 
     const linkLabels = screen.getAllByRole('link').map((link) => ({
       href: link.getAttribute('href'),

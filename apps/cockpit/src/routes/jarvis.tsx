@@ -1,4 +1,4 @@
-import { createFileRoute } from '@tanstack/react-router';
+import { createFileRoute } from '@tanstack/solid-router';
 import { Jarvis } from '@/domain/assistant/Jarvis/Jarvis.tsx';
 
 export const Route = createFileRoute('/jarvis')({
@@ -10,7 +10,7 @@ export const Route = createFileRoute('/jarvis')({
 
 function JarvisRoute() {
   return (
-    <div className="w-full h-full flex items-center justify-center">
+    <div class="w-full h-full flex items-center justify-center">
       <Jarvis />
     </div>
   );
