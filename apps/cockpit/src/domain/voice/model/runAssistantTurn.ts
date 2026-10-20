@@ -360,6 +360,15 @@ export async function streamAssistantTurn(options: StreamAssistantTurnOptions): 
     transcript,
   };
 
+  if (typeof window === 'undefined') {
+    try {
+      const { dumpAssistantTurnStreamArtifacts } = await import('src/domain/voice/model/assistantTurnDump.ts');
+      await dumpAssistantTurnStreamArtifacts(input, result);
+    } catch (error) {
+      getLogger().error('dump-streamed-assistant-turn-artifacts-failed', { url: url.toString() }, error);
+    }
+  }
+
   await options.onDone?.(result);
 
   getLogger().info('streamed assistant turn', {
