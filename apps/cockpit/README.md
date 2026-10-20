@@ -1,11 +1,18 @@
 # Cockpit
 
-TanStack Start frontend application for the Central dashboard.
+SolidJS 2 frontend application for the Central dashboard, with TanStack Solid Start 2 providing file-based routing,
+SSR, and server functions. Both framework integrations are pinned to release-candidate versions intentionally while
+their SolidJS 2 support stabilizes.
+
+Cockpit code follows SolidJS 2 semantics: JSX props stay reactive, stores use draft-first updates, async data flows
+through derived stores and `Loading`/`Errored` boundaries, mutations use actions with optimistic state, effects
+separate tracked computation from imperative work, and component lifecycle cleanup uses `onSettled`.
 
 Current primary routes:
 
 - `/` for the overview dashboard
-- `/finance/cash` for income and expense management
+- `/finance/transactions` for income and expense management
+- `/finance/accounts` for financial account management
 - `/jarvis` for the dedicated Jarvis workspace
 
 ## Jarvis Route
@@ -55,9 +62,12 @@ The weather widget module owns its loading contract:
 
 If neither is set, cockpit uses `http://localhost:3010` as the local orchestrator default. Other runtimes should set `BACKEND_BASE_URL` explicitly instead of relying on endpoint probing.
 
-Errors and traces go to the Sentry project `central-cockpit`: the browser SDK is initialized in `src/router.tsx`
-(`VITE_SENTRY_DSN` and `VITE_SENTRY_ENVIRONMENT`, build time), the server SDK in `instrument.server.mjs` (`SENTRY_DSN`, runtime, loaded with
-`node --import`). See [error monitoring](../../docs/service-catalog.md#error-monitoring).
+Errors and traces go to the Sentry project `central-cockpit`. Sentry has no SDK for TanStack Solid Start, so cockpit
+wires the framework-agnostic SDKs itself: `@sentry/browser` is initialized in `src/router.tsx` (`VITE_SENTRY_DSN` and
+`VITE_SENTRY_ENVIRONMENT`, build time) with route-named page load and navigation spans
+(`src/utils/sentry/routerTracing.ts`), `@sentry/node` in `instrument.server.mjs` (`SENTRY_DSN`, runtime, loaded with
+`node --import`), server request and server function errors are reported by the global middleware in `src/start.ts`,
+and `@sentry/vite-plugin` uploads source maps. See [error monitoring](../../docs/service-catalog.md#error-monitoring).
 
 Weather widget diagnostics are written by cockpit as structured logger records (`src/utils/logger`) with scope `cockpit.weather.*`, including invalid location payloads, outbound request attempts, and upstream request failures.
 
@@ -70,7 +80,8 @@ The `/finance/accounts` route manages financial accounts:
 
 - Create and edit accounts inline; archived accounts move to a collapsed "Archived" section and can be restored.
 - Active accounts are reordered by drag and drop through a handle (pointer, touch, and keyboard via
-  [dnd-kit](https://dndkit.com/)). The new order shows immediately and rolls back if saving fails.
+  [`@dnd-kit/dom`](https://dndkit.com/), wired up directly because `@dnd-kit/solid` does not support SolidJS 2 yet).
+  The new order shows immediately and rolls back if saving fails.
 
 The `/finance/transactions` route manages manual income and expense transactions:
 

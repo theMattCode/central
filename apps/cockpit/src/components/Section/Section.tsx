@@ -1,10 +1,9 @@
-import type { PropsWithChildren } from 'react';
-import { cx } from '@/utils/styles.ts';
+import type { ParentProps } from 'solid-js';
 
 interface Props {
-  className?: string;
+  class?: string;
 }
 
-export function Section({ children, className }: PropsWithChildren<Props>) {
-  return <div className={cx('section-base', className)}>{children}</div>;
+export function Section(props: ParentProps<Props>) {
+  return <div class={['section-base', props.class]}>{props.children}</div>;
 }

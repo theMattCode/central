@@ -18,7 +18,7 @@ Project names, targets, and commands are listed in [toolchain](./toolchain.md); 
 
 ### Cockpit (`apps/cockpit`)
 
-- TanStack Start + React frontend.
+- TanStack Solid Start + SolidJS 2 frontend.
 - Fetches backend data on the cockpit server via TanStack Start server functions, then sends the result to the browser.
 - Backend exposes weather current and forecast endpoints; Cockpit currently calls `/api/v1/weather/current`.
 - Cockpit has assistant client code for `POST /api/v1/assistant/turn` and `POST /api/v1/assistant/turn/stream`, but the default UI does not start turns while browser VAD is disabled.

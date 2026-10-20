@@ -1,42 +1,45 @@
-import type { ComponentType, PropsWithChildren, ReactNode } from 'react';
-import { MdChevronLeft as ExpandIcon } from 'react-icons/md';
+import type { ParentProps } from 'solid-js';
+import type { JSX } from '@solidjs/web';
+import type { IconTypes } from 'solid-icons';
+import { MdFillChevron_left as ExpandIcon } from 'solid-icons/md';
+import { Icon } from '@/components/Icon/Icon.tsx';
 
-type NavigationGroupProps = PropsWithChildren<{
-  Icon?: ComponentType<{ className?: string }>;
+type NavigationGroupProps = ParentProps<{
+  Icon?: IconTypes;
   title: string;
 }>;
 
-export function NavigationGroup({ Icon, title, children }: NavigationGroupProps) {
+export function NavigationGroup(props: NavigationGroupProps) {
   return (
-    <details className="group w-full" open>
-      <summary className="hidden w-full cursor-pointer list-none @[14rem]:flex [&::-webkit-details-marker]:hidden py-2">
-        <NavigationGroupHeading Icon={Icon} title={title}>
-          <ExpandIcon
-            aria-hidden="true"
-            className="h-4 w-4 shrink-0 rotate-0 text-(--color-txt-sec) transition-transform duration-180 group-open:-rotate-90"
+    <details class="group w-full" open>
+      <summary class="hidden w-full cursor-pointer list-none @[14rem]:flex [&::-webkit-details-marker]:hidden py-2">
+        <NavigationGroupHeading Icon={props.Icon} title={props.title}>
+          <Icon
+            icon={ExpandIcon}
+            class="h-4 w-4 rotate-0 text-(--color-txt-sec) transition-transform duration-180 group-open:-rotate-90"
           />
         </NavigationGroupHeading>
       </summary>
-      <div className="grid grid-rows-[0fr] transition-[grid-template-rows] duration-180 group-open:grid-rows-[1fr]">
-        <div className="min-h-0 overflow-hidden">
-          <div className="flex flex-col gap-1">{children}</div>
+      <div class="grid grid-rows-[0fr] transition-[grid-template-rows] duration-180 group-open:grid-rows-[1fr]">
+        <div class="min-h-0 overflow-hidden">
+          <div class="flex flex-col gap-1">{props.children}</div>
         </div>
       </div>
     </details>
   );
 }
 
-function NavigationGroupHeading({ Icon, title, children }: NavigationGroupProps & { children?: ReactNode }) {
+function NavigationGroupHeading(props: NavigationGroupProps & { children?: JSX.Element }) {
   return (
-    <div className="flex w-full flex-row items-center gap-2 px-2 text-(--color-txt-sec)">
-      {Icon && <Icon className="w-4 h-4" />}
-      <div className="truncate text-xs uppercase tracking-[0.14em] text-(--color-txt-sec)">{title}</div>
+    <div class="flex w-full flex-row items-center gap-2 px-2 text-(--color-txt-sec)">
+      {props.Icon && <Icon icon={props.Icon} class="w-4 h-4" />}
+      <div class="truncate text-xs uppercase tracking-[0.14em] text-(--color-txt-sec)">{props.title}</div>
       <div
         aria-hidden="true"
         data-testid="navigation-group-divider"
-        className="min-w-4 flex-1 border-t border-(--color-section-border)"
+        class="min-w-4 flex-1 border-t border-(--color-section-border)"
       />
-      <div data-testid="navigation-group-toggle-icon">{children}</div>
+      <div data-testid="navigation-group-toggle-icon">{props.children}</div>
     </div>
   );
 }

@@ -1,96 +1,99 @@
 import { NavigationItem } from '@/components/Navigation/NavigationItem.tsx';
 import { Logo } from '@/components/Brand/Logo.tsx';
 import {
-  MdClose as CloseIcon,
-  MdMenu as MenuIcon,
+  MdFillClose as CloseIcon,
+  MdFillMenu as MenuIcon,
   MdOutlineHome as HomeIcon,
   MdOutlineMail as MailIcon,
-  MdOutlineMonitorWeight as MonitorModeIcon,
+  MdOutlineMonitor_weight as MonitorModeIcon,
   MdOutlineTask as TaskIcon,
-  MdSettings as SettingsIcon,
-} from 'react-icons/md';
+  MdFillSettings as SettingsIcon,
+} from 'solid-icons/md';
 import {
-  RiArrowLeftRightLine as IncomeAndExpenseIcon,
-  RiBankLine as AccountsIcon,
-  RiStockLine as InvestIcon,
-} from 'react-icons/ri';
-import { PiSidebarSimpleDuotone as NavigationToggleIcon, PiWaveform as JarvisIcon } from 'react-icons/pi';
+  RiArrowsArrowLeftRightLine as IncomeAndExpenseIcon,
+  RiBuildingsBankLine as AccountsIcon,
+  RiFinanceStockLine as InvestIcon,
+} from 'solid-icons/ri';
 import { NavigationGroup } from '@/components/Navigation/NavigationGroup.tsx';
-import { useState } from 'react';
-import { cx } from '@/utils/styles.ts';
+import { createSignal, Show } from 'solid-js';
 import { BrandIdentity } from '@/components/Brand/BrandIdentity.tsx';
+import { Icon } from '@/components/Icon/Icon.tsx';
+import {
+  SidebarSimpleDuotoneIcon as NavigationToggleIcon,
+  WaveformIcon as JarvisIcon,
+} from '@/components/Icon/OriginalIcons.tsx';
 
 export function Navigation() {
-  const [isDesktopOpen, setIsDesktopOpen] = useState(true);
-  const [isMobileOpen, setIsMobileOpen] = useState(false);
+  const [isDesktopOpen, setIsDesktopOpen] = createSignal(true);
+  const [isMobileOpen, setIsMobileOpen] = createSignal(false);
 
   const closeMobileDrawer = () => setIsMobileOpen(false);
 
   return (
     <>
-      <div className="md:hidden w-full shrink-0 flex items-center justify-between border-b border-(--color-section-border) px-3 py-2">
+      <div class="md:hidden w-full shrink-0 flex items-center justify-between border-b border-(--color-section-border) px-3 py-2">
         <Logo />
         <button
           type="button"
           aria-label="Open mobile navigation"
-          className="rounded-lg p-2 text-(--color-txt-sec) hover:bg-(--color-pri)/10 hover:text-(--color-pri)"
+          class="rounded-lg p-2 text-(--color-txt-sec) hover:bg-(--color-pri)/10 hover:text-(--color-pri)"
           onClick={() => setIsMobileOpen(true)}
         >
-          <MenuIcon className="w-6 h-6" />
+          <Icon icon={MenuIcon} class="w-6 h-6" />
         </button>
       </div>
 
-      {isMobileOpen && (
-        <div className="md:hidden fixed inset-0 z-50">
+      <Show when={isMobileOpen()}>
+        <div class="md:hidden fixed inset-0 z-50">
           <button
             type="button"
             aria-label="Close mobile navigation backdrop"
-            className="absolute inset-0 bg-black/40"
+            class="absolute inset-0 bg-black/40"
             onClick={closeMobileDrawer}
           />
-          <aside className="absolute left-0 top-0 h-dvh w-72 max-w-[calc(100vw-2rem)] bg-(--color-bg) p-4 flex flex-col gap-4 @container">
-            <div className="w-full flex items-center justify-between gap-2">
-              <div className="flex items-center gap-3 @container">
+          <aside class="absolute left-0 top-0 h-dvh w-72 max-w-[calc(100vw-2rem)] bg-(--color-bg) p-4 flex flex-col gap-4 @container">
+            <div class="w-full flex items-center justify-between gap-2">
+              <div class="flex items-center gap-3 @container">
                 <Logo />
                 <BrandIdentity />
               </div>
               <button
                 type="button"
                 aria-label="Close mobile navigation"
-                className="rounded-lg p-2 text-(--color-txt-sec) hover:bg-(--color-pri)/10 hover:text-(--color-pri)"
+                class="rounded-lg p-2 text-(--color-txt-sec) hover:bg-(--color-pri)/10 hover:text-(--color-pri)"
                 onClick={closeMobileDrawer}
               >
-                <CloseIcon className="w-6 h-6" />
+                <Icon icon={CloseIcon} class="w-6 h-6" />
               </button>
             </div>
             <DrawerContent onNavigate={closeMobileDrawer} />
           </aside>
         </div>
-      )}
+      </Show>
 
       <aside
-        className={cx(
+        class={[
           'hidden md:flex h-dvh min-h-0 shrink-0 flex-col gap-4 overflow-hidden bg-(--color-bg) p-2 transition-[width] duration-300 ease-out @container',
-          isDesktopOpen ? 'w-64' : 'w-16',
-        )}
+          { 'w-64': isDesktopOpen(), 'w-16': !isDesktopOpen() },
+        ]}
       >
-        <div className="w-full h-14 flex items-center gap-0 p-2 @[14rem]:gap-4">
+        <div class="w-full h-14 flex items-center gap-0 p-2 @[14rem]:gap-4">
           <Logo />
-          <div className="hidden @[14rem]:block">
+          <div class="hidden @[14rem]:block">
             <BrandIdentity />
           </div>
         </div>
 
         <DrawerContent />
 
-        <div className="w-full mt-auto flex justify-center @[14rem]:justify-end">
+        <div class="w-full mt-auto flex justify-center @[14rem]:justify-end">
           <button
             type="button"
-            aria-label={isDesktopOpen ? 'Collapse navigation' : 'Expand navigation'}
-            className="rounded-lg p-2 text-(--color-txt-sec) hover:bg-(--color-pri)/10 hover:text-(--color-pri)"
+            aria-label={isDesktopOpen() ? 'Collapse navigation' : 'Expand navigation'}
+            class="rounded-lg p-2 text-(--color-txt-sec) hover:bg-(--color-pri)/10 hover:text-(--color-pri)"
             onClick={() => setIsDesktopOpen((value) => !value)}
           >
-            <NavigationToggleIcon className={cx('w-6 h-6 hover:text-(--color-pri)')} />
+            <Icon icon={NavigationToggleIcon} class="w-6 h-6 hover:text-(--color-pri)" />
           </button>
         </div>
       </aside>
@@ -98,14 +101,14 @@ export function Navigation() {
   );
 }
 
-function DrawerContent({ onNavigate }: { onNavigate?: () => void }) {
+function DrawerContent(props: { onNavigate?: () => void }) {
   return (
-    <div className="w-full min-h-0 flex-1 flex flex-col gap-2">
-      <nav className="w-full flex flex-col gap-2 overflow-y-auto">
-        <NavigationItem Icon={HomeIcon} href="/" onClick={onNavigate}>
+    <div class="w-full min-h-0 flex-1 flex flex-col gap-2">
+      <nav class="w-full flex flex-col gap-2 overflow-y-auto">
+        <NavigationItem Icon={HomeIcon} to="/" onClick={props.onNavigate}>
           Overview
         </NavigationItem>
-        <NavigationItem Icon={JarvisIcon} href="/jarvis" onClick={onNavigate}>
+        <NavigationItem Icon={JarvisIcon} to="/jarvis" onClick={props.onNavigate}>
           Jarvis
         </NavigationItem>
         <NavigationGroup title="Work">
@@ -113,16 +116,16 @@ function DrawerContent({ onNavigate }: { onNavigate?: () => void }) {
           <NavigationItem Icon={MailIcon}>E-Mail</NavigationItem>
         </NavigationGroup>
         <NavigationGroup title="Finance">
-          <NavigationItem Icon={IncomeAndExpenseIcon} href="/finance/transactions" onClick={onNavigate}>
+          <NavigationItem Icon={IncomeAndExpenseIcon} to="/finance/transactions" onClick={props.onNavigate}>
             Transactions
           </NavigationItem>
-          <NavigationItem Icon={AccountsIcon} href="/finance/accounts" onClick={onNavigate}>
+          <NavigationItem Icon={AccountsIcon} to="/finance/accounts" onClick={props.onNavigate}>
             Accounts
           </NavigationItem>
           <NavigationItem Icon={InvestIcon}>Invest</NavigationItem>
         </NavigationGroup>
       </nav>
-      <div className="w-full mt-auto pt-4 flex flex-col gap-1">
+      <div class="w-full mt-auto pt-4 flex flex-col gap-1">
         <NavigationItem Icon={SettingsIcon}>Settings</NavigationItem>
         <NavigationItem Icon={MonitorModeIcon}>Display</NavigationItem>
       </div>

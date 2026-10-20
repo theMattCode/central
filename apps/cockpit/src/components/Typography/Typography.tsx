@@ -1,15 +1,15 @@
-import * as React from 'react';
+import type { JSX } from '@solidjs/web';
 
 type Props = {
-  children: React.ReactNode;
+  children: JSX.Element;
   variant?: 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6';
 };
 
-export function Typography({ children, variant }: Props) {
-  switch (variant) {
+export function Typography(props: Props) {
+  switch (props.variant) {
     case 'h1':
-      return <span className="text-2xl text-(--color-txt) font-semibold">{children}</span>;
+      return <span class="text-2xl text-(--color-txt) font-semibold">{props.children}</span>;
     default:
-      return <span>{children}</span>;
+      return <span>{props.children}</span>;
   }
 }

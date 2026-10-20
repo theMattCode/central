@@ -62,23 +62,3 @@ export type WeatherData = Readonly<{
   nextFourHoursPrecipitation: HourlyPrecipitationPoint[];
    */
 }>;
-
-export type WeatherDataLoading = {
-  status: 'loading';
-  data?: WeatherData;
-};
-
-export type WeatherDataLoaded = {
-  status: 'loaded';
-  weatherData: WeatherData;
-  refresh: () => void;
-};
-
-export type WeatherDataError = {
-  status: 'error';
-  errorMessage: string;
-  data?: WeatherData;
-  refresh: () => void;
-};
-
-export type WeatherDataState = WeatherDataLoading | WeatherDataLoaded | WeatherDataError;

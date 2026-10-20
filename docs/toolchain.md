@@ -3,11 +3,11 @@
 ## Stack
 
 - Monorepo: Nx with pnpm workspaces (`apps/*`, `libs/*`) and a Cargo workspace (`services/Cargo.toml`)
-- Frontend: TanStack Start (React) + TypeScript, TanStack Router, Vite, Tailwind CSS
+- Frontend: SolidJS 2 RC + TanStack Solid Start 2 RC + TypeScript, TanStack Router, Vite 8, Tailwind CSS
 - Backend services: Rust (Axum) for Backend and Assistant, toolchain pinned in `services/rust-toolchain.toml`; Python
   HTTP adapters for STT, TTS, and LLM
 - Persistence: PostgreSQL 18 with forward-only SQL migrations
-- Tests: Vitest + Testing Library for TypeScript, Cargo tests for Rust, `unittest` for Python
+- Tests: Vitest + Solid Testing Library for TypeScript, Cargo tests for Rust, `unittest` for Python
 - Formatting: Prettier for TypeScript/JSON/Markdown, rustfmt (defaults) for Rust
 - CI: GitHub Actions (see [deployment](./deployment.md) for the release flow)
 - Node requirement: `>=24` (`package.json`, `.nvmrc` uses `lts/*`)

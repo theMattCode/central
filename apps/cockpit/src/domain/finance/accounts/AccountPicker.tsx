@@ -1,3 +1,4 @@
+import { createMemo, For, Show } from 'solid-js';
 import type { FinancialAccount } from '@/domain/finance/accounts/model.ts';
 
 type Props = {
@@ -17,61 +18,72 @@ const SELECT_CLASS_NAME =
  * Picks the financial account a new entry is booked on. Only active accounts are offered; an
  * account that is already assigned stays selectable even if it has been archived since.
  */
-export function AccountPicker({ accounts, error, currencyCode, value, onChange }: Props) {
-  if (!accounts) {
-    // Disabled until the accounts are known; submitting without an account is caught when building the input.
-    return (
-      <div className="w-full flex flex-col gap-1 text-sm text-(--color-txt-sec)">
-        <label className="flex flex-col gap-1">
-          Account
-          <select disabled className={SELECT_CLASS_NAME} value="">
-            <option value="">{error ? 'No accounts' : 'Loading accounts...'}</option>
-          </select>
-        </label>
-        {error && (
-          <span role="alert" className="text-red-600 dark:text-red-300">
-            Accounts could not be loaded: {error}
-          </span>
-        )}
-      </div>
-    );
-  }
-
-  const selectable = accounts.filter(
-    (account) => account.status === 'active' && account.primaryCurrencyCode === currencyCode,
+export function AccountPicker(props: Props) {
+  const selectable = createMemo(() =>
+    (props.accounts ?? []).filter(
+      (account) => account.status === 'active' && account.primaryCurrencyCode === props.currencyCode,
+    ),
   );
-  const assigned = accounts.find((account) => account.id === value && !selectable.includes(account));
-
-  if (selectable.length === 0 && !assigned) {
-    return (
-      <p className="flex flex-col gap-1 text-sm text-(--color-txt-sec)">
-        No {currencyCode} account yet.
-        <a href="/finance/accounts" className="text-(--color-pri) underline">
-          Create an account
-        </a>
-      </p>
-    );
-  }
+  const assigned = createMemo(() =>
+    props.accounts?.find((account) => account.id === props.value && !selectable().includes(account)),
+  );
 
   return (
-    <label className="w-full flex flex-col gap-1 text-sm text-(--color-txt-sec)">
-      Account
-      <select required className={SELECT_CLASS_NAME} value={value} onChange={(event) => onChange(event.target.value)}>
-        <option value="" disabled>
-          Select an account
-        </option>
-        {assigned && (
-          <option value={assigned.id}>
-            {assigned.name}
-            {assigned.status === 'archived' ? ' (archived)' : ''}
-          </option>
-        )}
-        {selectable.map((account) => (
-          <option key={account.id} value={account.id}>
-            {account.name}
-          </option>
-        ))}
-      </select>
-    </label>
+    <Show
+      when={props.accounts}
+      fallback={
+        // Disabled until the accounts are known; submitting without an account is caught when building the input.
+        <div class="w-full flex flex-col gap-1 text-sm text-(--color-txt-sec)">
+          <label class="flex flex-col gap-1">
+            Account
+            <select disabled class={SELECT_CLASS_NAME}>
+              <option value="">{props.error ? 'No accounts' : 'Loading accounts...'}</option>
+            </select>
+          </label>
+          <Show when={props.error}>
+            <span role="alert" class="text-red-600 dark:text-red-300">
+              Accounts could not be loaded: {props.error}
+            </span>
+          </Show>
+        </div>
+      }
+    >
+      <Show
+        when={selectable().length > 0 || assigned()}
+        fallback={
+          <p class="flex flex-col gap-1 text-sm text-(--color-txt-sec)">
+            No {props.currencyCode} account yet.
+            <a href="/finance/accounts" class="text-(--color-pri) underline">
+              Create an account
+            </a>
+          </p>
+        }
+      >
+        <label class="w-full flex flex-col gap-1 text-sm text-(--color-txt-sec)">
+          Account
+          {/* Options carry the selection so it survives the options rendering after the select. */}
+          <select required class={SELECT_CLASS_NAME} onChange={(event) => props.onChange(event.currentTarget.value)}>
+            <option value="" disabled selected={!props.value}>
+              Select an account
+            </option>
+            <Show when={assigned()}>
+              {(account) => (
+                <option value={account().id} selected>
+                  {account().name}
+                  {account().status === 'archived' ? ' (archived)' : ''}
+                </option>
+              )}
+            </Show>
+            <For each={selectable()}>
+              {(account) => (
+                <option value={account.id} selected={account.id === props.value}>
+                  {account.name}
+                </option>
+              )}
+            </For>
+          </select>
+        </label>
+      </Show>
+    </Show>
   );
 }

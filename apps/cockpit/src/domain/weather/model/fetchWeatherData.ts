@@ -1,4 +1,4 @@
-import { createServerFn } from '@tanstack/react-start';
+import { createServerFn } from '@tanstack/solid-start';
 import { getLogger } from '@/domain/weather/log.ts';
 import type { WeatherData, WeatherLocation } from 'src/domain/weather/model/model.ts';
 import { resolveBackendBaseUrl } from '@/utils/backend.ts';
@@ -141,5 +141,5 @@ async function requestWeatherData(location: WeatherLocation): Promise<WeatherDat
 }
 
 export const fetchWeatherData = createServerFn({ method: 'GET' })
-  .inputValidator(validateWeatherLocation)
+  .validator(validateWeatherLocation)
   .handler(async ({ data }) => requestWeatherData(data));

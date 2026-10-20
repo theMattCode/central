@@ -1,39 +1,41 @@
-import type { ComponentType, MouseEventHandler, PropsWithChildren } from 'react';
-import { cx } from '@/utils/styles.ts';
+import { Show, type ParentProps } from 'solid-js';
+import type { IconTypes } from 'solid-icons';
+import { Link, type LinkProps } from '@tanstack/solid-router';
+import { Icon } from '@/components/Icon/Icon.tsx';
 
-type NavigationItemProps = PropsWithChildren<{
-  Icon?: ComponentType<{ className?: string }>;
-  href?: string;
-  onClick?: MouseEventHandler<HTMLAnchorElement | HTMLButtonElement>;
+type NavigationItemProps = ParentProps<{
+  Icon?: IconTypes;
+  to?: LinkProps['to'];
+  onClick?: () => void;
   compact?: boolean;
 }>;
 
-function getNavigationItemClassName(compact: boolean) {
-  return cx(
-    'w-full flex flex-row items-center rounded-lg border-0 bg-transparent px-2 py-1 text-left text-(--color-txt) no-underline transition-colors hover:bg-(--color-pri)/10',
-    compact ? 'justify-center' : 'gap-2',
-  );
-}
-
-export function NavigationItem({ Icon, children, href, onClick, compact = false }: NavigationItemProps) {
-  const content = (
+export function NavigationItem(props: NavigationItemProps) {
+  // A plain string, because Link concatenates class strings and would stringify an array/object class.
+  const className = () =>
+    `w-full flex flex-row items-center rounded-lg border-0 bg-transparent px-2 py-1 text-left text-(--color-txt) no-underline transition-colors hover:bg-(--color-pri)/10 ${props.compact ? 'justify-center' : 'gap-2'}`;
+  const content = () => (
     <>
-      {Icon && <Icon className="h-6 w-6 text-(--color-txt-sec)" />}
-      {!compact && <div className="hidden truncate @[14rem]:block">{children}</div>}
+      {props.Icon && <Icon icon={props.Icon} class="h-6 w-6 text-(--color-txt-sec)" />}
+      {!props.compact && <div class="hidden truncate @[14rem]:block">{props.children}</div>}
     </>
   );
 
-  if (href) {
-    return (
-      <a className={getNavigationItemClassName(compact)} href={href} onClick={onClick}>
-        {content}
-      </a>
-    );
-  }
-
+  // Router links navigate client-side; a plain anchor would reload the document and flash the default background.
   return (
-    <button type="button" className={getNavigationItemClassName(compact)} onClick={onClick}>
-      {content}
-    </button>
+    <Show
+      when={props.to}
+      fallback={
+        <button type="button" class={className()} onClick={props.onClick}>
+          {content()}
+        </button>
+      }
+    >
+      {(to) => (
+        <Link to={to()} class={className()} onClick={props.onClick}>
+          {content()}
+        </Link>
+      )}
+    </Show>
   );
 }

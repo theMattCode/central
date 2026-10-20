@@ -1,14 +1,14 @@
-import { type PropsWithChildren } from 'react';
+import { type ParentProps } from 'solid-js';
 import { Breadcrumb } from '@/components/Breadcrumb/Breadcrumb.tsx';
 
-export function ContentArea({ children }: PropsWithChildren) {
+export function ContentArea(props: ParentProps) {
   return (
-    <main className="w-full min-h-0 flex flex-col lg:flex-row overflow-hidden lg:py-4">
-      <div className="h-full flex flex-1 flex-col gap-4 overflow-hidden md:rounded-l-2xl md:bg-(--color-content-bg) @container py-4 pl-4 transition-all">
-        <div className="flex flex-row items-center">
+    <main class="w-full min-h-0 flex flex-col lg:flex-row overflow-hidden lg:py-4">
+      <div class="h-full flex flex-1 flex-col gap-4 overflow-hidden md:rounded-l-2xl md:bg-(--color-content-bg) @container py-4 pl-4 transition-all">
+        <div class="flex flex-row items-center">
           <Breadcrumb />
         </div>
-        {children}
+        {props.children}
       </div>
     </main>
   );

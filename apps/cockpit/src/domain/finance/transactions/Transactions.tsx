@@ -1,21 +1,15 @@
-import { type ReactNode, useState } from 'react';
+import { createStore, Errored, For, Loading, Show } from 'solid-js';
+import type { JSX } from '@solidjs/web';
 import {
-  MdAdd as AddIcon,
-  MdClose as CancelIcon,
-  MdDeleteOutline as DeleteIcon,
-  MdEdit as EditIcon,
-  MdSave as SaveIcon,
-} from 'react-icons/md';
-import { GiPayMoney, GiReceiveMoney } from 'react-icons/gi';
+  MdFillAdd as AddIcon,
+  MdFillClose as CancelIcon,
+  MdFillDelete_outline as DeleteIcon,
+  MdFillEdit as EditIcon,
+  MdFillSave as SaveIcon,
+} from 'solid-icons/md';
 import { Button } from '@/components/Button/Button.tsx';
 import { ButtonGroup, type Option as ButtonGroupOption } from '@/components/ButtonGroup/ButtonGroup.tsx';
 import { toErrorMessage } from '@/utils/formatting.ts';
-import { cx } from '@/utils/styles.ts';
-import {
-  createCashTransaction,
-  deleteCashTransaction,
-  updateCashTransaction,
-} from 'src/domain/finance/transactions/api.ts';
 import {
   createEmptyTransactionFormState,
   toCashTransactionInput,
@@ -23,12 +17,14 @@ import {
   type Transaction,
   type TransactionDirection,
   type TransactionFormState,
-} from 'src/domain/finance/transactions/model.ts';
+} from '@/domain/finance/transactions/model.ts';
 import { useTransactions } from '@/domain/finance/transactions/data.ts';
 import { useDateRange } from '@/utils/useDateRange.ts';
 import { SummaryStrip } from '@/domain/finance/transactions/SummaryStrip.tsx';
 import { Section } from '@/components/Section/Section.tsx';
 import { Input } from '@/components/Input/Input.tsx';
+import { Icon } from '@/components/Icon/Icon.tsx';
+import { PayMoneyIcon, ReceiveMoneyIcon } from '@/components/Icon/OriginalIcons.tsx';
 import { AccountPicker } from '@/domain/finance/accounts/AccountPicker.tsx';
 import { useAccounts } from '@/domain/finance/accounts/data.ts';
 import type { FinancialAccount } from '@/domain/finance/accounts/model.ts';
@@ -37,53 +33,52 @@ export type Direction = { value: TransactionDirection; label: string };
 
 export function Transactions() {
   const { dateRange /*, onFromChanged, onToChanged */ } = useDateRange();
-  const { data, loading, error, reload } = useTransactions(dateRange);
-  const { accounts, error: accountsError } = useAccounts();
+  const transactions = useTransactions(dateRange);
+  const accounts = useAccounts();
 
-  const [form, setForm] = useState<TransactionFormState>(() => createEmptyTransactionFormState());
-  const [editingTransactionId, setEditingTransactionId] = useState<string | null>(null);
-  const [formError, setFormError] = useState<string | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [state, setState] = createStore({
+    form: createEmptyTransactionFormState(),
+    editingTransactionId: null as string | null,
+    formError: null as string | null,
+  });
 
   const resetForm = () => {
-    setEditingTransactionId(null);
-    setForm(createEmptyTransactionFormState());
-    setFormError(null);
+    setState((current) => {
+      current.editingTransactionId = null;
+      current.form = createEmptyTransactionFormState();
+      current.formError = null;
+    });
   };
 
   const startEdit = (transaction: Transaction) => {
-    setEditingTransactionId(transaction.id);
-    setForm({
-      direction: transaction.direction,
-      transactionDate: transaction.transactionDate,
-      amount: transaction.amount,
-      description: transaction.description,
-      category: transaction.category ?? '',
-      note: transaction.note ?? '',
-      financialAccountId: transaction.financialAccountId,
+    setState((current) => {
+      current.editingTransactionId = transaction.id;
+      current.form = {
+        direction: transaction.direction,
+        transactionDate: transaction.transactionDate,
+        amount: transaction.amount,
+        description: transaction.description,
+        category: transaction.category ?? '',
+        note: transaction.note ?? '',
+        financialAccountId: transaction.financialAccountId,
+      };
+      current.formError = null;
     });
-    setFormError(null);
   };
 
   const submitForm = async () => {
-    setFormError(null);
-    setIsSubmitting(true);
+    setState((current) => void (current.formError = null));
 
     try {
-      const input = toCashTransactionInput(form);
-      if (editingTransactionId) {
-        await updateCashTransaction({
-          data: { id: editingTransactionId, ...input },
-        });
+      const input = toCashTransactionInput(state.form);
+      if (state.editingTransactionId) {
+        await transactions.update(state.editingTransactionId, input);
       } else {
-        await createCashTransaction({ data: input });
+        await transactions.create(input);
       }
       resetForm();
-      reload();
     } catch (error) {
-      setFormError(toErrorMessage(error));
-    } finally {
-      setIsSubmitting(false);
+      setState((current) => void (current.formError = toErrorMessage(error)));
     }
   };
 
@@ -93,53 +88,66 @@ export function Transactions() {
     }
 
     try {
-      await deleteCashTransaction({ data: { id: transaction.id } });
-      if (editingTransactionId === transaction.id) {
+      await transactions.delete(transaction);
+      if (state.editingTransactionId === transaction.id) {
         resetForm();
       }
-      reload();
     } catch (error) {
-      setFormError(toErrorMessage(error));
+      setState((current) => void (current.formError = toErrorMessage(error)));
     }
   };
 
   return (
     <>
-      {data?.summary && <SummaryStrip summary={data.summary} />}
-      {error && (
-        <div className="col-span-full rounded-md border border-red-500/40 bg-red-500/10 px-3 py-2 text-sm text-red-400 dark:text-red-300">
-          {error.message}
-        </div>
-      )}
-
-      <TransactionForm
-        accounts={accounts}
-        accountsError={accountsError}
-        categories={data?.categories ?? []}
-        editing={Boolean(editingTransactionId)}
-        error={formError}
-        form={form}
-        isSubmitting={isSubmitting}
-        onCancel={resetForm}
-        onChange={setForm}
-        onSubmit={submitForm}
-      />
-      {loading && <p className="col-span-full text-sm text-(--color-txt-sec)">Loading transactions...</p>}
-      {/* Transaction list should have kind of toolbar
-          <input type="month" value={month} className="rounded-md border border-(--color-section-border) bg-(--color-bg) px-3 py-2 text-(--color-txt)" onChange={(event) => setDateRangeMonth(event.target.value)} />
-          <label className="flex flex-col gap-1 text-sm text-(--color-txt-sec)"></label>
-          <button type="button" aria-label="Refresh transactions" title="Refresh" className="mt-6 rounded-md border border-(--color-section-border) p-2 text-(--color-txt-sec) hover:bg-(--color-pri)/10 hover:text-(--color-pri)" onClick={reload} >
-            <RefreshIcon className="h-5 w-5" />
+      <Errored fallback={(error, reset) => <TransactionsError error={error()} onRetry={reset} />}>
+        <Loading fallback={<p class="col-span-full text-sm text-(--color-txt-sec)">Loading transactions...</p>}>
+          <SummaryStrip summary={transactions.data.summary} />
+          <TransactionForm
+            accounts={accounts.data.accounts}
+            categories={transactions.data.categories}
+            editing={Boolean(state.editingTransactionId)}
+            error={state.formError}
+            form={state.form}
+            isSubmitting={transactions.isMutating()}
+            onCancel={resetForm}
+            onChange={(form) => setState((current) => void (current.form = form))}
+            onSubmit={submitForm}
+          />
+          {/* Transaction list should have kind of toolbar
+          <input type="month" value={month} class="rounded-md border border-(--color-section-border) bg-(--color-bg) px-3 py-2 text-(--color-txt)" onChange={(event) => setDateRangeMonth(event.target.value)} />
+          <label class="flex flex-col gap-1 text-sm text-(--color-txt-sec)"></label>
+          <button type="button" aria-label="Refresh transactions" title="Refresh" class="mt-6 rounded-md border border-(--color-section-border) p-2 text-(--color-txt-sec) hover:bg-(--color-pri)/10 hover:text-(--color-pri)" onClick={reload} >
+            <RefreshIcon class="h-5 w-5" />
           </button>
        */}
-      {data && <TransactionList transactions={data.transactions} onDelete={deleteTransaction} onEdit={startEdit} />}
+          <Show when={transactions.isRefreshing()}>
+            <p class="col-span-full text-sm text-(--color-txt-sec)">Updating transactions...</p>
+          </Show>
+          <TransactionList
+            transactions={transactions.data.transactions}
+            onDelete={deleteTransaction}
+            onEdit={startEdit}
+          />
+        </Loading>
+      </Errored>
     </>
   );
 }
 
+function TransactionsError(props: { error: unknown; onRetry: () => void }) {
+  return (
+    <div class="col-span-full flex flex-col gap-2 rounded-md border border-red-500/40 bg-red-500/10 px-3 py-2 text-sm text-red-600 dark:text-red-300">
+      <span>{toErrorMessage(props.error)}</span>
+      <button class="self-start underline" onClick={props.onRetry} type="button">
+        Retry
+      </button>
+    </div>
+  );
+}
+
 type TransactionFormProps = {
-  accounts: FinancialAccount[] | null;
-  accountsError: string | null;
+  /** Read under the form's own boundaries, so loading or failing accounts never blocks the form. */
+  accounts: FinancialAccount[];
   categories: string[];
   editing: boolean;
   error: string | null;
@@ -155,205 +163,211 @@ const DIRECTION_OPTIONS: ButtonGroupOption[] = [
     id: 'expense',
     text: 'Ausgabe',
     style: { optionColor: 'var(--color-sem-negative)' },
-    icon: GiPayMoney,
+    icon: PayMoneyIcon,
   },
   {
     id: 'income',
     text: 'Einnahme',
     style: { optionColor: 'var(--color-sem-positive)' },
-    icon: GiReceiveMoney,
+    icon: ReceiveMoneyIcon,
   },
 ];
 
-function TransactionForm({
-  accounts,
-  accountsError,
-  categories,
-  editing,
-  error,
-  form,
-  isSubmitting,
-  onCancel,
-  onChange,
-  onSubmit,
-}: TransactionFormProps) {
-  const updateForm = (patch: Partial<TransactionFormState>) => onChange({ ...form, ...patch });
+function TransactionForm(props: TransactionFormProps) {
+  const updateForm = (patch: Partial<TransactionFormState>) => props.onChange({ ...props.form, ...patch });
   return (
     <Section>
       <form
-        className="w-full flex flex-col gap-4"
+        class="w-full flex flex-col gap-4"
         onSubmit={(event) => {
           event.preventDefault();
-          void onSubmit();
+          void props.onSubmit();
         }}
       >
-        <div className="w-full grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4">
-          <label className="w-full flex flex-col gap-1 text-sm text-(--color-txt-sec)">
+        <div class="w-full grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4">
+          <label class="w-full flex flex-col gap-1 text-sm text-(--color-txt-sec)">
             Direction
             <ButtonGroup
               defaultValue={DIRECTION_OPTIONS[0]}
+              value={DIRECTION_OPTIONS.find((option) => option.id === props.form.direction)}
               options={DIRECTION_OPTIONS}
               onChanged={(option) => updateForm({ direction: option.id as TransactionDirection })}
             />
           </label>
-          <label className="w-full flex flex-col gap-1 text-sm text-(--color-txt-sec)">
+          <label class="w-full flex flex-col gap-1 text-sm text-(--color-txt-sec)">
             Date
             <Input
               type="date"
-              value={form.transactionDate}
-              onChange={(event) => updateForm({ transactionDate: event.target.value })}
+              value={props.form.transactionDate}
+              onInput={(event) => updateForm({ transactionDate: event.currentTarget.value })}
             />
           </label>
-          <label className="w-full flex flex-col gap-1 text-sm text-(--color-txt-sec)">
+          <label class="w-full flex flex-col gap-1 text-sm text-(--color-txt-sec)">
             Amount
             <Input
-              inputMode="decimal"
-              value={form.amount}
+              inputmode="decimal"
+              value={props.form.amount}
               placeholder="0.00"
-              onChange={(event) => updateForm({ amount: event.target.value })}
+              onInput={(event) => updateForm({ amount: event.currentTarget.value })}
             />
           </label>
-          <AccountPicker
-            accounts={accounts}
-            error={accountsError}
-            currencyCode={TRANSACTION_CURRENCY_CODE}
-            value={form.financialAccountId}
-            onChange={(financialAccountId) => updateForm({ financialAccountId })}
-          />
-          <label className="flex flex-col gap-1 text-sm text-(--color-txt-sec)">
+          <Errored
+            fallback={(error) => (
+              <AccountPicker
+                accounts={null}
+                error={toErrorMessage(error())}
+                currencyCode={TRANSACTION_CURRENCY_CODE}
+                value=""
+                onChange={() => {}}
+              />
+            )}
+          >
+            <Loading
+              fallback={
+                <AccountPicker accounts={null} currencyCode={TRANSACTION_CURRENCY_CODE} value="" onChange={() => {}} />
+              }
+            >
+              <AccountPicker
+                accounts={props.accounts}
+                currencyCode={TRANSACTION_CURRENCY_CODE}
+                value={props.form.financialAccountId}
+                onChange={(financialAccountId) => updateForm({ financialAccountId })}
+              />
+            </Loading>
+          </Errored>
+          <label class="flex flex-col gap-1 text-sm text-(--color-txt-sec)">
             Description
-            <Input value={form.description} onChange={(event) => updateForm({ description: event.target.value })} />
+            <Input
+              value={props.form.description}
+              onInput={(event) => updateForm({ description: event.currentTarget.value })}
+            />
           </label>
-          <label className="flex flex-col gap-1 text-sm text-(--color-txt-sec)">
+          <label class="flex flex-col gap-1 text-sm text-(--color-txt-sec)">
             Category
             <Input
               list="cash-category-options"
-              value={form.category}
-              onChange={(event) => updateForm({ category: event.target.value })}
+              value={props.form.category}
+              onInput={(event) => updateForm({ category: event.currentTarget.value })}
             />
           </label>
-          <label className="flex flex-col gap-1 text-sm text-(--color-txt-sec)">
+          <label class="flex flex-col gap-1 text-sm text-(--color-txt-sec)">
             Note
-            <Input value={form.note} onChange={(event) => updateForm({ note: event.target.value })} />
+            <Input value={props.form.note} onInput={(event) => updateForm({ note: event.currentTarget.value })} />
           </label>
         </div>
-        <div className="flex gap-4 justify-end">
-          {editing && (
+        <div class="flex gap-4 justify-end">
+          <Show when={props.editing}>
             <Button
               type="button"
               aria-label="Cancel edit"
               title="Cancel"
-              onClick={onCancel}
+              onClick={props.onCancel}
               icon={CancelIcon}
               text="Cancel"
             />
-          )}
+          </Show>
           <Button
             type="submit"
-            name={editing ? 'Save Transaction' : 'Add transaction'}
-            text={editing ? 'Save' : 'Add'}
-            icon={editing ? SaveIcon : AddIcon}
-            disabled={isSubmitting}
+            name={props.editing ? 'Save Transaction' : 'Add transaction'}
+            text={props.editing ? 'Save' : 'Add'}
+            icon={props.editing ? SaveIcon : AddIcon}
+            disabled={props.isSubmitting}
           />
         </div>
-        {error && (
-          <div className="rounded-md border border-red-500/40 bg-red-500/10 px-3 py-2 text-sm text-red-600 dark:text-red-300 lg:col-span-5">
-            {error}
+        <Show when={props.error}>
+          <div class="rounded-md border border-red-500/40 bg-red-500/10 px-3 py-2 text-sm text-red-600 dark:text-red-300 lg:col-span-5">
+            {props.error}
           </div>
-        )}
+        </Show>
         <datalist id="cash-category-options">
-          {categories.map((category) => (
-            <option key={category} value={category} />
-          ))}
+          <For each={props.categories}>{(category) => <option value={category} />}</For>
         </datalist>
       </form>
     </Section>
   );
 }
 
-function TransactionList({
-  transactions,
-  onDelete,
-  onEdit,
-}: {
+function TransactionList(props: {
   transactions: Transaction[];
   onDelete: (transaction: Transaction) => void;
   onEdit: (transaction: Transaction) => void;
 }) {
-  if (transactions.length === 0) {
-    return <p className="text-sm text-(--color-txt-sec)">No transactions for this month.</p>;
-  }
-
   return (
-    <Section>
-      <div className="w-full hidden overflow-x-auto sm:block">
-        <table className="w-full border-separate border-spacing-0 text-sm">
-          <thead className="text-left text-(--color-txt-sec)">
-            <tr>
-              <th className="border-b border-(--color-section-border) py-2 pr-3 font-medium">Date</th>
-              <th className="border-b border-(--color-section-border) py-2 pr-3 font-medium">Description</th>
-              <th className="border-b border-(--color-section-border) py-2 pr-3 font-medium">Account</th>
-              <th className="border-b border-(--color-section-border) py-2 pr-3 font-medium">Category</th>
-              <th className="border-b border-(--color-section-border) py-2 pr-3 text-right font-medium">Amount</th>
-              <th className="border-b border-(--color-section-border) py-2 pl-3 text-right font-medium">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {transactions.map((transaction) => (
-              <TransactionRow key={transaction.id} transaction={transaction} onDelete={onDelete} onEdit={onEdit} />
-            ))}
-          </tbody>
-        </table>
-      </div>
-      <div className="w-full flex flex-col gap-4 sm:hidden">
-        {transactions.map((transaction) => (
-          <TransactionCard key={transaction.id} transaction={transaction} onDelete={onDelete} onEdit={onEdit} />
-        ))}
-      </div>
-    </Section>
+    <Show
+      when={props.transactions.length > 0}
+      fallback={<p class="text-sm text-(--color-txt-sec)">No transactions for this month.</p>}
+    >
+      <Section>
+        <div class="w-full hidden overflow-x-auto sm:block">
+          <table class="w-full border-separate border-spacing-0 text-sm">
+            <thead class="text-left text-(--color-txt-sec)">
+              <tr>
+                <th class="border-b border-(--color-section-border) py-2 pr-3 font-medium">Date</th>
+                <th class="border-b border-(--color-section-border) py-2 pr-3 font-medium">Description</th>
+                <th class="border-b border-(--color-section-border) py-2 pr-3 font-medium">Account</th>
+                <th class="border-b border-(--color-section-border) py-2 pr-3 font-medium">Category</th>
+                <th class="border-b border-(--color-section-border) py-2 pr-3 text-right font-medium">Amount</th>
+                <th class="border-b border-(--color-section-border) py-2 pl-3 text-right font-medium">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <For each={props.transactions}>
+                {(transaction) => (
+                  <TransactionRow transaction={transaction} onDelete={props.onDelete} onEdit={props.onEdit} />
+                )}
+              </For>
+            </tbody>
+          </table>
+        </div>
+        <div class="w-full flex flex-col gap-4 sm:hidden">
+          <For each={props.transactions}>
+            {(transaction) => (
+              <TransactionCard transaction={transaction} onDelete={props.onDelete} onEdit={props.onEdit} />
+            )}
+          </For>
+        </div>
+      </Section>
+    </Show>
   );
 }
 
-function TransactionRow({
-  transaction,
-  onDelete,
-  onEdit,
-}: {
+function TransactionRow(props: {
   transaction: Transaction;
   onDelete: (transaction: Transaction) => void;
   onEdit: (transaction: Transaction) => void;
 }) {
   return (
     <tr>
-      <td className="border-b border-(--color-section-border) py-2 pr-3">{transaction.transactionDate}</td>
-      <td className="border-b border-(--color-section-border) py-2 pr-3">
-        <div className="font-medium">{transaction.description}</div>
-        {transaction.note && <div className="text-xs text-(--color-txt-sec)">{transaction.note}</div>}
+      <td class="border-b border-(--color-section-border) py-2 pr-3">{props.transaction.transactionDate}</td>
+      <td class="border-b border-(--color-section-border) py-2 pr-3">
+        <div class="font-medium">{props.transaction.description}</div>
+        {props.transaction.note && <div class="text-xs text-(--color-txt-sec)">{props.transaction.note}</div>}
       </td>
-      <td className="border-b border-(--color-section-border) py-2 pr-3 text-(--color-txt-sec)">
-        {transaction.financialAccountName}
+      <td class="border-b border-(--color-section-border) py-2 pr-3 text-(--color-txt-sec)">
+        {props.transaction.financialAccountName}
       </td>
-      <td className="border-b border-(--color-section-border) py-2 pr-3 text-(--color-txt-sec)">
-        {transaction.category ?? '-'}
+      <td class="border-b border-(--color-section-border) py-2 pr-3 text-(--color-txt-sec)">
+        {props.transaction.category ?? '-'}
       </td>
       <td
-        className={cx(
+        class={[
           'border-b border-(--color-section-border) py-2 pr-3 text-right font-semibold',
-          transaction.direction === 'income'
-            ? 'text-emerald-600 dark:text-emerald-300'
-            : 'text-rose-600 dark:text-rose-300',
-        )}
+          {
+            'text-emerald-600 dark:text-emerald-300': props.transaction.direction === 'income',
+            'text-rose-600 dark:text-rose-300': props.transaction.direction !== 'income',
+          },
+        ]}
       >
-        {transaction.direction === 'income' ? '+' : '-'}
-        {transaction.amount} {transaction.currencyCode}
+        {props.transaction.direction === 'income' ? '+' : '-'}
+        {props.transaction.amount} {props.transaction.currencyCode}
       </td>
-      <td className="border-b border-(--color-section-border) py-2 pl-3">
-        <div className="flex justify-end gap-1">
-          <IconButton label="Edit transaction" onClick={() => onEdit(transaction)}>
-            <EditIcon className="h-5 w-5" />
+      <td class="border-b border-(--color-section-border) py-2 pl-3">
+        <div class="flex justify-end gap-1">
+          <IconButton label="Edit transaction" onClick={() => props.onEdit(props.transaction)}>
+            <Icon icon={EditIcon} class="h-5 w-5" />
           </IconButton>
-          <IconButton label="Delete transaction" onClick={() => onDelete(transaction)}>
-            <DeleteIcon className="h-5 w-5" />
+          <IconButton label="Delete transaction" onClick={() => props.onDelete(props.transaction)}>
+            <Icon icon={DeleteIcon} class="h-5 w-5" />
           </IconButton>
         </div>
       </td>
@@ -361,45 +375,42 @@ function TransactionRow({
   );
 }
 
-function TransactionCard({
-  transaction,
-  onDelete,
-  onEdit,
-}: {
+function TransactionCard(props: {
   transaction: Transaction;
   onDelete: (transaction: Transaction) => void;
   onEdit: (transaction: Transaction) => void;
 }) {
   return (
     <Section>
-      <div className="w-full flex flex-col">
-        <div className="w-full flex items-start justify-between gap-3">
+      <div class="w-full flex flex-col">
+        <div class="w-full flex items-start justify-between gap-3">
           <div>
-            <div className="font-medium">{transaction.description}</div>
-            <div className="text-sm text-(--color-txt-sec)">
-              {transaction.transactionDate} - {transaction.financialAccountName}
-              {transaction.category ? ` - ${transaction.category}` : ''}
+            <div class="font-medium">{props.transaction.description}</div>
+            <div class="text-sm text-(--color-txt-sec)">
+              {props.transaction.transactionDate} - {props.transaction.financialAccountName}
+              {props.transaction.category ? ` - ${props.transaction.category}` : ''}
             </div>
-            {transaction.note && <div className="mt-1 text-sm text-(--color-txt-sec)">{transaction.note}</div>}
+            {props.transaction.note && <div class="mt-1 text-sm text-(--color-txt-sec)">{props.transaction.note}</div>}
           </div>
           <div
-            className={cx(
+            class={[
               'shrink-0 text-right font-semibold',
-              transaction.direction === 'income'
-                ? 'text-emerald-600 dark:text-emerald-300'
-                : 'text-rose-600 dark:text-rose-300',
-            )}
+              {
+                'text-emerald-600 dark:text-emerald-300': props.transaction.direction === 'income',
+                'text-rose-600 dark:text-rose-300': props.transaction.direction !== 'income',
+              },
+            ]}
           >
-            {transaction.direction === 'income' ? '+' : '-'}
-            {transaction.amount} {transaction.currencyCode}
+            {props.transaction.direction === 'income' ? '+' : '-'}
+            {props.transaction.amount} {props.transaction.currencyCode}
           </div>
         </div>
-        <div className="flex justify-end gap-1">
-          <IconButton label="Edit transaction" onClick={() => onEdit(transaction)}>
-            <EditIcon className="h-5 w-5" />
+        <div class="flex justify-end gap-1">
+          <IconButton label="Edit transaction" onClick={() => props.onEdit(props.transaction)}>
+            <Icon icon={EditIcon} class="h-5 w-5" />
           </IconButton>
-          <IconButton label="Delete transaction" onClick={() => onDelete(transaction)}>
-            <DeleteIcon className="h-5 w-5" />
+          <IconButton label="Delete transaction" onClick={() => props.onDelete(props.transaction)}>
+            <Icon icon={DeleteIcon} class="h-5 w-5" />
           </IconButton>
         </div>
       </div>
@@ -407,16 +418,16 @@ function TransactionCard({
   );
 }
 
-function IconButton({ children, label, onClick }: { children: ReactNode; label: string; onClick: () => void }) {
+function IconButton(props: { children: JSX.Element; label: string; onClick: () => void }) {
   return (
     <button
       type="button"
-      aria-label={label}
-      title={label}
-      className="rounded-md p-2 text-(--color-txt-sec) hover:bg-(--color-pri)/10 hover:text-(--color-pri)"
-      onClick={onClick}
+      aria-label={props.label}
+      title={props.label}
+      class="rounded-md p-2 text-(--color-txt-sec) hover:bg-(--color-pri)/10 hover:text-(--color-pri)"
+      onClick={props.onClick}
     >
-      {children}
+      {props.children}
     </button>
   );
 }

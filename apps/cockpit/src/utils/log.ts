@@ -1,4 +1,4 @@
-import { createIsomorphicFn } from '@tanstack/react-start';
+import { createIsomorphicFn } from '@tanstack/solid-start';
 import { ConsoleLogger } from '@/utils/logger/ConsoleLogger';
 import type { Logger } from '@/utils/logger/api';
 

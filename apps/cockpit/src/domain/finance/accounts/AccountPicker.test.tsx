@@ -1,5 +1,5 @@
 /* @vitest-environment jsdom */
-import { render, screen, within } from '@testing-library/react';
+import { render, screen, within } from '@solidjs/testing-library';
 import { userEvent } from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { AccountPicker } from '@/domain/finance/accounts/AccountPicker.tsx';
@@ -36,19 +36,19 @@ describe('AccountPicker', () => {
   const user = userEvent.setup();
 
   it('offers only active EUR accounts in list order', () => {
-    render(<AccountPicker currencyCode="EUR" accounts={ACCOUNTS} value="" onChange={() => {}} />);
+    render(() => <AccountPicker currencyCode="EUR" accounts={ACCOUNTS} value="" onChange={() => {}} />);
 
     expect(optionLabels()).toEqual(['Select an account', 'Girokonto', 'Wallet']);
   });
 
   it('requires a selection', () => {
-    render(<AccountPicker currencyCode="EUR" accounts={ACCOUNTS} value="" onChange={() => {}} />);
+    render(() => <AccountPicker currencyCode="EUR" accounts={ACCOUNTS} value="" onChange={() => {}} />);
 
     expect((screen.getByLabelText('Account') as HTMLSelectElement).required).toBe(true);
   });
 
   it('keeps an assigned archived account selectable and marks it', () => {
-    render(<AccountPicker currencyCode="EUR" accounts={ACCOUNTS} value="old" onChange={() => {}} />);
+    render(() => <AccountPicker currencyCode="EUR" accounts={ACCOUNTS} value="old" onChange={() => {}} />);
 
     expect(optionLabels()).toEqual(['Select an account', 'Old wallet (archived)', 'Girokonto', 'Wallet']);
     expect((screen.getByLabelText('Account') as HTMLSelectElement).value).toBe('old');
@@ -56,7 +56,7 @@ describe('AccountPicker', () => {
 
   it('reports the selected account id', async () => {
     const onChange = vi.fn();
-    render(<AccountPicker currencyCode="EUR" accounts={ACCOUNTS} value="" onChange={onChange} />);
+    render(() => <AccountPicker currencyCode="EUR" accounts={ACCOUNTS} value="" onChange={onChange} />);
 
     await user.selectOptions(screen.getByLabelText('Account'), 'cash');
 
@@ -64,14 +64,16 @@ describe('AccountPicker', () => {
   });
 
   it('links to account management when no account can be selected', () => {
-    render(<AccountPicker currencyCode="EUR" accounts={[ACCOUNTS[1], ACCOUNTS[2]]} value="" onChange={() => {}} />);
+    render(() => (
+      <AccountPicker currencyCode="EUR" accounts={[ACCOUNTS[1], ACCOUNTS[2]]} value="" onChange={() => {}} />
+    ));
 
     expect(screen.queryByLabelText('Account')).toBeNull();
     expect(screen.getByRole('link', { name: 'Create an account' }).getAttribute('href')).toBe('/finance/accounts');
   });
 
   it('shows a disabled select while accounts are loading', () => {
-    render(<AccountPicker currencyCode="EUR" accounts={null} value="" onChange={() => {}} />);
+    render(() => <AccountPicker currencyCode="EUR" accounts={null} value="" onChange={() => {}} />);
 
     expect((screen.getByLabelText('Account') as HTMLSelectElement).disabled).toBe(true);
     expect(optionLabels()).toEqual(['Loading accounts...']);
@@ -79,9 +81,9 @@ describe('AccountPicker', () => {
   });
 
   it('shows why accounts are missing when loading failed', () => {
-    render(
-      <AccountPicker currencyCode="EUR" accounts={null} error="backend unavailable" value="" onChange={() => {}} />,
-    );
+    render(() => (
+      <AccountPicker currencyCode="EUR" accounts={null} error="backend unavailable" value="" onChange={() => {}} />
+    ));
 
     expect(screen.getByRole('alert').textContent).toBe('Accounts could not be loaded: backend unavailable');
     expect((screen.getByLabelText('Account') as HTMLSelectElement).disabled).toBe(true);

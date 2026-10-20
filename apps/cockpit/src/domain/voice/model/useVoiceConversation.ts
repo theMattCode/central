@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { createSignal, onSettled } from 'solid-js';
 import { getLogger } from '@/domain/voice/log.ts';
 import {
   base64ToBytes,
@@ -82,129 +82,126 @@ function releaseAudioElement(audioElement: HTMLAudioElement): void {
 }
 
 export function useVoiceConversation(options: UseVoiceConversationOptions = {}): UseVoiceConversationResult {
-  const [playbackLevel, setPlaybackLevel] = useState(0);
-  const [status, setStatus] = useState<VoiceConversationStatus>('idle');
-  const [transcript, setTranscript] = useState<string | null>(null);
-  const [responseText, setResponseText] = useState<string | null>(null);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const abortControllerRef = useRef<AbortController | null>(null);
-  const audioElementRef = useRef<HTMLAudioElement | null>(null);
-  const audioQueueRef = useRef<QueuedAudioChunk[]>([]);
-  const audioUrlRef = useRef<string | null>(null);
-  const audioAnalyserRef = useRef<AnalyserNode | null>(null);
-  const audioContextRef = useRef<AudioContext | null>(null);
-  const audioSourceNodeRef = useRef<MediaElementAudioSourceNode | null>(null);
-  const isStreamCompleteRef = useRef(false);
-  const playbackFrameRef = useRef<number | null>(null);
+  const [playbackLevel, setPlaybackLevel] = createSignal(0);
+  const [status, setStatus] = createSignal<VoiceConversationStatus>('idle');
+  const [transcript, setTranscript] = createSignal<string | null>(null);
+  const [responseText, setResponseText] = createSignal<string | null>(null);
+  const [errorMessage, setErrorMessage] = createSignal<string | null>(null);
+  let abortControllerRef: AbortController | null = null;
+  let audioElementRef: HTMLAudioElement | null = null;
+  let audioQueueRef: QueuedAudioChunk[] = [];
+  let audioUrlRef: string | null = null;
+  let audioAnalyserRef: AnalyserNode | null = null;
+  let audioContextRef: AudioContext | null = null;
+  let audioSourceNodeRef: MediaElementAudioSourceNode | null = null;
+  let isStreamCompleteRef = false;
+  let playbackFrameRef: number | null = null;
 
-  const stopPlaybackMonitoring = useCallback(() => {
-    if (playbackFrameRef.current !== null && typeof window !== 'undefined') {
-      window.cancelAnimationFrame(playbackFrameRef.current);
-      playbackFrameRef.current = null;
+  const stopPlaybackMonitoring = () => {
+    if (playbackFrameRef !== null && typeof window !== 'undefined') {
+      window.cancelAnimationFrame(playbackFrameRef);
+      playbackFrameRef = null;
     }
 
-    audioAnalyserRef.current?.disconnect();
-    audioAnalyserRef.current = null;
+    audioAnalyserRef?.disconnect();
+    audioAnalyserRef = null;
 
-    audioSourceNodeRef.current?.disconnect();
-    audioSourceNodeRef.current = null;
+    audioSourceNodeRef?.disconnect();
+    audioSourceNodeRef = null;
 
     setPlaybackLevel(0);
-  }, []);
+  };
 
-  const attachPlaybackMonitoring = useCallback(
-    (audioElement: HTMLAudioElement) => {
-      if (typeof window === 'undefined' || typeof window.AudioContext === 'undefined') {
-        setPlaybackLevel(0);
-        return;
-      }
+  const attachPlaybackMonitoring = (audioElement: HTMLAudioElement) => {
+    if (typeof window === 'undefined' || typeof window.AudioContext === 'undefined') {
+      setPlaybackLevel(0);
+      return;
+    }
 
-      stopPlaybackMonitoring();
-
-      try {
-        const audioContext = audioContextRef.current ?? new window.AudioContext();
-        audioContextRef.current = audioContext;
-
-        const analyser = audioContext.createAnalyser();
-        analyser.fftSize = 256;
-        analyser.smoothingTimeConstant = 0.82;
-
-        const sourceNode = audioContext.createMediaElementSource(audioElement);
-        sourceNode.connect(analyser);
-        analyser.connect(audioContext.destination);
-
-        audioAnalyserRef.current = analyser;
-        audioSourceNodeRef.current = sourceNode;
-
-        void audioContext.resume().catch(() => undefined);
-
-        const buffer = new Uint8Array(analyser.fftSize);
-
-        const measure = () => {
-          if (audioAnalyserRef.current !== analyser) {
-            return;
-          }
-
-          analyser.getByteTimeDomainData(buffer);
-          const nextPlaybackLevel = getByteTimeDomainSignalLevel(buffer);
-          setPlaybackLevel((currentValue) =>
-            Math.abs(currentValue - nextPlaybackLevel) < 0.015 ? currentValue : nextPlaybackLevel,
-          );
-          playbackFrameRef.current = window.requestAnimationFrame(measure);
-        };
-
-        playbackFrameRef.current = window.requestAnimationFrame(measure);
-      } catch (error) {
-        getLogger().info('voice-playback-monitor-unavailable', {
-          reason: toErrorMessage(error),
-        });
-        setPlaybackLevel(0);
-      }
-    },
-    [stopPlaybackMonitoring],
-  );
-
-  const clearCurrentAudio = useCallback(() => {
     stopPlaybackMonitoring();
 
-    const audioElement = audioElementRef.current;
-    audioElementRef.current = null;
+    try {
+      const audioContext = audioContextRef ?? new window.AudioContext();
+      audioContextRef = audioContext;
+
+      const analyser = audioContext.createAnalyser();
+      analyser.fftSize = 256;
+      analyser.smoothingTimeConstant = 0.82;
+
+      const sourceNode = audioContext.createMediaElementSource(audioElement);
+      sourceNode.connect(analyser);
+      analyser.connect(audioContext.destination);
+
+      audioAnalyserRef = analyser;
+      audioSourceNodeRef = sourceNode;
+
+      void audioContext.resume().catch(() => undefined);
+
+      const buffer = new Uint8Array(analyser.fftSize);
+
+      const measure = () => {
+        if (audioAnalyserRef !== analyser) {
+          return;
+        }
+
+        analyser.getByteTimeDomainData(buffer);
+        const nextPlaybackLevel = getByteTimeDomainSignalLevel(buffer);
+        setPlaybackLevel((currentValue) =>
+          Math.abs(currentValue - nextPlaybackLevel) < 0.015 ? currentValue : nextPlaybackLevel,
+        );
+        playbackFrameRef = window.requestAnimationFrame(measure);
+      };
+
+      playbackFrameRef = window.requestAnimationFrame(measure);
+    } catch (error) {
+      getLogger().info('voice-playback-monitor-unavailable', {
+        reason: toErrorMessage(error),
+      });
+      setPlaybackLevel(0);
+    }
+  };
+
+  const clearCurrentAudio = () => {
+    stopPlaybackMonitoring();
+
+    const audioElement = audioElementRef;
+    audioElementRef = null;
     if (audioElement) {
       releaseAudioElement(audioElement);
     }
 
-    const audioUrl = audioUrlRef.current;
-    audioUrlRef.current = null;
+    const audioUrl = audioUrlRef;
+    audioUrlRef = null;
     if (audioUrl) {
       URL.revokeObjectURL(audioUrl);
     }
-  }, [stopPlaybackMonitoring]);
+  };
 
-  const clearQueuedAudioChunks = useCallback(() => {
-    for (const queuedChunk of audioQueueRef.current) {
+  const clearQueuedAudioChunks = () => {
+    for (const queuedChunk of audioQueueRef) {
       URL.revokeObjectURL(queuedChunk.audioUrl);
     }
 
-    audioQueueRef.current = [];
-  }, []);
+    audioQueueRef = [];
+  };
 
-  const stopPlayback = useCallback(() => {
-    abortControllerRef.current?.abort();
-    abortControllerRef.current = null;
-    isStreamCompleteRef.current = false;
+  const stopPlayback = () => {
+    abortControllerRef?.abort();
+    abortControllerRef = null;
+    isStreamCompleteRef = false;
 
     clearCurrentAudio();
     clearQueuedAudioChunks();
-  }, [clearCurrentAudio, clearQueuedAudioChunks]);
+  };
 
-  const playNextChunk = useCallback(() => {
-    if (audioElementRef.current) {
+  const playNextChunk = () => {
+    if (audioElementRef) {
       return;
     }
 
-    const nextChunk = audioQueueRef.current.shift();
+    const nextChunk = audioQueueRef.shift();
     if (!nextChunk) {
-      if (isStreamCompleteRef.current) {
+      if (isStreamCompleteRef) {
         setStatus('idle');
       }
       return;
@@ -212,12 +209,12 @@ export function useVoiceConversation(options: UseVoiceConversationOptions = {}):
 
     const audioElement = new Audio(nextChunk.audioUrl);
     audioElement.preload = 'auto';
-    audioElementRef.current = audioElement;
-    audioUrlRef.current = nextChunk.audioUrl;
+    audioElementRef = audioElement;
+    audioUrlRef = nextChunk.audioUrl;
     attachPlaybackMonitoring(audioElement);
 
     audioElement.onloadedmetadata = () => {
-      if (audioElementRef.current !== audioElement) {
+      if (audioElementRef !== audioElement) {
         return;
       }
 
@@ -230,7 +227,7 @@ export function useVoiceConversation(options: UseVoiceConversationOptions = {}):
     };
 
     audioElement.oncanplay = () => {
-      if (audioElementRef.current !== audioElement) {
+      if (audioElementRef !== audioElement) {
         return;
       }
 
@@ -242,7 +239,7 @@ export function useVoiceConversation(options: UseVoiceConversationOptions = {}):
     };
 
     audioElement.onplaying = () => {
-      if (audioElementRef.current !== audioElement) {
+      if (audioElementRef !== audioElement) {
         return;
       }
 
@@ -254,7 +251,7 @@ export function useVoiceConversation(options: UseVoiceConversationOptions = {}):
     };
 
     audioElement.onended = () => {
-      if (audioElementRef.current !== audioElement) {
+      if (audioElementRef !== audioElement) {
         return;
       }
 
@@ -268,7 +265,7 @@ export function useVoiceConversation(options: UseVoiceConversationOptions = {}):
     };
 
     audioElement.onerror = () => {
-      if (audioElementRef.current !== audioElement) {
+      if (audioElementRef !== audioElement) {
         return;
       }
 
@@ -298,7 +295,7 @@ export function useVoiceConversation(options: UseVoiceConversationOptions = {}):
     });
 
     void audioElement.play().catch((error) => {
-      if (audioElementRef.current !== audioElement) {
+      if (audioElementRef !== audioElement) {
         return;
       }
 
@@ -315,133 +312,140 @@ export function useVoiceConversation(options: UseVoiceConversationOptions = {}):
       setErrorMessage(toErrorMessage(error));
       stopPlayback();
     });
-  }, [attachPlaybackMonitoring, clearCurrentAudio, stopPlayback]);
+  };
 
-  useEffect(() => {
+  onSettled(() => {
     return () => {
       stopPlayback();
 
-      const audioContext = audioContextRef.current;
-      audioContextRef.current = null;
+      const audioContext = audioContextRef;
+      audioContextRef = null;
       void audioContext?.close().catch(() => undefined);
     };
-  }, [stopPlayback]);
+  });
 
-  const processSpeech = useCallback(
-    async (audio: Float32Array) => {
-      stopPlayback();
-      setStatus('processing');
-      setTranscript(null);
-      setResponseText(null);
-      setErrorMessage(null);
-      isStreamCompleteRef.current = false;
+  const processSpeech = async (audio: Float32Array) => {
+    stopPlayback();
+    setStatus('processing');
+    setTranscript(null);
+    setResponseText(null);
+    setErrorMessage(null);
+    isStreamCompleteRef = false;
 
-      const abortController = new AbortController();
-      abortControllerRef.current = abortController;
+    const abortController = new AbortController();
+    abortControllerRef = abortController;
 
-      const shouldIgnoreEvent = () => abortController.signal.aborted || abortControllerRef.current !== abortController;
+    const shouldIgnoreEvent = () => abortController.signal.aborted || abortControllerRef !== abortController;
 
-      const queueAudioChunk = (chunk: AssistantTurnAudioChunk) => {
-        if (shouldIgnoreEvent()) {
-          return;
-        }
+    const queueAudioChunk = (chunk: AssistantTurnAudioChunk) => {
+      if (shouldIgnoreEvent()) {
+        return;
+      }
 
-        const responseAudioBytes = base64ToBytes(chunk.audioBase64);
-        const audioDiagnostics = describeAudioBytes(responseAudioBytes, chunk.audioMimeType);
-        getLogger().info('assistant-turn-audio-chunk-received', {
-          chunkIndex: chunk.chunkIndex,
-          chunkTextLength: chunk.text.length,
-          ...audioDiagnostics,
-        });
-
-        const audioUrl = createAudioObjectUrlFromBytes(responseAudioBytes, chunk.audioMimeType);
-        audioQueueRef.current.push({
-          audioDiagnostics,
-          audioMimeType: chunk.audioMimeType,
-          audioUrl,
-          chunkIndex: chunk.chunkIndex,
-        });
-        playNextChunk();
-      };
-
-      const payload: AssistantTurnInput = {
-        audioBase64: encodeFloat32ToWavBase64(audio),
-        audioMimeType: WAV_AUDIO_MIME_TYPE,
-        language: options.language ?? 'de',
-        voiceInstruction: options.voiceInstruction,
-      };
-
-      getLogger().info('assistant-turn-request-started', {
-        encodedAudioLength: payload.audioBase64.length,
-        language: payload.language,
-        sampleCount: audio.length,
-        voiceInstructionLength: payload.voiceInstruction?.length ?? 0,
+      const responseAudioBytes = base64ToBytes(chunk.audioBase64);
+      const audioDiagnostics = describeAudioBytes(responseAudioBytes, chunk.audioMimeType);
+      getLogger().info('assistant-turn-audio-chunk-received', {
+        chunkIndex: chunk.chunkIndex,
+        chunkTextLength: chunk.text.length,
+        ...audioDiagnostics,
       });
 
-      try {
-        const result = await streamAssistantTurn({
-          data: payload,
-          onAudioChunk: async (chunk) => queueAudioChunk(chunk),
-          onResponseDelta: async (delta) => {
-            if (shouldIgnoreEvent()) {
-              return;
-            }
+      const audioUrl = createAudioObjectUrlFromBytes(responseAudioBytes, chunk.audioMimeType);
+      audioQueueRef.push({
+        audioDiagnostics,
+        audioMimeType: chunk.audioMimeType,
+        audioUrl,
+        chunkIndex: chunk.chunkIndex,
+      });
+      playNextChunk();
+    };
 
-            setResponseText((currentValue) => `${currentValue ?? ''}${delta}`);
-          },
-          onTranscript: async (value) => {
-            if (shouldIgnoreEvent()) {
-              return;
-            }
+    const payload: AssistantTurnInput = {
+      audioBase64: encodeFloat32ToWavBase64(audio),
+      audioMimeType: WAV_AUDIO_MIME_TYPE,
+      language: options.language ?? 'de',
+      voiceInstruction: options.voiceInstruction,
+    };
 
-            setTranscript(value);
-            getLogger().info('assistant-turn-transcript-received', {
-              transcriptLength: value.length,
-            });
-          },
-          signal: abortController.signal,
-        });
+    getLogger().info('assistant-turn-request-started', {
+      encodedAudioLength: payload.audioBase64.length,
+      language: payload.language,
+      sampleCount: audio.length,
+      voiceInstructionLength: payload.voiceInstruction?.length ?? 0,
+    });
 
-        if (shouldIgnoreEvent()) {
-          return;
-        }
+    try {
+      const result = await streamAssistantTurn({
+        data: payload,
+        onAudioChunk: async (chunk) => queueAudioChunk(chunk),
+        onResponseDelta: async (delta) => {
+          if (shouldIgnoreEvent()) {
+            return;
+          }
 
-        isStreamCompleteRef.current = true;
-        setTranscript(result.transcript);
-        setResponseText(result.responseText);
+          setResponseText((currentValue) => `${currentValue ?? ''}${delta}`);
+        },
+        onTranscript: async (value) => {
+          if (shouldIgnoreEvent()) {
+            return;
+          }
 
-        getLogger().info('assistant-turn-stream-completed', {
-          audioChunkCount: result.audioChunks.length,
-          responseLength: result.responseText.length,
-          transcriptLength: result.transcript.length,
-        });
+          setTranscript(value);
+          getLogger().info('assistant-turn-transcript-received', {
+            transcriptLength: value.length,
+          });
+        },
+        signal: abortController.signal,
+      });
 
-        if (!audioElementRef.current && audioQueueRef.current.length === 0) {
-          setStatus('idle');
-        } else {
-          playNextChunk();
-        }
-      } catch (error) {
-        if (abortController.signal.aborted) {
-          getLogger().info('assistant-turn-request-aborted');
-          setStatus('idle');
-          return;
-        }
-
-        getLogger().error('assistant-turn-failed', undefined, error);
-        setStatus('error');
-        setErrorMessage(toErrorMessage(error));
+      if (shouldIgnoreEvent()) {
+        return;
       }
-    },
-    [options.language, options.voiceInstruction, playNextChunk, stopPlayback],
-  );
+
+      isStreamCompleteRef = true;
+      setTranscript(result.transcript);
+      setResponseText(result.responseText);
+
+      getLogger().info('assistant-turn-stream-completed', {
+        audioChunkCount: result.audioChunks.length,
+        responseLength: result.responseText.length,
+        transcriptLength: result.transcript.length,
+      });
+
+      if (!audioElementRef && audioQueueRef.length === 0) {
+        setStatus('idle');
+      } else {
+        playNextChunk();
+      }
+    } catch (error) {
+      if (abortController.signal.aborted) {
+        getLogger().info('assistant-turn-request-aborted');
+        setStatus('idle');
+        return;
+      }
+
+      getLogger().error('assistant-turn-failed', undefined, error);
+      setStatus('error');
+      setErrorMessage(toErrorMessage(error));
+    }
+  };
 
   return {
-    playbackLevel,
-    status,
-    transcript,
-    responseText,
-    errorMessage,
+    get playbackLevel() {
+      return playbackLevel();
+    },
+    get status() {
+      return status();
+    },
+    get transcript() {
+      return transcript();
+    },
+    get responseText() {
+      return responseText();
+    },
+    get errorMessage() {
+      return errorMessage();
+    },
     processSpeech,
     stopPlayback,
   };

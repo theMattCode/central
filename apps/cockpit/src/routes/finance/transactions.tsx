@@ -1,6 +1,8 @@
-import { createFileRoute } from '@tanstack/react-router';
+import { createFileRoute } from '@tanstack/solid-router';
 import { Transactions } from '@/domain/finance/transactions/Transactions.tsx';
 import { GridLayout } from '@/components/GridLayout/GridLayout.tsx';
+import { FinanceClientProvider } from '@/domain/finance/FinanceClientContext.tsx';
+import { DEFAULT_FINANCE_CLIENT } from '@/domain/finance/financeClient.ts';
 
 export const Route = createFileRoute('/finance/transactions')({
   component: TransactionsRoute,
@@ -11,8 +13,10 @@ export const Route = createFileRoute('/finance/transactions')({
 
 function TransactionsRoute() {
   return (
-    <GridLayout>
-      <Transactions />
-    </GridLayout>
+    <FinanceClientProvider client={DEFAULT_FINANCE_CLIENT}>
+      <GridLayout>
+        <Transactions />
+      </GridLayout>
+    </FinanceClientProvider>
   );
 }

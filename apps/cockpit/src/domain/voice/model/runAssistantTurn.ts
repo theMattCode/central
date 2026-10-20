@@ -1,4 +1,4 @@
-import { createServerFn } from '@tanstack/react-start';
+import { createServerFn } from '@tanstack/solid-start';
 import { getLogger } from '@/domain/voice/log.ts';
 import type {
   AssistantTurnAudioChunk,
@@ -6,10 +6,6 @@ import type {
   AssistantTurnResult,
   AssistantTurnStreamResult,
 } from 'src/domain/voice/model/model.ts';
-import {
-  dumpAssistantTurnArtifacts,
-  dumpAssistantTurnStreamArtifacts,
-} from 'src/domain/voice/model/assistantTurnDump.ts';
 import { resolveAssistantServiceBaseUrl } from 'src/domain/voice/model/assistantServiceBaseUrl.ts';
 
 type AssistantServiceError = {
@@ -206,10 +202,13 @@ async function requestAssistantTurn(input: AssistantTurnInput, signal?: AbortSig
   }
 
   const result = (await response.json()) as AssistantTurnResult;
-  try {
-    await dumpAssistantTurnArtifacts(input, result);
-  } catch (error) {
-    getLogger().error('dump-assistant-turn-artifacts-failed', { url: url.toString() }, error);
+  if (typeof window === 'undefined') {
+    try {
+      const { dumpAssistantTurnArtifacts } = await import('src/domain/voice/model/assistantTurnDump.ts');
+      await dumpAssistantTurnArtifacts(input, result);
+    } catch (error) {
+      getLogger().error('dump-assistant-turn-artifacts-failed', { url: url.toString() }, error);
+    }
   }
 
   getLogger().info('requested assistant turn', {
@@ -370,10 +369,13 @@ export async function streamAssistantTurn(options: StreamAssistantTurnOptions): 
     transcript,
   };
 
-  try {
-    await dumpAssistantTurnStreamArtifacts(input, result);
-  } catch (error) {
-    getLogger().error('dump-streamed-assistant-turn-artifacts-failed', { url: url.toString() }, error);
+  if (typeof window === 'undefined') {
+    try {
+      const { dumpAssistantTurnStreamArtifacts } = await import('src/domain/voice/model/assistantTurnDump.ts');
+      await dumpAssistantTurnStreamArtifacts(input, result);
+    } catch (error) {
+      getLogger().error('dump-streamed-assistant-turn-artifacts-failed', { url: url.toString() }, error);
+    }
   }
 
   await options.onDone?.(result);
@@ -389,5 +391,5 @@ export async function streamAssistantTurn(options: StreamAssistantTurnOptions): 
 }
 
 export const runAssistantTurn = createServerFn({ method: 'POST' })
-  .inputValidator(validateAssistantTurnInput)
+  .validator(validateAssistantTurnInput)
   .handler(async ({ data }) => requestAssistantTurn(data));

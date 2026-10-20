@@ -1,5 +1,5 @@
-import type { PropsWithChildren } from 'react';
+import type { ParentProps } from 'solid-js';
 
-export function GridLayout({ children }: PropsWithChildren) {
-  return <div className="pr-4 overflow-auto grid-layout">{children}</div>;
+export function GridLayout(props: ParentProps) {
+  return <div class="pr-4 overflow-auto grid-layout">{props.children}</div>;
 }
