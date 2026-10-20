@@ -31,7 +31,7 @@ export function Navigation() {
 
   return (
     <>
-      <div class="md:hidden w-full shrink-0 flex items-center justify-between border-b border-(--color-section-border) px-3 py-2">
+      <div class="md:hidden w-full shrink-0 flex items-center justify-between border-b border-(--glass-border) bg-(--glass-surface) backdrop-blur-lg px-3 py-2">
         <Logo />
         <button
           type="button"
@@ -48,10 +48,10 @@ export function Navigation() {
           <button
             type="button"
             aria-label="Close mobile navigation backdrop"
-            class="absolute inset-0 bg-black/40"
+            class="absolute inset-0 bg-black/40 backdrop-blur-sm"
             onClick={closeMobileDrawer}
           />
-          <aside class="absolute left-0 top-0 h-dvh w-72 max-w-[calc(100vw-2rem)] bg-(--color-bg) p-4 flex flex-col gap-4 @container">
+          <aside class="absolute left-0 top-0 h-dvh w-72 max-w-[calc(100vw-2rem)] glass-panel rounded-r-2xl p-4 flex flex-col gap-4 @container">
             <div class="w-full flex items-center justify-between gap-2">
               <div class="flex items-center gap-3 @container">
                 <Logo />
@@ -73,7 +73,7 @@ export function Navigation() {
 
       <aside
         class={[
-          'hidden md:flex h-dvh min-h-0 shrink-0 flex-col gap-4 overflow-hidden bg-(--color-bg) p-2 transition-[width] duration-300 ease-out @container',
+          'hidden md:flex h-dvh min-h-0 shrink-0 flex-col gap-4 overflow-hidden p-2 transition-[width] duration-300 ease-out @container',
           { 'w-64': isDesktopOpen(), 'w-16': !isDesktopOpen() },
         ]}
       >

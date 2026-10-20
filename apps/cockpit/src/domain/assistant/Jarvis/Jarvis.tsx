@@ -125,7 +125,7 @@ function useJarvisMotion(mode: () => JarvisMode, microphoneLevel: () => number, 
 
 function TelemetryList(props: { items: ReadonlyArray<{ label: string; value: string }>; title: string }) {
   return (
-    <div class="jarvis-telemetry">
+    <div class="jarvis-telemetry glass-panel">
       <div class="jarvis-telemetry__title">{props.title}</div>
       <div class="jarvis-telemetry__items">
         <For each={props.items}>
@@ -240,7 +240,7 @@ export function Jarvis() {
         <div class="jarvis-shell__status">
           <div
             class={[
-              'jarvis-shell__badge',
+              'jarvis-shell__badge glass-control',
               {
                 'jarvis-shell__badge--error': systemState().tone === 'error',
                 'jarvis-shell__badge--attention': systemState().tone === 'attention',
@@ -252,7 +252,7 @@ export function Jarvis() {
           </div>
           <button
             type="button"
-            class={['jarvis-shell__toggle', { 'jarvis-shell__toggle--active': isEnabled() }]}
+            class={['jarvis-shell__toggle glass-control', { 'jarvis-shell__toggle--active': isEnabled() }]}
             onClick={toggleEnabled}
             disabled={!isVadEnabled}
           >
@@ -269,7 +269,7 @@ export function Jarvis() {
       </div>
 
       <div class="jarvis-shell__panels">
-        <div class="jarvis-panel">
+        <div class="jarvis-panel glass-panel">
           <div class="jarvis-panel__title">
             <Icon icon={MicIcon} class="h-4 w-4" />
             Transcript
@@ -277,7 +277,7 @@ export function Jarvis() {
           <p>{transcriptCopy()}</p>
         </div>
 
-        <div class="jarvis-panel">
+        <div class="jarvis-panel glass-panel">
           <div class="jarvis-panel__title">
             <Icon icon={OutputIcon} class="h-4 w-4" />
             Reply stream
@@ -286,7 +286,7 @@ export function Jarvis() {
         </div>
       </div>
 
-      {errorMessage() ? <div class="jarvis-shell__alert">{errorMessage()}</div> : null}
+      {errorMessage() ? <div class="jarvis-shell__alert glass-panel">{errorMessage()}</div> : null}
     </section>
   );
 }

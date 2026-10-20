@@ -12,7 +12,7 @@ type Props = {
 };
 
 const SELECT_CLASS_NAME =
-  'w-full rounded-md border border-(--color-section-border) bg-(--color-bg) px-3 py-2 text-(--color-txt) outline-none disabled:opacity-60';
+  'w-full rounded-md glass-control px-3 py-2 text-(--color-txt) outline-none disabled:opacity-60';
 
 /**
  * Picks the financial account a new entry is booked on. Only active accounts are offered; an

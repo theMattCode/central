@@ -92,6 +92,16 @@ describe('Navigation', () => {
     const [jarvisLink] = screen.getAllByRole('link', { name: 'Jarvis' });
 
     expect(jarvisLink.classList).toContain('gap-2');
-    expect(jarvisLink.classList).toContain('hover:bg-(--color-pri)/10');
+    expect(jarvisLink.classList).toContain('glass-item');
+  });
+
+  it('marks only the link of the current route as active', async () => {
+    await renderNavigation();
+
+    const [overviewLink] = screen.getAllByRole('link', { name: 'Overview' });
+    const [jarvisLink] = screen.getAllByRole('link', { name: 'Jarvis' });
+
+    expect(overviewLink.getAttribute('aria-current')).toBe('page');
+    expect(jarvisLink.getAttribute('aria-current')).toBeNull();
   });
 });

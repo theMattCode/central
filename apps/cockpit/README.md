@@ -23,6 +23,20 @@ The `/jarvis` route is a browser-native voice HUD inspired by the linked Tkinter
 - Listening and turn-processing drive a more aggressive animation state.
 - Spoken reply playback feeds live output energy back into the center reactor, so the browser animation reacts to the streamed TTS audio.
 
+## Styling
+
+The cockpit uses a moulded glass look defined in `src/styles.css`:
+
+- `--glass-*` tokens hold the translucent fills, rim lights and shadows for light and dark mode.
+- `glass-panel` (sections, drawers) and `glass-control` (buttons, form fields) live in the `components` layer, so
+  utilities on the same element (border width/colour, tints) still override them.
+- `glass-tray` is the recessed, unblurred content area that the panels float on.
+- `glass-item` (navigation items) stays transparent and turns into a `glass-control` on hover or when its link is
+  the current page (`aria-current="page"`).
+
+The Jarvis HUD has no frame of its own: its grid fades out into the page, and its panels and controls use the same
+glass components and theme colours as the rest of the cockpit.
+
 ## Run
 
 From repository root:

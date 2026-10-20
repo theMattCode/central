@@ -17,7 +17,7 @@ export function Button(props: ParentProps<Props>) {
       class={[
         props.shape === 'circle' ? 'rounded-full aspect-square' : 'rounded-md',
         'flex gap-2 py-1 px-2 items-center justify-center',
-        'border-2 border-(--color-pri)/60 bg-(--color-pri)/10 hover:bg-(--color-pri)/15 active:bg-(--color-pri)/25 focus:bg-(--color-pri)/20 text-(--color-text) disabled:opacity-50',
+        'glass-control border-2 border-(--color-pri)/60 bg-(--color-pri)/10 hover:bg-(--color-pri)/15 active:bg-(--color-pri)/25 focus:bg-(--color-pri)/20 text-(--color-text) disabled:opacity-50',
         props.class,
       ]}
     >

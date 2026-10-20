@@ -13,10 +13,12 @@ type NavigationItemProps = ParentProps<{
 export function NavigationItem(props: NavigationItemProps) {
   // A plain string, because Link concatenates class strings and would stringify an array/object class.
   const className = () =>
-    `w-full flex flex-row items-center rounded-lg border-0 bg-transparent px-2 py-1 text-left text-(--color-txt) no-underline transition-colors hover:bg-(--color-pri)/10 ${props.compact ? 'justify-center' : 'gap-2'}`;
+    `group glass-item w-full flex flex-row items-center rounded-lg px-2 py-1 text-left text-(--color-txt) no-underline transition ${props.compact ? 'justify-center' : 'gap-2'}`;
   const content = () => (
     <>
-      {props.Icon && <Icon icon={props.Icon} class="h-6 w-6 text-(--color-txt-sec)" />}
+      {props.Icon && (
+        <Icon icon={props.Icon} class="h-6 w-6 text-(--color-txt-sec) group-aria-[current=page]:text-(--color-pri)" />
+      )}
       {!props.compact && <div class="hidden truncate @[14rem]:block">{props.children}</div>}
     </>
   );

@@ -178,7 +178,7 @@ function SortableAccountItem(props: SortableAccountItemProps) {
   return (
     <li
       ref={(element) => (sortable.element = element)}
-      class={['flex flex-wrap items-center gap-3 py-2 bg-(--color-bg)', { 'relative z-10 opacity-80': isDragging() }]}
+      class={['flex flex-wrap items-center gap-3 py-2', { 'relative z-10 opacity-80 bg-(--color-bg)': isDragging() }]}
     >
       <Show when={!props.editing}>
         <button

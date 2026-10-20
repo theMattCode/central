@@ -36,6 +36,7 @@ export function JarvisOrb(props: JarvisOrbProps) {
         <div class="jarvis-reactor__layer jarvis-reactor__layer--core-ring" />
         <div class="jarvis-reactor__layer jarvis-reactor__layer--core-arc" />
         <div class="jarvis-reactor__layer jarvis-reactor__layer--core-dot" />
+        <div class="jarvis-reactor__layer jarvis-reactor__layer--lens" />
       </div>
     </div>
   );

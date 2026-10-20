@@ -10,7 +10,7 @@ export const Route = createFileRoute('/jarvis')({
 
 function JarvisRoute() {
   return (
-    <div class="w-full h-full flex items-center justify-center">
+    <div class="w-full h-full min-h-0 flex items-center justify-center pr-4">
       <Jarvis />
     </div>
   );

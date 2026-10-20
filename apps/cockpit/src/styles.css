@@ -2,31 +2,53 @@
 
 :root {
   color-scheme: light;
-  --color-bg: #fff;
-  --color-content-bg: #e6e6e6;
+  --color-bg: #e9eef3;
   --color-txt: #000000;
   --color-txt-sec: #707070;
   --color-pri: #22d9ff;
   --color-sec: #44c56a;
-  --color-section-border: #d6dde6;
+  --color-section-border: rgb(15 23 42 / 0.1);
   --color-sem-positive: oklch(59.6% 0.145 163.225);
   --color-sem-negative: oklch(58.6% 0.253 17.585);
   --color-skeleton: #e6e6e6;
+
+  /* Glass surfaces: a translucent fill, a top sheen and an inner rim light give panels a moulded, plastic depth. */
+  --glass-ambient-pri: rgb(34 217 255 / 0.28);
+  --glass-ambient-sec: rgb(68 197 106 / 0.22);
+  --glass-tray: rgb(255 255 255 / 0.18);
+  --glass-surface: rgb(255 255 255 / 0.28);
+  --glass-control: rgb(255 255 255 / 0.22);
+  --glass-sheen: rgb(255 255 255 / 0.35);
+  --glass-border: rgb(255 255 255 / 0.6);
+  --glass-highlight: rgb(255 255 255 / 0.95);
+  --glass-shade: rgb(15 23 42 / 0.06);
+  --glass-shadow: rgb(15 23 42 / 0.18);
+  --glass-blur: 18px;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
     color-scheme: dark;
     --color-bg: #0a0b0a;
-    --color-content-bg: #141414;
     --color-txt: #e0e0e0;
     --color-txt-sec: #8f8f8f;
     --color-pri: #22d9ff;
     --color-sec: #44c56a;
-    --color-section-border: #272727;
+    --color-section-border: rgb(255 255 255 / 0.08);
     --color-sem-positive: oklch(84.5% 0.143 164.978);
     --color-sem-negative: oklch(71.2% 0.194 13.428);
     --color-skeleton: #272727;
+
+    --glass-ambient-pri: rgb(34 217 255 / 0.12);
+    --glass-ambient-sec: rgb(68 197 106 / 0.09);
+    --glass-tray: rgb(255 255 255 / 0.02);
+    --glass-surface: rgb(255 255 255 / 0.025);
+    --glass-control: rgb(255 255 255 / 0.025);
+    --glass-sheen: rgb(255 255 255 / 0.04);
+    --glass-border: rgb(255 255 255 / 0.09);
+    --glass-highlight: rgb(255 255 255 / 0.14);
+    --glass-shade: rgb(0 0 0 / 0.35);
+    --glass-shadow: rgb(0 0 0 / 0.55);
   }
 }
 
@@ -37,6 +59,11 @@ body {
     'Helvetica Neue', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  /* Soft ambient light behind the glass, so the panels have something to refract. */
+  background-image:
+    radial-gradient(60rem 40rem at 0% 0%, var(--glass-ambient-pri), transparent 70%),
+    radial-gradient(50rem 40rem at 100% 100%, var(--glass-ambient-sec), transparent 70%);
+  background-attachment: fixed;
 }
 
 code {
@@ -61,5 +88,50 @@ code {
 }
 
 .section-base {
-  @apply transition-all self-start w-full h-full bg-(--color-bg) flex p-4 rounded-lg border border-(--color-section-border) @container;
+  @apply transition-all self-start w-full h-full flex p-4 rounded-xl @container;
+}
+
+/* Glass components live in the components layer, so utilities on the element (border width/colour, tints) override them. */
+@layer components {
+  /* Raised glass pane for sections, cards and drawers. */
+  .glass-panel {
+    border: 1px solid var(--glass-border);
+    border-top-color: var(--glass-highlight);
+    background-color: var(--glass-surface);
+    background-image: linear-gradient(180deg, var(--glass-sheen), transparent 30%);
+    box-shadow:
+      inset 0 -1px 0 var(--glass-shade),
+      0 12px 32px -14px var(--glass-shadow);
+    backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+  }
+
+  /* Small pressable glass for buttons and form fields; glass items (navigation) only show it when hovered or active. */
+  .glass-control,
+  .glass-item:hover,
+  .glass-item[aria-current='page'] {
+    border: 1px solid var(--glass-border);
+    border-top-color: var(--glass-highlight);
+    background-color: var(--glass-control);
+    background-image: linear-gradient(180deg, var(--glass-sheen), transparent 50%);
+    box-shadow:
+      inset 0 -1px 0 var(--glass-shade),
+      0 2px 6px -2px var(--glass-shadow);
+    backdrop-filter: blur(8px) saturate(150%);
+  }
+
+  .glass-control option {
+    background-color: var(--color-bg);
+    color: var(--color-txt);
+  }
+
+  /* Reserves the control border, so the item does not shift when the glass appears. */
+  .glass-item {
+    border: 1px solid transparent;
+  }
+}
+
+/* Recessed tray that holds the page content; it stays unblurred so the panels inside blur the ambient light. */
+@utility glass-tray {
+  background-color: var(--glass-tray);
+  box-shadow: inset 0 1px 2px var(--glass-shade);
 }

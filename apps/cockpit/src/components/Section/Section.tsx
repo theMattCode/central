@@ -5,5 +5,5 @@ interface Props {
 }
 
 export function Section(props: ParentProps<Props>) {
-  return <div class={['section-base', props.class]}>{props.children}</div>;
+  return <div class={['section-base glass-panel', props.class]}>{props.children}</div>;
 }

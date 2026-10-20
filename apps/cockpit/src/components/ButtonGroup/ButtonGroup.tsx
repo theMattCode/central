@@ -41,7 +41,7 @@ export function ButtonGroup(props: Props) {
               aria-checked={isSelected() ? 'true' : 'false'}
               style={{ '--option-color': option.style.optionColor }}
               class={[
-                'px-3 py-2 flex flex-row items-center gap-2 transition-all duration-200 border border-(--color-section-border) first:rounded-l-md last:rounded-r-md text-(--color-txt) bg-(--color-bg)',
+                'px-3 py-2 flex flex-row items-center gap-2 transition-all duration-200 glass-control first:rounded-l-md last:rounded-r-md text-(--color-txt)',
                 {
                   'border-(--option-color)': isSelected(),
                   'hover:border-(--option-color)/40': !isSelected(),

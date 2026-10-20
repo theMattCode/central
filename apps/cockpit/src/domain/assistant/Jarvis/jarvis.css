@@ -11,17 +11,21 @@
   --jarvis-warning: #f8d38c;
   --jarvis-error: #ff7d9a;
   overflow: hidden;
+  padding: clamp(1rem, 2vw, 1.75rem);
 }
 
-#jarvis::before,
-#jarvis::after {
+/* The HUD panels are regular cockpit glass. */
+#jarvis .glass-panel {
+  border-radius: 0.75rem;
+}
+
+/* The HUD grid has no frame; it fades out into the page from behind the reactor. */
+#jarvis::before {
   content: '';
   position: absolute;
   inset: 0;
   pointer-events: none;
-}
-
-#jarvis::before {
+  mask-image: radial-gradient(ellipse 60% 70% at center, #000 35%, transparent 100%);
   background-image:
     linear-gradient(rgba(79, 183, 219, 0.08) 1px, transparent 1px),
     linear-gradient(90deg, rgba(79, 183, 219, 0.08) 1px, transparent 1px),
@@ -32,14 +36,7 @@
     4.5rem 4.5rem,
     7.5rem 7.5rem,
     7.5rem 7.5rem;
-  opacity: 0.32;
-}
-
-#jarvis::after {
-  background:
-    radial-gradient(circle at center, rgba(0, 0, 0, 0) 54%, rgba(1, 8, 16, 0.82) 100%),
-    linear-gradient(180deg, rgba(152, 248, 255, 0.02), rgba(152, 248, 255, 0));
-  opacity: 0.95;
+  opacity: 0.7;
 }
 
 #jarvis[data-mode='transcribing'],
@@ -60,18 +57,25 @@
   filter: saturate(1.18);
 }
 
+/* The sweep fades out just below the reactor and stays hidden for the rest of the cycle. */
 @keyframes scanline-keyframes {
   from {
     opacity: 0;
     transform: translateY(0);
   }
 
-  10% {
+  6% {
     opacity: 0.45;
   }
 
+  41% {
+    opacity: 0.45;
+  }
+
+  54%,
   to {
-    transform: translateY(64rem);
+    opacity: 0;
+    transform: translateY(34.5rem);
   }
 }
 
@@ -90,6 +94,7 @@
   );
   mix-blend-mode: screen;
   opacity: 0.45;
+  mask-image: linear-gradient(90deg, transparent, #000 25%, #000 75%, transparent);
   animation: scanline-keyframes 7s linear infinite;
 }
 
@@ -125,13 +130,13 @@
 .jarvis-shell__eyebrow {
   display: inline-flex;
   margin-bottom: 0.6rem;
-  color: rgba(184, 245, 255, 0.72);
+  color: var(--color-txt-sec);
   font-size: 0.76rem;
 }
 
 .jarvis-shell__headline h1 {
   margin: 0;
-  color: rgba(229, 252, 255, 0.96);
+  color: var(--color-txt);
   font-family: 'Orbitron', 'Rajdhani', sans-serif;
   font-size: clamp(2rem, 4vw, 3.15rem);
   letter-spacing: 0.08em;
@@ -140,7 +145,7 @@
 
 .jarvis-shell__headline p {
   margin: 0.7rem 0 0;
-  color: rgba(191, 228, 238, 0.74);
+  color: var(--color-txt-sec);
   font-size: 1.02rem;
   line-height: 1.4;
 }
@@ -165,10 +170,8 @@
 }
 
 .jarvis-shell__badge {
-  border: 1px solid rgba(143, 246, 255, 0.26);
-  background: rgba(5, 28, 48, 0.72);
   padding: 0.7rem 1rem;
-  color: rgba(228, 252, 255, 0.92);
+  color: var(--color-txt);
 }
 
 .jarvis-shell__badge svg,
@@ -183,14 +186,12 @@
 }
 
 .jarvis-shell__badge--error {
-  border-color: rgba(255, 125, 154, 0.34);
-  color: var(--jarvis-error);
+  border-color: color-mix(in srgb, var(--color-sem-negative) 40%, transparent);
+  color: var(--color-sem-negative);
 }
 
 .jarvis-shell__toggle {
-  border: 1px solid rgba(143, 246, 255, 0.2);
-  background: rgba(5, 18, 34, 0.86);
-  color: rgba(226, 252, 255, 0.92);
+  color: var(--color-txt);
   padding: 0.85rem 1.2rem;
   cursor: pointer;
   transition:
@@ -202,13 +203,15 @@
 
 .jarvis-shell__toggle:hover {
   transform: translateY(-1px);
-  border-color: rgba(143, 246, 255, 0.38);
-  box-shadow: 0 0 1.6rem rgba(34, 217, 255, 0.12);
+  border-color: color-mix(in srgb, var(--color-pri) 40%, transparent);
+  box-shadow:
+    inset 0 -1px 0 var(--glass-shade),
+    0 0 1.6rem color-mix(in srgb, var(--color-pri) 18%, transparent);
 }
 
 .jarvis-shell__toggle--active {
-  border-color: rgba(143, 246, 255, 0.44);
-  background: rgba(7, 35, 57, 0.92);
+  border-color: color-mix(in srgb, var(--color-pri) 60%, transparent);
+  background-color: color-mix(in srgb, var(--color-pri) 15%, transparent);
 }
 
 .jarvis-shell__center {
@@ -221,11 +224,10 @@
 
 .jarvis-telemetry {
   padding: 1rem 1rem;
-  clip-path: polygon(0 0, calc(100% - 1rem) 0, 100% 1rem, 100% 100%, 1rem 100%, 0 calc(100% - 1rem));
 }
 
 .jarvis-telemetry__title {
-  color: rgba(183, 244, 255, 0.82);
+  color: var(--color-txt-sec);
   font-size: 0.68rem;
 }
 
@@ -241,16 +243,17 @@
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
-  color: rgba(188, 224, 237, 0.74);
+  color: var(--color-txt-sec);
   font-size: 0.92rem;
   letter-spacing: 0.08em;
 }
 
 .jarvis-telemetry__row strong {
-  color: rgba(226, 251, 255, 0.96);
+  color: var(--color-txt);
   font-family: 'Orbitron', 'Rajdhani', sans-serif;
   font-size: 0.84rem;
   font-weight: 500;
+  text-align: right;
 }
 
 .jarvis-reactor {
@@ -279,10 +282,10 @@
   height: 18rem;
   background: radial-gradient(
     circle,
-    rgba(31, 151, 205, 0.32) 0%,
-    rgba(20, 101, 156, 0.2) 34%,
-    rgba(9, 45, 79, 0.1) 54%,
-    rgba(9, 45, 79, 0) 72%
+    rgba(63, 191, 220, 0.3) 0%,
+    rgba(40, 160, 190, 0.16) 34%,
+    rgba(25, 110, 130, 0.07) 54%,
+    rgba(25, 110, 130, 0) 72%
   );
   filter: blur(20px);
   opacity: var(--jarvis-pulse-opacity);
@@ -301,19 +304,54 @@
   box-sizing: border-box;
 }
 
-.jarvis-reactor__layer--well {
+.jarvis-reactor__layer--well,
+.jarvis-reactor__layer--lens {
   width: 17rem;
   height: 17rem;
-  background: radial-gradient(
-    circle,
-    rgba(8, 28, 49, 0.04) 0 30%,
-    rgba(7, 22, 42, 0.32) 52%,
-    rgba(4, 15, 33, 0.82) 74%,
-    rgba(4, 15, 33, 0.96) 100%
-  );
+}
+
+/* Dark gunmetal with a hint of the ring turquoise: conic bands fake the anisotropic reflections of a turned metal disc. It is opaque,
+so the reactor looks the same on light and dark pages; the darker centre keeps the blue rings and core glowing. */
+.jarvis-reactor__layer--well {
+  background:
+    radial-gradient(circle at 32% 22%, rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0) 28%),
+    radial-gradient(circle, rgba(3, 15, 18, 0.9) 0 28%, rgba(3, 15, 18, 0.55) 52%, rgba(3, 15, 18, 0.2) 76%),
+    conic-gradient(
+      from 20deg,
+      #1c2629,
+      #4b5f64 9%,
+      #1f2a2d 20%,
+      #5f7579 32%,
+      #222e31 44%,
+      #465a5e 55%,
+      #1d272a 67%,
+      #586d71 79%,
+      #1f2a2d 91%,
+      #1c2629
+    );
   box-shadow:
-    inset 0 0 0 1px rgba(145, 240, 255, 0.05),
-    0 0 2rem rgba(7, 34, 59, 0.34);
+    inset 0 0 0 1px rgba(255, 255, 255, 0.16),
+    inset 0 2px 1px rgba(255, 255, 255, 0.22),
+    inset 0 -3px 2px rgba(0, 0, 0, 0.35),
+    inset 0 -14px 28px rgba(0, 12, 14, 0.45),
+    0 18px 36px -14px var(--glass-shadow),
+    0 0 2rem rgba(34, 217, 255, 0.16);
+}
+
+/* Glass dome over the rings: a soft top reflection and a rim light give the reactor a moulded, glossy look. */
+.jarvis-reactor__layer--lens {
+  background:
+    radial-gradient(
+      ellipse 62% 38% at 50% 16%,
+      rgba(255, 255, 255, 0.2),
+      rgba(255, 255, 255, 0.04) 70%,
+      transparent 72%
+    ),
+    radial-gradient(circle at 50% 50%, transparent 62%, rgba(152, 248, 255, 0.08) 72%, transparent 74%);
+  box-shadow:
+    inset 0 1px 0 rgba(220, 252, 255, 0.28),
+    inset 0 -16px 30px -12px rgba(63, 191, 220, 0.22);
+  pointer-events: none;
 }
 
 .jarvis-reactor__layer--outermost {
@@ -357,8 +395,8 @@
   width: 205px;
   height: 205px;
   border: 30px solid transparent;
-  border-top-color: rgba(0, 178, 255, 0.29);
-  border-right-color: rgba(0, 178, 255, 0.29);
+  border-top-color: rgba(63, 191, 220, 0.24);
+  border-right-color: rgba(63, 191, 220, 0.24);
   opacity: calc(0.44 + var(--jarvis-energy) * 0.22);
   animation: jarvis-spin-ccw 20s linear infinite reverse;
 }
@@ -392,8 +430,15 @@
 .jarvis-reactor__layer--core-dot {
   width: 35px;
   height: 35px;
-  background: radial-gradient(circle, rgba(231, 251, 255, 0.98) 0%, rgba(106, 223, 255, 0.98) 56%, #3fbfdc 100%);
+  background: radial-gradient(
+    circle at 36% 30%,
+    rgba(255, 255, 255, 1) 0%,
+    rgba(231, 251, 255, 0.98) 18%,
+    rgba(106, 223, 255, 0.98) 58%,
+    #2a9fbd 100%
+  );
   box-shadow:
+    inset 0 -3px 6px rgba(0, 60, 90, 0.35),
     0 0 calc(1rem + var(--jarvis-energy) * 1rem) rgba(63, 191, 220, 0.48),
     0 0 calc(2rem + var(--jarvis-energy) * 1rem) rgba(63, 191, 220, 0.16);
 }
@@ -414,7 +459,7 @@
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-  color: rgba(183, 244, 255, 0.82);
+  color: var(--color-txt-sec);
   font-size: 0.7rem;
 }
 
@@ -424,7 +469,7 @@
 
 .jarvis-panel p {
   margin: 0.95rem 0 0;
-  color: rgba(229, 246, 255, 0.88);
+  color: var(--color-txt);
   font-size: 1rem;
   line-height: 1.5;
 }
@@ -432,7 +477,8 @@
 .jarvis-shell__alert {
   margin-top: 1rem;
   padding: 0.9rem 1rem;
-  color: rgba(255, 223, 232, 0.94);
+  border-color: color-mix(in srgb, var(--color-sem-negative) 40%, transparent);
+  color: var(--color-sem-negative);
   font-size: 0.98rem;
 }
 
