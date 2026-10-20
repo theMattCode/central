@@ -105,10 +105,10 @@ function DrawerContent(props: { onNavigate?: () => void }) {
   return (
     <div class="w-full min-h-0 flex-1 flex flex-col gap-2">
       <nav class="w-full flex flex-col gap-2 overflow-y-auto">
-        <NavigationItem Icon={HomeIcon} href="/" onClick={props.onNavigate}>
+        <NavigationItem Icon={HomeIcon} to="/" onClick={props.onNavigate}>
           Overview
         </NavigationItem>
-        <NavigationItem Icon={JarvisIcon} href="/jarvis" onClick={props.onNavigate}>
+        <NavigationItem Icon={JarvisIcon} to="/jarvis" onClick={props.onNavigate}>
           Jarvis
         </NavigationItem>
         <NavigationGroup title="Work">
@@ -116,10 +116,10 @@ function DrawerContent(props: { onNavigate?: () => void }) {
           <NavigationItem Icon={MailIcon}>E-Mail</NavigationItem>
         </NavigationGroup>
         <NavigationGroup title="Finance">
-          <NavigationItem Icon={IncomeAndExpenseIcon} href="/finance/transactions" onClick={props.onNavigate}>
+          <NavigationItem Icon={IncomeAndExpenseIcon} to="/finance/transactions" onClick={props.onNavigate}>
             Transactions
           </NavigationItem>
-          <NavigationItem Icon={AccountsIcon} href="/finance/accounts" onClick={props.onNavigate}>
+          <NavigationItem Icon={AccountsIcon} to="/finance/accounts" onClick={props.onNavigate}>
             Accounts
           </NavigationItem>
           <NavigationItem Icon={InvestIcon}>Invest</NavigationItem>
