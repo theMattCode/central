@@ -202,6 +202,15 @@ async function requestAssistantTurn(input: AssistantTurnInput, signal?: AbortSig
   }
 
   const result = (await response.json()) as AssistantTurnResult;
+  if (typeof window === 'undefined') {
+    try {
+      const { dumpAssistantTurnArtifacts } = await import('src/domain/voice/model/assistantTurnDump.ts');
+      await dumpAssistantTurnArtifacts(input, result);
+    } catch (error) {
+      getLogger().error('dump-assistant-turn-artifacts-failed', { url: url.toString() }, error);
+    }
+  }
+
   getLogger().info('requested assistant turn', {
     url: url.toString(),
     transcriptLength: result.transcript.length,
@@ -383,13 +392,4 @@ export async function streamAssistantTurn(options: StreamAssistantTurnOptions): 
 
 export const runAssistantTurn = createServerFn({ method: 'POST' })
   .validator(validateAssistantTurnInput)
-  .handler(async ({ data }) => {
-    const result = await requestAssistantTurn(data);
-    try {
-      const { dumpAssistantTurnArtifacts } = await import('src/domain/voice/model/assistantTurnDump.ts');
-      await dumpAssistantTurnArtifacts(data, result);
-    } catch (error) {
-      getLogger().error('dump-assistant-turn-artifacts-failed', undefined, error);
-    }
-    return result;
-  });
+  .handler(async ({ data }) => requestAssistantTurn(data));
