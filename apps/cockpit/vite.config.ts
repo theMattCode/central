@@ -4,14 +4,11 @@ import { tanstackStart } from '@tanstack/solid-start/plugin/vite';
 import viteSolid from '@solidjs/vite-plugin';
 import tailwindcss from '@tailwindcss/vite';
 import { sentryVitePlugin } from '@sentry/vite-plugin';
-import tsconfigPaths from 'vite-tsconfig-paths';
 import { env } from 'node:process';
 
 const config = defineConfig(({ mode }) => ({
   plugins: [
     ...(mode === 'development' ? [devtools()] : []),
-    // Vitest currently resolves Vite 7, so tests still need the compatibility plugin.
-    ...(mode === 'test' ? [tsconfigPaths({ projects: ['./tsconfig.json'] })] : []),
     tailwindcss(),
     ...(mode === 'test' ? [] : [tanstackStart()]),
     viteSolid({ ssr: mode !== 'test' }),
