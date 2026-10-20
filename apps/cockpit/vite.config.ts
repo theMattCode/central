@@ -40,7 +40,8 @@ const config = defineConfig(({ mode }) => ({
     setupFiles: ['./src/setupTests.ts'],
     server: {
       deps: {
-        inline: [/\.jsx$/, /\/node_modules\/.*(?:@tanstack\+solid-|@solidjs\+|solid-icons)/],
+        // TanStack Solid packages ship uncompiled JSX under the `solid` export condition; Node can't load it.
+        inline: [/\/node_modules\/.*@tanstack\+solid-/],
       },
     },
   },
