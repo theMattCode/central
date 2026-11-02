@@ -114,9 +114,9 @@ export function Transactions() {
             onSubmit={submitForm}
           />
           {/* Transaction list should have kind of toolbar
-          <input type="month" value={month} class="rounded-md border border-(--color-section-border) bg-(--color-bg) px-3 py-2 text-(--color-txt)" onChange={(event) => setDateRangeMonth(event.target.value)} />
+          <input type="month" value={month} class="rounded-md glass-control px-3 py-2 text-(--color-txt)" onChange={(event) => setDateRangeMonth(event.target.value)} />
           <label class="flex flex-col gap-1 text-sm text-(--color-txt-sec)"></label>
-          <button type="button" aria-label="Refresh transactions" title="Refresh" class="mt-6 rounded-md border border-(--color-section-border) p-2 text-(--color-txt-sec) hover:bg-(--color-pri)/10 hover:text-(--color-pri)" onClick={reload} >
+          <button type="button" aria-label="Refresh transactions" title="Refresh" class="mt-6 rounded-md glass-control p-2 text-(--color-txt-sec) hover:bg-(--color-pri)/10 hover:text-(--color-pri)" onClick={reload} >
             <RefreshIcon class="h-5 w-5" />
           </button>
        */}
