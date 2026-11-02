@@ -6,9 +6,6 @@ type Props = JSX.InputHTMLAttributes<HTMLInputElement>;
 export function Input(props: Props) {
   const inputProps = omit(props, 'class');
   return (
-    <input
-      {...inputProps}
-      class={['w-full rounded-md glass-control px-3 py-2 text-(--color-txt) outline-none', props.class]}
-    />
+    <input {...inputProps} class={['w-full rounded-md glass-control px-3 py-2 text-(--color-txt)', props.class]} />
   );
 }

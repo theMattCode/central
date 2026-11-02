@@ -33,6 +33,8 @@ The cockpit uses a moulded glass look defined in `src/styles.css`:
 - `glass-tray` is the recessed, unblurred content area that the panels float on.
 - `glass-item` (navigation items) stays transparent and turns into a `glass-control` on hover or when its link is
   the current page (`aria-current="page"`).
+- `glass-control` and `glass-item` show a `--color-focus` outline on keyboard focus (`:focus-visible`), so do not add
+  `outline-none` to them.
 
 The Jarvis HUD has no frame of its own: its grid fades out into the page, and its panels and controls use the same
 glass components and theme colours as the rest of the cockpit.

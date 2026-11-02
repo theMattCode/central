@@ -7,6 +7,8 @@
   --color-txt-sec: #707070;
   --color-pri: #22d9ff;
   --color-sec: #44c56a;
+  /* The primary cyan is too light for a focus ring on the light glass. */
+  --color-focus: #0891b2;
   --color-section-border: rgb(15 23 42 / 0.1);
   --color-sem-positive: oklch(59.6% 0.145 163.225);
   --color-sem-negative: oklch(58.6% 0.253 17.585);
@@ -20,6 +22,7 @@
   --glass-control: rgb(255 255 255 / 0.22);
   --glass-sheen: rgb(255 255 255 / 0.35);
   --glass-border: rgb(255 255 255 / 0.6);
+  --glass-control-border: rgb(15 23 42 / 0.22);
   --glass-highlight: rgb(255 255 255 / 0.95);
   --glass-shade: rgb(15 23 42 / 0.06);
   --glass-shadow: rgb(15 23 42 / 0.18);
@@ -34,6 +37,7 @@
     --color-txt-sec: #8f8f8f;
     --color-pri: #22d9ff;
     --color-sec: #44c56a;
+    --color-focus: #22d9ff;
     --color-section-border: rgb(255 255 255 / 0.08);
     --color-sem-positive: oklch(84.5% 0.143 164.978);
     --color-sem-negative: oklch(71.2% 0.194 13.428);
@@ -46,6 +50,7 @@
     --glass-control: rgb(255 255 255 / 0.025);
     --glass-sheen: rgb(255 255 255 / 0.04);
     --glass-border: rgb(255 255 255 / 0.09);
+    --glass-control-border: rgb(255 255 255 / 0.18);
     --glass-highlight: rgb(255 255 255 / 0.14);
     --glass-shade: rgb(0 0 0 / 0.35);
     --glass-shadow: rgb(0 0 0 / 0.55);
@@ -109,7 +114,8 @@ code {
   .glass-control,
   .glass-item:hover,
   .glass-item[aria-current='page'] {
-    border: 1px solid var(--glass-border);
+    /* Darker than the panel rim, so form fields and buttons stay recognisable on the light glass. */
+    border: 1px solid var(--glass-control-border);
     border-top-color: var(--glass-highlight);
     background-color: var(--glass-control);
     background-image: linear-gradient(180deg, var(--glass-sheen), transparent 50%);
@@ -117,6 +123,12 @@ code {
       inset 0 -1px 0 var(--glass-shade),
       0 2px 6px -2px var(--glass-shadow);
     backdrop-filter: blur(8px) saturate(150%);
+  }
+
+  .glass-control:focus-visible,
+  .glass-item:focus-visible {
+    outline: 2px solid var(--color-focus);
+    outline-offset: 2px;
   }
 
   .glass-control option {
