@@ -122,7 +122,7 @@ code {
     box-shadow:
       inset 0 -1px 0 var(--glass-shade),
       0 2px 6px -2px var(--glass-shadow);
-    backdrop-filter: blur(8px) saturate(150%);
+    /* No backdrop-filter: inside a blurred panel it could only blur the panel's own content, yet costs a layer per control. */
   }
 
   .glass-control:focus-visible,

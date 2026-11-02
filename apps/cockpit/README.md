@@ -30,6 +30,8 @@ The cockpit uses a moulded glass look defined in `src/styles.css`:
 - `--glass-*` tokens hold the translucent fills, rim lights and shadows for light and dark mode.
 - `glass-panel` (sections, drawers) and `glass-control` (buttons, form fields) live in the `components` layer, so
   utilities on the same element (border width/colour, tints) still override them.
+- `glass-panel` blurs its backdrop. A `backdrop-filter` makes the panel the containing block of `position: fixed`
+  descendants, so render overlays (dialogs, popovers) outside of panels, e.g. through a `Portal`.
 - `glass-tray` is the recessed, unblurred content area that the panels float on.
 - `glass-item` (navigation items) stays transparent and turns into a `glass-control` on hover or when its link is
   the current page (`aria-current="page"`).
