@@ -2,14 +2,7 @@
 
 #jarvis {
   --jarvis-accent: #22d9ff;
-  --jarvis-accent-strong: #00b4f6;
-  --jarvis-accent-muted: rgba(71, 175, 212, 0.42);
-  --jarvis-border: rgba(92, 209, 255, 0.26);
-  --jarvis-panel: rgba(2, 17, 33, 0.72);
-  --jarvis-panel-border: rgba(92, 209, 255, 0.16);
-  --jarvis-shadow: rgba(13, 103, 156, 0.34);
   --jarvis-warning: #f8d38c;
-  --jarvis-error: #ff7d9a;
   overflow: hidden;
   padding: clamp(1rem, 2vw, 1.75rem);
 }
@@ -42,14 +35,10 @@
 #jarvis[data-mode='transcribing'],
 #jarvis[data-mode='booting'] {
   --jarvis-accent: #ffe0a0;
-  --jarvis-accent-strong: #ffbf4d;
-  --jarvis-accent-muted: rgba(255, 191, 77, 0.28);
 }
 
 #jarvis[data-mode='error'] {
   --jarvis-accent: #ff9ab0;
-  --jarvis-accent-strong: #ff6f92;
-  --jarvis-accent-muted: rgba(255, 111, 146, 0.28);
 }
 
 #jarvis[data-mode='speaking'] .jarvis-reactor,
