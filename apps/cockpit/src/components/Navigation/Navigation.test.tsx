@@ -6,10 +6,10 @@ import { flush } from 'solid-js';
 import { createMemoryHistory, createRootRoute, createRouter, RouterProvider } from '@tanstack/solid-router';
 import { Navigation } from '@/components/Navigation/Navigation.tsx';
 
-async function renderNavigation() {
+async function renderNavigation(path = '/') {
   const router = createRouter({
     routeTree: createRootRoute({ component: Navigation }),
-    history: createMemoryHistory({ initialEntries: ['/'] }),
+    history: createMemoryHistory({ initialEntries: [path] }),
   });
   render(() => <RouterProvider router={router} />);
   await screen.findByLabelText('Collapse navigation');
@@ -103,5 +103,15 @@ describe('Navigation', () => {
 
     expect(overviewLink.getAttribute('aria-current')).toBe('page');
     expect(jarvisLink.getAttribute('aria-current')).toBeNull();
+  });
+
+  it('does not keep the overview link active on other routes', async () => {
+    await renderNavigation('/jarvis');
+
+    const [overviewLink] = screen.getAllByRole('link', { name: 'Overview' });
+    const [jarvisLink] = screen.getAllByRole('link', { name: 'Jarvis' });
+
+    expect(overviewLink.getAttribute('aria-current')).toBeNull();
+    expect(jarvisLink.getAttribute('aria-current')).toBe('page');
   });
 });
