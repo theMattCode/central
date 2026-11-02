@@ -12,7 +12,8 @@
   --color-section-border: rgb(15 23 42 / 0.1);
   --color-sem-positive: oklch(59.6% 0.145 163.225);
   --color-sem-negative: oklch(58.6% 0.253 17.585);
-  --color-skeleton: #e6e6e6;
+  /* Translucent, so skeletons stay visible on the tinted glass. */
+  --color-skeleton: rgb(15 23 42 / 0.1);
 
   /* Glass surfaces: a translucent fill, a top sheen and an inner rim light give panels a moulded, plastic depth. */
   --glass-ambient-pri: rgb(34 217 255 / 0.28);
