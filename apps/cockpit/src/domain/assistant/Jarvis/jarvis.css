@@ -57,7 +57,9 @@
   filter: saturate(1.18);
 }
 
-/* The sweep fades out just below the reactor and stays hidden for the rest of the cycle. */
+/* The sweep runs over the header and the reactor and fades out just below them, then stays hidden for the rest of the
+cycle. The scanline is as tall as that area and draws its band at the top, so translating it by its own height ends
+right below the reactor in every layout. */
 @keyframes scanline-keyframes {
   from {
     opacity: 0;
@@ -75,26 +77,30 @@
   54%,
   to {
     opacity: 0;
-    transform: translateY(34.5rem);
+    transform: translateY(100%);
   }
+}
+
+.jarvis-shell__sweep {
+  position: relative;
 }
 
 .scanline {
   position: absolute;
-  inset-inline: 0;
-  top: 0;
-  height: 7rem;
+  inset: 0;
   background: linear-gradient(
-    180deg,
-    rgba(0, 0, 0, 0),
-    rgba(49, 198, 255, 0.04) 20%,
-    rgba(43, 153, 198, 0.18) 50%,
-    rgba(49, 198, 255, 0.04) 80%,
-    rgba(0, 0, 0, 0)
-  );
+      180deg,
+      rgba(0, 0, 0, 0),
+      rgba(49, 198, 255, 0.04) 20%,
+      rgba(43, 153, 198, 0.18) 50%,
+      rgba(49, 198, 255, 0.04) 80%,
+      rgba(0, 0, 0, 0)
+    )
+    top / 100% 7rem no-repeat;
   mix-blend-mode: screen;
   opacity: 0.45;
   mask-image: linear-gradient(90deg, transparent, #000 25%, #000 75%, transparent);
+  pointer-events: none;
   animation: scanline-keyframes 7s linear infinite;
 }
 

@@ -230,42 +230,44 @@ export function Jarvis() {
 
   return (
     <section class="relative w-full h-full" data-mode={systemState().mode} id="jarvis">
-      <div class="absolute scanline" aria-hidden="true" />
+      <div class="jarvis-shell__sweep">
+        <div class="scanline" aria-hidden="true" />
 
-      <div class="jarvis-shell__header">
-        <div class="jarvis-shell__headline">
-          <p>{systemState().detail}</p>
-        </div>
-
-        <div class="jarvis-shell__status">
-          <div
-            class={[
-              'jarvis-shell__badge glass-control',
-              {
-                'jarvis-shell__badge--error': systemState().tone === 'error',
-                'jarvis-shell__badge--attention': systemState().tone === 'attention',
-              },
-            ]}
-          >
-            <Icon icon={PowerIcon} class="h-4 w-4" />
-            {systemState().label}
+        <div class="jarvis-shell__header">
+          <div class="jarvis-shell__headline">
+            <p>{systemState().detail}</p>
           </div>
-          <button
-            type="button"
-            class={['jarvis-shell__toggle glass-control', { 'jarvis-shell__toggle--active': isEnabled() }]}
-            onClick={toggleEnabled}
-            disabled={!isVadEnabled}
-          >
-            <Icon icon={isEnabled() ? StandbyIcon : MicIcon} class="h-5 w-5" />
-            {isEnabled() ? 'Stand down' : 'VAD disabled'}
-          </button>
-        </div>
-      </div>
 
-      <div class="jarvis-shell__center">
-        <TelemetryList items={leftTelemetry()} title="Sensor rail" />
-        <JarvisOrb bars={motion().bars} energy={motion().energy} mode={systemState().mode} />
-        <TelemetryList items={rightTelemetry()} title="Output rail" />
+          <div class="jarvis-shell__status">
+            <div
+              class={[
+                'jarvis-shell__badge glass-control',
+                {
+                  'jarvis-shell__badge--error': systemState().tone === 'error',
+                  'jarvis-shell__badge--attention': systemState().tone === 'attention',
+                },
+              ]}
+            >
+              <Icon icon={PowerIcon} class="h-4 w-4" />
+              {systemState().label}
+            </div>
+            <button
+              type="button"
+              class={['jarvis-shell__toggle glass-control', { 'jarvis-shell__toggle--active': isEnabled() }]}
+              onClick={toggleEnabled}
+              disabled={!isVadEnabled}
+            >
+              <Icon icon={isEnabled() ? StandbyIcon : MicIcon} class="h-5 w-5" />
+              {isEnabled() ? 'Stand down' : 'VAD disabled'}
+            </button>
+          </div>
+        </div>
+
+        <div class="jarvis-shell__center">
+          <TelemetryList items={leftTelemetry()} title="Sensor rail" />
+          <JarvisOrb bars={motion().bars} energy={motion().energy} mode={systemState().mode} />
+          <TelemetryList items={rightTelemetry()} title="Output rail" />
+        </div>
       </div>
 
       <div class="jarvis-shell__panels">
